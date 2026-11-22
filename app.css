@@ -249,3 +249,9 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--safe-to
 .mgrid button span{font-size:11px;color:var(--muted)}
 .mgrid button.today{border-color:var(--line2)}
 .mgrid button.on{border:1.5px solid var(--accent-hi);background:var(--accent-soft)}
+
+/* Celý řádek jako odkaz (album, soubory) */
+.info>a.rowlink{display:flex;align-items:center;gap:12px;padding:13px 14px;color:inherit;text-decoration:none;font-size:inherit;font-weight:inherit}
+.info>*+a.rowlink,.info>a.rowlink+*{border-top:1px solid var(--line)}
+.info>a.rowlink>svg:last-child{color:var(--muted);flex:0 0 auto}
+.info>a.rowlink:active{background:var(--surface)}

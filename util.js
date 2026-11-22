@@ -29,8 +29,14 @@ export function relDays(date, now = new Date()) {
   if (d === 0) return 'dnes';
   if (d === 1) return 'zítra';
   if (d === -1) return 'včera';
+  const a = Math.abs(d);
+  if (a > 60) {
+    const months = Math.round(a / 30.44);
+    if (months < 12) return d > 0 ? `za ${months} ${plural(months, 'měsíc', 'měsíce', 'měsíců')}` : `před ${months} ${months === 1 ? 'měsícem' : 'měsíci'}`;
+    const years = Math.round(a / 365.25);
+    return d > 0 ? `za ${years} ${plural(years, 'rok', 'roky', 'let')}` : `před ${years} ${years === 1 ? 'rokem' : 'lety'}`;
+  }
   if (d > 1) return `za ${d} ${plural(d, 'den', 'dny', 'dní')}`;
-  const a = -d;
   return `před ${a} ${a === 1 ? 'dnem' : 'dny'}`;
 }
 

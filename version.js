@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.09',
+    date: '22. 11. 2026',
+    items: [
+      'Detail proběhlé akce: bez tlačítka „Do kalendáře“.',
+      'Řádek „Album fotek“ je klikací celý (bez popisku „Otevřít“), stejně tak přiložené soubory. Odkaz na Google Fotky se už neopakuje v popisu akce.',
+      'U starších akcí je u data i rok a místo „před 4012 dny“ se píše „před 11 lety“ (podobně „před 7 měsíci“, „za 2 měsíce“).'
+    ]
+  },
+  {
     version: '1.08',
     date: '22. 11. 2026',
     items: [

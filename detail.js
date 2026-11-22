@@ -11,6 +11,14 @@ import { albumFlow, canAddAlbum } from './plus.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
+// Popis akce bez odkazů na Google Fotky — album má vlastní řádek nahoře.
+function descText(ev) {
+  return String(ev.description || '')
+    .replace(/https?:\/\/(?:photos\.app\.goo\.gl|photos\.google\.com)\/\S+/g, '')
+    .replace(/^[^\n:]{0,30}:[ \t]*$/gm, '')   // osiřelý popisek typu „Fotky:“
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 export function render(root, { id }) {
   let ev = null, att = null, comments = null, items = null, album = null;
   const unsubs = [];
@@ -36,12 +44,12 @@ export function render(root, { id }) {
         <h1 class="title" style="margin:6px 0 14px">${esc(ev.title)}</h1>
         ${ro && !past ? `<div class="banner">${icon('lock', 18)}<span>Zkušební provoz: tahle akce patří starému kalendáři, takže se tu zatím jen čte.</span></div>` : ''}
         <div class="info">
-          <div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(ev.start))}</b><span>${esc(whenLine(ev))}</span></div><button class="link" data-ics>Do kalendáře</button></div>
+          <div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(ev.start))}${ev.start.getFullYear() !== new Date().getFullYear() ? ' ' + ev.start.getFullYear() : ''}</b><span>${esc(whenLine(ev))}</span></div>${past ? '' : '<button class="link" data-ics>Do kalendáře</button>'}</div>
           ${ev.place ? `<div>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="${esc(mapUrl(ev.place))}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
           <div data-albumrow style="display:none"></div>
-          ${(ev.driveFiles || []).map((f) => `<div>${icon('file')}<div class="k"><b>${esc(f.title)}</b></div><a href="${esc(f.url)}" target="_blank" rel="noopener">Otevřít</a></div>`).join('')}
+          ${(ev.driveFiles || []).map((f) => `<a class="rowlink" href="${esc(f.url)}" target="_blank" rel="noopener">${icon('file')}<div class="k"><b>${esc(f.title)}</b></div>${icon('next', 18)}</a>`).join('')}
         </div>
-        ${ev.description ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(ev.description)}</div>` : ''}
+        ${descText(ev) ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(descText(ev))}</div>` : ''}
 
         <div class="h2"><span>Kdo jde</span><span class="sub" data-attcount></span></div>
         <div data-att>${spinner()}</div>
@@ -58,7 +66,8 @@ export function render(root, { id }) {
       </div>
     </div>`;
 
-    root.querySelector('[data-ics]').onclick = () => {
+    const icsBtn = root.querySelector('[data-ics]');
+    if (icsBtn) icsBtn.onclick = () => {
       shareIcs(icsFor(ev), (ev.title || 'akce').replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) + '.ics', ev.title);
     };
     root.querySelector('[data-share]').onclick = async () => {
@@ -100,7 +109,12 @@ export function render(root, { id }) {
       return;
     }
     row.style.display = '';
-    row.innerHTML = `${icon('photo')}<div class="k"><b>Album fotek</b><span>Google Fotky</span></div><a href="${esc(album)}" target="_blank" rel="noopener">Otevřít</a>`;
+    const a = document.createElement('a');
+    a.className = 'rowlink';
+    a.href = album; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = `${icon('photo')}<div class="k"><b>Album fotek</b></div>${icon('next', 18)}`;
+    row.replaceWith(a);
+    a.setAttribute('data-albumrow', '');
     const ct = root.querySelector('[data-covertext]');
     if (ct) ct.innerHTML = `<a href="${esc(album)}" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--cover-ink);text-decoration:none">${icon('photo', 40, 1.5)}<span>Otevřít album</span></a>`;
   }
