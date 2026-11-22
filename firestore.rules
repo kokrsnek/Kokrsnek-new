@@ -84,6 +84,11 @@ service cloud.firestore {
       }
     }
 
+    // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).
+    match /presence/{name} {
+      allow read, write: if isV2Approved();
+    }
+
     // Testovací chat a check-iny nové aplikace (zkušební provoz — parta je nevidí).
     match /v2_chats/{thread}/messages/{msg} {
       allow read, write: if isV2Approved();

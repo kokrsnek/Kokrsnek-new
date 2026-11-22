@@ -7,6 +7,7 @@ import { myName } from './auth.js';
 import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
 import { shrinkPhoto } from './store.js';
+import { isOnline, lastSeenText, watchPresence, watchOne } from './presence.js';
 
 export const PARTY_THREAD = 'parta-vsichni';
 const TEST_THREAD = 'test';
@@ -50,7 +51,7 @@ export function renderList(root) {
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
   const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
-  let alive = true;
+  let alive = true, pres = {};
 
   const draw = () => {
     const rows = threads
@@ -66,7 +67,8 @@ export function renderList(root) {
       const title = threadTitle(id);
       const av = id === PARTY_THREAD
         ? `<span class="av" style="background:var(--accent);color:var(--on-accent)">${icon('people', 18)}</span>`
-        : id === TEST_THREAD ? `<span class="av" style="background:var(--surface);color:var(--warn-ink)">${icon('chat', 18)}</span>` : avatar(title, 40);
+        : id === TEST_THREAD ? `<span class="av" style="background:var(--surface);color:var(--warn-ink)">${icon('chat', 18)}</span>`
+        : `<span class="avwrap">${avatar(title, 40)}${isOnline(pres[title]) ? '<i class="onldot"></i>' : ''}</span>`;
       return `<a class="row" href="#/chat/${encodeURIComponent(id)}">
         ${av}
         <div style="min-width:0;flex:1"><div class="t">${esc(title)}${id === TEST_THREAD ? ' <span class="pill test" style="height:20px;font-size:11px">test</span>' : ''}</div>
@@ -75,6 +77,10 @@ export function renderList(root) {
       </a>`;
     }).join('') + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
+
+  // Kdo je online (zelená tečka u avataru).
+  const unsubP = watchPresence((m) => { pres = m; if (alive) draw(); });
+  const presTick = setInterval(() => { if (alive) draw(); }, 30000);
 
   // Poslední zpráva v každém vlákně (Celá parta a test živě, soukromá jednorázově).
   const unsubs = [];
@@ -87,7 +93,7 @@ export function renderList(root) {
     }
   }
   draw();
-  return () => { alive = false; unsubs.forEach((u) => u()); };
+  return () => { alive = false; unsubP(); clearInterval(presTick); unsubs.forEach((u) => u()); };
 }
 
 // ---------- konverzace ----------
@@ -101,7 +107,7 @@ export function renderThread(root, { id }) {
     <div class="top chattop">
       <a class="ibtn" href="#/chat" aria-label="Zpět">${icon('back')}</a>
       <div style="flex:1;min-width:0"><div class="h1" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(threadTitle(id))}</div>
-        <div class="sub">${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : 'soukromá zpráva'}</div></div>
+        <div class="sub" data-status>${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : ''}</div></div>
     </div>
     <div class="msgs" data-msgs>${spinner()}</div>
     <div class="composer">
@@ -115,6 +121,19 @@ export function renderThread(root, { id }) {
     </div>
   </div>`;
   const box = root.querySelector('[data-msgs]');
+  // Soukromá konverzace: online (zelená tečka) nebo kdy byl naposledy aktivní.
+  let presUnsub = null, presTick = null;
+  if (!group) {
+    const other = threadTitle(id);
+    const st = root.querySelector('[data-status]');
+    let lastIso = null;
+    const show = () => { st.innerHTML = isOnline(lastIso) ? '<i class="onldot inline"></i> online' : esc(lastSeenText(lastIso)); };
+    presUnsub = watchOne(other, (iso) => { lastIso = iso; show(); });
+    presTick = setInterval(show, 30000);
+  }
+  // Drží se dole, dokud uživatel sám neodroluje nahoru.
+  let stick = true;
+  box.addEventListener('scroll', () => { stick = box.scrollHeight - box.scrollTop - box.clientHeight < 120; }, { passive: true });
 
   function draw() {
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
@@ -138,7 +157,7 @@ export function renderThread(root, { id }) {
           <div class="bubble ${m.image || m.audio ? 'media' : ''}">
             ${m.forwardedFrom ? `<div class="fwd">přeposláno od ${esc(m.forwardedFrom)}</div>` : ''}
             ${m.replyTo ? `<div class="quote"><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
-            ${m.image ? `<img src="${esc(m.image)}" alt="" loading="lazy">` : ''}
+            ${m.image ? `<img src="${esc(m.image)}" alt="">` : ''}
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
           </div>
@@ -148,7 +167,13 @@ export function renderThread(root, { id }) {
       </div>`;
     });
     box.innerHTML = html || '<div class="empty">Zatím žádné zprávy.</div>';
-    if (first || nearBottom) { box.scrollTop = box.scrollHeight; first = false; }
+    if (first || nearBottom) {
+      // Na konec (nejnovější zprávy); znovu po načtení fotek, které výšku změní.
+      const toEnd = () => { box.scrollTop = box.scrollHeight; };
+      toEnd(); requestAnimationFrame(toEnd);
+      box.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', () => { if (stick) toEnd(); }, { once: true }); });
+      first = false;
+    }
   }
 
   const q = query(collection(db, ...threadPath(id)), orderBy('at'));
@@ -237,5 +262,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return unsub;
+  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); };
 }
