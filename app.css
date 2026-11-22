@@ -367,3 +367,23 @@ body{overflow-x:hidden}
 .cimap .mapcopy{position:absolute;right:8px;bottom:6px;z-index:500;font-size:10px;color:#333;background:rgba(255,255,255,.75);padding:1px 6px;border-radius:6px;text-decoration:none}
 .cipin{background:none;border:none}.cipin .av{border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .replybar[hidden]{display:none}
+
+/* Formulář nového check-inu (jako ve staré aplikaci) */
+.ciform{position:fixed;inset:0;z-index:45;background:var(--bg);display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding-top:var(--safe-top)}
+.ciload{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:14px;text-align:center}
+.ciformin{flex:1;overflow-y:auto;padding:20px 24px 10px}
+.cilbl{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.ciformin .input{margin-bottom:16px}
+.ciformin textarea.input{min-height:70px}
+.cifav{margin-bottom:16px}
+.cifav .chip{font-weight:700;color:var(--ink);font-size:15px;padding:9px 14px;border-width:1.5px}
+.cifav .chip.on,.cisug.on{border-color:var(--accent-hi)}
+.cisugs{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.cisugs[hidden]{display:none}
+.cisug{text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:10px 14px;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.cisug b{font-size:16px}.cisug span{font-size:13px;color:var(--muted)}
+.cimore{background:none;border:none;color:var(--accent-text);font-weight:700;font-size:15px;padding:6px 2px 14px}
+.ciphrow{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ciphrow img{width:56px;height:56px;object-fit:cover;border-radius:10px}
+.cibtns{display:flex;gap:10px;padding:10px 24px calc(12px + var(--safe-bottom));border-top:1px solid var(--line)}
+.cibtns .btn{flex:1;height:50px;font-weight:700}

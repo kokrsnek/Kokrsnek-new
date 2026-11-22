@@ -27,6 +27,15 @@ try {
 }
 export const db = firestore;
 
+// Serverové funkce (callable) — stejné jako ve staré aplikaci, např. nearbyPlaces.
+let fnMod = null;
+export async function callFunction(name, data) {
+  if (!fnMod) fnMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+  const fns = fnMod.getFunctions(app, 'us-central1');
+  const r = await fnMod.httpsCallable(fns, name)(data);
+  return r.data;
+}
+
 export {
   onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut,

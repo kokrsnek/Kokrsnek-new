@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.18',
+    date: '22. 11. 2026',
+    items: [
+      'Nový check-in vypadá a funguje jako ve staré aplikaci: pole „Kde jsi“, Tvoje místa (nejčastější z tvých check-inů), Místa v okolí (stejná služba Google Places jako stará aplikace, první tři a „Další místa v okolí“), poznámka, Přidat fotku a dole Zrušit / Odeslat.'
+    ]
+  },
+  {
     version: '1.17',
     date: '22. 11. 2026',
     items: [

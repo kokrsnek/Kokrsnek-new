@@ -1,11 +1,11 @@
 // Kde jsi?: check-iny party (Feed a Mapa) a nový check-in.
 // Skutečné check-iny (placeCheckins) se čtou. Ve zkušebním provozu se nové
 // check-iny, reakce a komentáře zapisují jen do v2_checkins (test).
-import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL, KNOWN_PLACES } from './util.js';
+import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
 import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY } from './config.js';
-import { db, collection, doc, query, orderBy, limit, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs, writeBatch } from './firebase.js';
+import { db, collection, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, writeBatch, callFunction } from './firebase.js';
 import { shrinkPhoto } from './store.js';
 import { loadLeaflet } from './map.js';
 
@@ -204,81 +204,126 @@ export function render(root, { tab = 'feed', openNew = false }) {
   return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); };
 }
 
-// ---------- nový check-in ----------
-function distM(a, b) {
-  const R = 6371000, r = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
-  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
+// ---------- nový check-in (stejně jako ve staré aplikaci) ----------
+// Tvoje místa: nejčastější a nejnovější z vlastních check-inů (do 6).
+async function favoritePlaces(me) {
+  const map = new Map();
+  for (const col of ['placeCheckins', 'v2_checkins']) {
+    try {
+      const s = await getDocs(query(collection(db, col), where('user', '==', me), limit(300)));
+      s.forEach((d) => {
+        const c = d.data();
+        const name = (c.place || '').trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        const e = map.get(key) || { name, count: 0, last: '' };
+        e.count++;
+        if ((c.at || '') > e.last) { e.last = c.at || ''; e.name = name; }
+        map.set(key, e);
+      });
+    } catch (e) { /* bez oblíbených */ }
+  }
+  return [...map.values()].sort((a, b) => (b.count - a.count) || (b.last > a.last ? 1 : -1)).slice(0, 6).map((e) => e.name);
 }
 
-async function suggestions(c) {
-  const out = [];
-  for (const [k, v] of Object.entries(KNOWN_PLACES)) {
-    const [lat, lng] = v.split(',').map(Number);
-    if (distM(c, { lat, lng }) < 400) out.push(k.charAt(0).toUpperCase() + k.slice(1));
-  }
+// Místa v okolí: stejná serverová funkce jako stará aplikace (Google Places),
+// když nic nevrátí, aspoň odhad adresy z Mapy.com.
+async function nearby(c) {
+  try {
+    const r = await callFunction('nearbyPlaces', { lat: c.lat, lng: c.lng });
+    if (r && r.results && r.results.length) return { list: r.results, guess: '' };
+  } catch (e) { console.error('Místa v okolí:', e); }
+  let guess = '';
   if (MAPY_API_KEY) {
     try {
-      const r = await fetch(`https://api.mapy.com/v1/rgeocode?lon=${c.lng}&lat=${c.lat}&lang=cs&apikey=${encodeURIComponent(MAPY_API_KEY)}`);
-      const j = await r.json();
-      (j.items || []).slice(0, 3).forEach((it) => { if (it.name && !out.includes(it.name)) out.push(it.name); });
-    } catch (e) { /* bez návrhů */ }
+      const res = await fetch(`https://api.mapy.com/v1/rgeocode?lon=${c.lng}&lat=${c.lat}&lang=cs&apikey=${encodeURIComponent(MAPY_API_KEY)}`);
+      const j = await res.json();
+      guess = (j.items && j.items[0] && (j.items[0].name || j.items[0].label)) || '';
+    } catch (e) { /* bez odhadu */ }
   }
-  return out;
+  return { list: [], guess };
 }
 
 export function newCheckin() {
   const me = myName();
-  let coords = null, photo = '';
-  const bd = document.createElement('div');
-  bd.className = 'backdrop';
-  bd.innerHTML = `<div class="sheet" role="dialog" aria-label="Nový check-in"><div class="grab"></div>
-    <h3>Kde jsi?</h3>
-    <p data-gps>${icon('pin', 14)} Zjišťuju polohu…</p>
-    <div class="chips" data-sug style="margin-bottom:10px"></div>
-    <input class="input" data-place placeholder="Název místa" maxlength="80" aria-label="Místo">
-    <textarea class="input" data-note rows="2" placeholder="Poznámka (nepovinné)" maxlength="300" style="margin-top:8px;min-height:60px"></textarea>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
-      <button class="btn" data-ph>${icon('photo', 18)} Fotka</button><input type="file" accept="image/*" data-file hidden>
-      <img data-prev alt="" style="height:48px;border-radius:8px;display:none">
-    </div>
-    ${TEST_MODE ? '<div class="note" style="margin-top:8px">Ve zkušebním provozu se check-in uloží jako testovací — parta ho neuvidí.</div>' : ''}
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
-      <button class="btn primary big block" data-go>Odeslat check-in</button>
-      <button class="btn block" data-x>Zrušit</button>
-    </div></div>`;
-  bd.addEventListener('click', (e) => { if (e.target === bd) bd.remove(); });
-  document.body.appendChild(bd);
-  const $ = (s) => bd.querySelector(s);
-  $('[data-x]').onclick = () => bd.remove();
-  $('[data-ph]').onclick = () => $('[data-file]').click();
+  const scr = document.createElement('div');
+  scr.className = 'ciform';
+  scr.innerHTML = `<div class="ciload">Hledám místa v okolí…<div><button class="btn" data-x style="margin-top:12px">Zrušit</button></div></div>`;
+  document.body.appendChild(scr);
+  let cancelled = false;
+  scr.querySelector('[data-x]').onclick = () => { cancelled = true; scr.remove(); };
+
+  const favP = favoritePlaces(me);
+  const getPos = () => new Promise((res) => {
+    if (!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { timeout: 8000, maximumAge: 60000 });
+  });
+  (async () => {
+    const coords = await getPos();
+    const nb = coords ? await nearby(coords) : { list: [], guess: '' };
+    const favs = await favP;
+    if (cancelled) return;
+    renderForm(scr, me, coords, nb.list, nb.guess, favs);
+  })();
+}
+
+function renderForm(scr, me, coords, sugs, guess, favs) {
+  let photo = '', picked = null;
+  const sugRow = (s, i) => `<button type="button" class="cisug" data-i="${i}"><b>${esc(s.name)}</b>${s.vicinity ? `<span>${esc(s.vicinity)}</span>` : ''}</button>`;
+  const first = sugs.slice(0, 3), more = sugs.slice(3);
+  scr.innerHTML = `<div class="ciformin">
+    <label class="cilbl" for="ci-place">Kde jsi</label>
+    <input id="ci-place" class="input" data-place placeholder="Napiš, kde jsi…" maxlength="80" value="${esc(guess)}">
+    ${favs.length ? `<div class="cilbl">Tvoje místa</div><div class="chips cifav">${favs.map((n) => `<button type="button" class="chip" data-fav="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
+    ${sugs.length ? `<div class="cilbl">Místa v okolí</div>
+      <div class="cisugs">${first.map((s, i) => sugRow(s, i)).join('')}</div>
+      ${more.length ? `<div class="cisugs" data-more hidden>${more.map((s, i) => sugRow(s, i + 3)).join('')}</div>
+        <button type="button" class="cimore" data-morebtn>Další místa v okolí (${more.length})</button>` : ''}` : ''}
+    ${!coords ? '<div class="note" style="text-align:left;margin-bottom:12px">Polohu se nepodařilo zjistit — místo napiš ručně.</div>' : ''}
+    <label class="cilbl" for="ci-note">Poznámka (nepovinné)</label>
+    <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
+    <input type="file" accept="image/*" data-file hidden>
+    <div class="ciphrow" data-phrow></div>
+    ${TEST_MODE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
+  </div>
+  <div class="cibtns"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Odeslat</button></div>`;
+  const $ = (q) => scr.querySelector(q);
+  const input = $('[data-place]');
+  const mark = (el) => { scr.querySelectorAll('.chip[data-fav], .cisug').forEach((x) => x.classList.remove('on')); if (el) el.classList.add('on'); };
+  scr.querySelectorAll('[data-fav]').forEach((b) => { b.onclick = () => { input.value = b.dataset.fav; picked = null; mark(b); }; });
+  scr.querySelectorAll('.cisug').forEach((b) => { b.onclick = () => { const s = sugs[+b.dataset.i]; input.value = s.name; picked = s; mark(b); }; });
+  const mb = $('[data-morebtn]');
+  if (mb) mb.onclick = () => { $('[data-more]').hidden = false; mb.remove(); };
+  const drawPh = () => {
+    $('[data-phrow]').innerHTML = `${photo ? `<img src="${photo}" alt="">` : ''}
+      <button type="button" class="btn" data-ph>${icon('photo', 18)} ${photo ? 'Změnit fotku' : 'Přidat fotku'}</button>
+      ${photo ? '<button type="button" class="btn" data-phx>Odebrat</button>' : ''}`;
+    $('[data-ph]').onclick = () => $('[data-file]').click();
+    const x = $('[data-phx]'); if (x) x.onclick = () => { photo = ''; drawPh(); };
+  };
+  drawPh();
   $('[data-file]').onchange = async () => {
     const f = $('[data-file]').files[0];
+    $('[data-file]').value = '';
     if (!f) return;
-    try { photo = await shrinkPhoto(f); $('[data-prev]').src = photo; $('[data-prev]').style.display = 'block'; } catch (x) { toast('Fotku se nepodařilo načíst.'); }
+    try { photo = await shrinkPhoto(f); drawPh(); } catch (e) { toast('Fotku se nepodařilo načíst.'); }
   };
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async (p) => {
-      coords = { lat: p.coords.latitude, lng: p.coords.longitude };
-      $('[data-gps]').innerHTML = `${icon('pin', 14)} Poloha zjištěna (±${Math.round(p.coords.accuracy)} m)`;
-      const s = await suggestions(coords);
-      $('[data-sug]').innerHTML = s.map((n) => `<button class="chip" data-s="${esc(n)}">${esc(n)}</button>`).join('');
-      if (s[0] && !$('[data-place]').value) $('[data-place]').value = s[0];
-    }, () => { $('[data-gps]').textContent = 'Polohu se nepodařilo zjistit — check-in odejde bez mapy.'; }, { enableHighAccuracy: true, timeout: 12000 });
-  } else $('[data-gps]').textContent = 'Telefon nepodporuje zjištění polohy.';
-  $('[data-sug]').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) $('[data-place]').value = b.dataset.s; };
+  const close = () => scr.remove();
+  $('[data-x]').onclick = close;
   $('[data-go]').onclick = async (e) => {
-    const place = $('[data-place]').value.trim();
-    if (!place) { $('[data-place]').focus(); return; }
-    e.target.disabled = true;
-    const data = { user: me, place, note: $('[data-note]').value.trim(), lat: coords ? coords.lat : null, lng: coords ? coords.lng : null,
-      at: new Date().toISOString(), photo, coming: [], near: [], emojis: {}, commentCount: 0, via: 'v2' };
+    const place = input.value.trim();
+    if (!place) { input.focus(); return; }
+    e.target.disabled = true; e.target.textContent = 'Ukládám…';
+    const gp = picked && picked.name === place ? picked : null;
+    const data = { user: me, place, note: $('[data-note]').value.trim(),
+      lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, gPlaceId: gp ? gp.id || '' : '',
+      at: new Date().toISOString(), photo, photoPath: '', via: 'v2' };
     try {
       await addDoc(collection(db, TEST_MODE ? 'v2_checkins' : 'placeCheckins'), data);
-      bd.remove();
+      close();
       toast('Check-in odeslán 📍');
       if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
-    } catch (x) { console.error(x); e.target.disabled = false; toast('Check-in se nepodařilo uložit.'); }
+    } catch (x) { console.error(x); e.target.disabled = false; e.target.textContent = 'Odeslat'; toast('Check-in se nepodařilo uložit.'); }
   };
+  setTimeout(() => input.focus(), 100);
 }
