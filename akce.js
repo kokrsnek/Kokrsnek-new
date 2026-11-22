@@ -11,6 +11,8 @@ const PAGE = 60;
 export function render(root, { tab }) {
   let searchOpen = false, q = '', shown = PAGE;
   let heroAtt = null, heroUnsub = null, heroId = null;
+  let shift = 0;            // posun velké karty: 0 = nejbližší akce, -1 = předchozí, +1 = další
+  let enterDir = '';         // směr animace po swipu
   const loading = new Set();
 
   const today = new Date();
@@ -76,39 +78,95 @@ export function render(root, { tab }) {
   function heroHtml(ev) {
     const now = new Date();
     const live = isLive(ev, now);
+    const past = !live && isPast(ev, now);
     const me = myName();
-    let pct, left, eyebrow;
+    let pct = 0, left = '', eyebrow;
     if (live) {
       const tot = Math.max(1, ev.end - ev.start);
       pct = Math.min(100, ((now - ev.start) / tot) * 100);
       left = `ještě ${fmtSpan(ev.end - now)}`;
       eyebrow = 'Právě probíhá';
+    } else if (past) {
+      eyebrow = `Proběhlo · ${relDays(ev.start, now)}`;
     } else {
       const prev = [...events.list].reverse().find((e) => e.end <= ev.start && e.id !== ev.id);
       const from = prev ? prev.end : new Date(ev.start.getTime() - 30 * 86400000);
       const tot = Math.max(1, ev.start - from);
       pct = Math.max(2, Math.min(100, ((now - from) / tot) * 100));
       left = `zbývá ${fmtSpan(ev.start - now)}`;
-      eyebrow = `Další akce · ${relDays(ev.start, now)}`;
+      eyebrow = shift === 0 ? `Další akce · ${relDays(ev.start, now)}` : `Plánovaná akce · ${relDays(ev.start, now)}`;
     }
     const going = heroAtt?.going || [];
-    return `<div class="card hero" data-open="${esc(ev.id)}">
+    const cls = enterDir ? ` enter-${enterDir}` : '';
+    return `<div class="card hero${past ? ' was' : ''}${cls}" data-open="${esc(ev.id)}">
       <div style="display:flex;gap:14px;align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div class="eyebrow ${live ? 'live' : ''}">${esc(eyebrow)}${ev.isTest ? ' · test' : ''}</div>
+          <div class="eyebrow ${live ? 'live' : ''}" ${past ? 'style="color:var(--muted)"' : ''}>${esc(eyebrow)}${ev.isTest ? ' · test' : ''}</div>
           <h2 class="title" style="margin-top:6px">${esc(ev.title)}</h2>
         </div>
         <div class="datetile"><span class="m">${MONTHS_SHORT[ev.start.getMonth()]}</span><span class="d">${ev.start.getDate()}</span></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div class="meta">${icon('calendar', 16)}${esc(fmtWhen(ev))}</div>
+        <div class="meta">${icon('calendar', 16)}${esc(fmtWhen(ev))}${ev.start.getFullYear() !== now.getFullYear() ? ' ' + ev.start.getFullYear() : ''}</div>
         ${ev.place ? `<div class="meta">${icon('pin', 16)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.place)}</span></div>` : ''}
       </div>
-      <div class="progress ${live ? 'live' : ''}"><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
-        <div class="lbl"><span>${esc(left)}</span><span>${heroAtt ? `jde <b>${going.length}</b>` : ''}</span></div></div>
-      ${going.length ? `<div style="display:flex;align-items:center;gap:10px">${faces(going)}<span class="sub" style="margin:0">${going.includes(me) ? 'Ty a další' : 'Zatím bez tebe'}</span></div>` : ''}
-      <div data-nodetail>${heroAtt ? attendButtons(ev, heroAtt) : '<div class="note">Načítám docházku…</div>'}</div>
+      ${past ? '' : `<div class="progress ${live ? 'live' : ''}"><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="lbl"><span>${esc(left)}</span><span>${heroAtt ? `jde <b>${going.length}</b>` : ''}</span></div></div>`}
+      ${going.length ? `<div style="display:flex;align-items:center;gap:10px">${faces(going)}<span class="sub" style="margin:0">${past ? `${going.includes(me) ? 'Byl jsi tam' : 'Bez tebe'} · ${going.length} ${going.length === 1 ? 'účastník' : going.length < 5 ? 'účastníci' : 'účastníků'}` : going.includes(me) ? 'Ty a další' : 'Zatím bez tebe'}</span></div>` : ''}
+      <div data-nodetail>
+        ${past
+          ? (ev.photoAlbum ? `<a class="btn block" href="${esc(ev.photoAlbum)}" target="_blank" rel="noopener">${icon('photo', 18)}Album fotek</a>` : '')
+          : (heroAtt ? attendButtons(ev, heroAtt) : '<div class="note">Načítám docházku…</div>')}
+        <div class="hero-nav">
+          <button data-hnav="-1" aria-label="Předchozí akce">‹ dřívější</button>
+          ${shift !== 0 ? '<button data-hnav="0" class="home">nejbližší</button>' : '<span class="hint">swipem listuj</span>'}
+          <button data-hnav="1" aria-label="Další akce">pozdější ›</button>
+        </div>
+      </div>
     </div>`;
+  }
+
+  // Akce na velké kartě podle posunu od nejbližší.
+  function heroEvent(now) {
+    const list = events.list;
+    if (!list.length) return null;
+    const next = nextEvent(now);
+    let base = next ? list.indexOf(next) : list.length - 1;
+    const idx = Math.max(0, Math.min(list.length - 1, base + shift));
+    shift = idx - base;
+    return list[idx];
+  }
+
+  function moveHero(delta) {
+    const before = shift;
+    shift = delta === 0 ? 0 : shift + delta;
+    enterDir = delta === 0 ? (before > 0 ? 'right' : 'left') : (delta > 0 ? 'left' : 'right');
+    draw();
+    enterDir = '';
+  }
+
+  // Výsledky hledání napříč všemi akcemi (budoucí, probíhající i proběhlé).
+  function drawSearch(now) {
+    const all = events.list.filter(match);
+    const up = all.filter((e) => !isPast(e, now));
+    const past = all.filter((e) => isPast(e, now)).reverse();
+    if (!all.length) { body.innerHTML = '<div class="empty">Nic nenalezeno.</div>'; return; }
+    let html = '';
+    if (up.length) html += `<div class="section-h">Nadcházející (${up.length})</div><div class="rows">${up.map((e) => row(e, false)).join('')}</div>`;
+    if (past.length) {
+      html += `<div class="section-h">Proběhlé (${past.length})</div>`;
+      let lastY = null;
+      for (const ev of past.slice(0, shown)) {
+        const y = ev.start.getFullYear();
+        if (y !== lastY) { html += `${lastY !== null ? '</div>' : ''}<div class="section-h" style="padding-top:8px">${y}</div><div class="rows">`; lastY = y; }
+        html += row(ev, true);
+      }
+      if (lastY !== null) html += '</div>';
+      if (past.length > shown) html += `<button class="btn dashed block" data-more>Zobrazit další (${past.length - shown})</button>`;
+    }
+    body.innerHTML = html;
+    const more = body.querySelector('[data-more]');
+    if (more) more.onclick = () => { shown += PAGE * 2; draw(); };
   }
 
   function draw() {
@@ -118,15 +176,18 @@ export function render(root, { tab }) {
       return;
     }
     const now = new Date();
+    root.querySelector('.seg').style.display = q.trim() ? 'none' : '';
+    if (q.trim()) return drawSearch(now);
     if (tab === 'nadchazejici') {
       const up = events.list.filter((e) => !isPast(e, now) && match(e));
       if (!events.list.length) {
         body.innerHTML = `<div class="empty">Zatím tu nejsou žádné akce.<br>Správce je převezme z Google Kalendáře v záložce <a href="#/parta">Parta</a>.</div>`;
         return;
       }
-      if (!up.length) { body.innerHTML = `<div class="empty">${q ? 'Nic nenalezeno.' : 'Žádná naplánovaná akce. Přidej nějakou!'}</div>`; return; }
-      const hero = !q ? nextEvent(now) : null;
-      const rest = hero ? up.filter((e) => e.id !== hero.id) : up;
+      if (!up.length && !hero) { body.innerHTML = '<div class="empty">Žádná naplánovaná akce. Přidej nějakou!</div>'; return; }
+      const hero = heroEvent(now);
+      const next = nextEvent(now);
+      const rest = next ? up.filter((e) => e.id !== next.id) : up;
       let html = hero ? heroHtml(hero) : '';
       let lastKey = '';
       for (const ev of rest) {
@@ -143,7 +204,7 @@ export function render(root, { tab }) {
       if (hero && hero.id !== heroId) {
         if (heroUnsub) heroUnsub();
         heroId = hero.id; heroAtt = cachedAttendance(hero.id);
-        heroUnsub = watchAttendance(hero, (a) => { heroAtt = a; const el = body.querySelector('.hero'); if (el) el.outerHTML = heroHtml(hero); bindHero(hero); });
+        heroUnsub = watchAttendance(hero, (a) => { if (heroId !== hero.id) return; heroAtt = a; const el = body.querySelector('.hero'); if (el) el.outerHTML = heroHtml(hero); bindHero(hero); });
       }
       if (hero) bindHero(hero);
       // Docházka u dalších nadcházejících akcí (kvůli štítku Jdu/Nejdu).
@@ -172,7 +233,36 @@ export function render(root, { tab }) {
   function bindHero(ev) {
     const el = body.querySelector('.hero');
     if (!el) return;
+    let x0 = 0, y0 = 0, dx = 0, track = null, swiped = false;
+    el.addEventListener('touchstart', (e) => {
+      const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null; swiped = false;
+      el.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      const ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (track === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) track = Math.abs(ddx) > Math.abs(ddy);
+      if (!track) return;
+      dx = ddx;
+      el.style.transform = `translateX(${dx}px) rotate(${dx / 60}deg)`;
+      el.style.opacity = String(Math.max(0.4, 1 - Math.abs(dx) / 500));
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      el.style.transition = '';
+      if (track && Math.abs(dx) > 60) {
+        swiped = true;
+        // swipe doprava = dřívější akce, swipe doleva = pozdější akce
+        moveHero(dx > 0 ? -1 : 1);
+        return;
+      }
+      el.style.transform = ''; el.style.opacity = '';
+      if (track) swiped = true;
+      setTimeout(() => { swiped = false; }, 50);
+    });
     el.onclick = (e) => {
+      if (swiped) return;
+      const nav = e.target.closest('[data-hnav]');
+      if (nav) { moveHero(+nav.dataset.hnav); return; }
       const b = e.target.closest('[data-att]');
       if (b) { changeAttendance(ev, b.dataset.att, heroAtt); return; }
       if (e.target.closest('[data-nodetail]')) return;

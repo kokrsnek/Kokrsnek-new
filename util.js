@@ -125,3 +125,41 @@ const P = {
 export function icon(name, size = 20, sw = 2) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
 }
+
+// Známá místa party se souřadnicemi (převzato ze staré aplikace).
+// Klíč je slovo z názvu místa bez diakritiky a velkých písmen.
+export const KNOWN_PLACES = {
+  bouda: '49.432694,16.622583',
+  hastrman: '49.463861,16.496667',
+  funibrouk: '49.446694,16.665611',
+  sjizdeni: '49.482333,16.608556'
+};
+
+// Odkaz do Google Map pro místo akce: odkaz na mapu v textu → GPS v textu →
+// známé místo party → hledání podle textu.
+export function mapUrl(place) {
+  const base = 'https://www.google.com/maps/search/?api=1&query=';
+  if (!place) return base;
+  const url = place.match(/https?:\/\/(?:maps\.app\.goo\.gl|maps\.google\.com|goo\.gl|www\.google\.com\/maps)[^\s]*/);
+  if (url) return url[0];
+  const dec = place.match(/(-?\d{1,3}\.\d+)\s*([NSns])?[,\s]+(-?\d{1,3}\.\d+)\s*([EWew])?/);
+  if (dec) {
+    let lat = parseFloat(dec[1]), lng = parseFloat(dec[3]);
+    if (dec[2] && dec[2].toUpperCase() === 'S') lat = -lat;
+    if (dec[4] && dec[4].toUpperCase() === 'W') lng = -lng;
+    return base + `${lat},${lng}`;
+  }
+  const dms = place.match(/(\d+)[°\s]+(\d+)['\s]+(\d+\.?\d*)["″\s]*([NS])[,\s]+(\d+)[°\s]+(\d+)['\s]+(\d+\.?\d*)["″\s]*([EW])/i);
+  if (dms) {
+    let lat = +dms[1] + dms[2] / 60 + parseFloat(dms[3]) / 3600;
+    let lng = +dms[5] + dms[6] / 60 + parseFloat(dms[7]) / 3600;
+    if (dms[4].toUpperCase() === 'S') lat = -lat;
+    if (dms[8].toUpperCase() === 'W') lng = -lng;
+    return base + `${lat.toFixed(6)},${lng.toFixed(6)}`;
+  }
+  for (const word of looseName(place).split(/\s+/)) {
+    const clean = word.replace(/[^a-z]/g, '');
+    if (KNOWN_PLACES[clean]) return base + KNOWN_PLACES[clean];
+  }
+  return base + encodeURIComponent(place);
+}

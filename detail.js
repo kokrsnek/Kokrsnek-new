@@ -1,10 +1,10 @@
 // Detail akce: informace, docházka, co přinést, album, soubory, komentáře.
-import { esc, icon, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
+import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
 import { avatar, toast, confirmDanger, spinner } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
-  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor
+  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
@@ -37,7 +37,7 @@ export function render(root, { id }) {
         ${ro && !past ? `<div class="banner">${icon('lock', 18)}<span>Zkušební provoz: tahle akce patří starému kalendáři, takže se tu zatím jen čte.</span></div>` : ''}
         <div class="info">
           <div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(ev.start))}</b><span>${esc(whenLine(ev))}</span></div><button class="link" data-ics>Do kalendáře</button></div>
-          ${ev.place ? `<div>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.place)}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
+          ${ev.place ? `<div>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="${esc(mapUrl(ev.place))}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
           <div data-albumrow style="display:none"></div>
           ${(ev.driveFiles || []).map((f) => `<div>${icon('file')}<div class="k"><b>${esc(f.title)}</b></div><a href="${esc(f.url)}" target="_blank" rel="noopener">Otevřít</a></div>`).join('')}
         </div>
@@ -59,12 +59,7 @@ export function render(root, { id }) {
     </div>`;
 
     root.querySelector('[data-ics]').onclick = () => {
-      const blob = new Blob([icsFor(ev)], { type: 'text/calendar;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = (ev.title || 'akce').replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) + '.ics';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      shareIcs(icsFor(ev), (ev.title || 'akce').replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) + '.ics', ev.title);
     };
     root.querySelector('[data-share]').onclick = async () => {
       const text = `${ev.title}\n${fmtWhen(ev)}${ev.place ? '\n' + ev.place : ''}`;

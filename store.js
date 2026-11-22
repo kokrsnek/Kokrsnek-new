@@ -287,17 +287,46 @@ export async function importCalendar(onProgress = () => {}) {
 }
 
 // ---------- export do kalendáře v telefonu (.ics) ----------
-export function icsFor(ev) {
+// Export do kalendáře v telefonu: jedna akce nebo celý seznam v jednom souboru.
+function icsEvent(ev, stamp) {
   const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const fd = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
   const escI = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, (m) => '\\' + m);
-  const lines = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KoKrSNeK//CS', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
-    `UID:${ev.id}@kokrsnek`, `DTSTAMP:${f(new Date())}`,
+  return [
+    'BEGIN:VEVENT', `UID:${ev.id}@kokrsnek`, `DTSTAMP:${stamp}`,
     ev.allDay ? `DTSTART;VALUE=DATE:${fd(ev.start)}` : `DTSTART:${f(ev.start)}`,
     ev.allDay ? `DTEND;VALUE=DATE:${fd(ev.end > ev.start ? ev.end : new Date(ev.start.getTime() + 86400000))}` : `DTEND:${f(ev.end > ev.start ? ev.end : new Date(ev.start.getTime() + 3600000))}`,
     `SUMMARY:${escI(ev.title)}`, ev.place ? `LOCATION:${escI(ev.place)}` : '', ev.description ? `DESCRIPTION:${escI(ev.description)}` : '',
-    'END:VEVENT', 'END:VCALENDAR'
+    ev.photoAlbum ? `URL:${ev.photoAlbum}` : '',
+    'END:VEVENT'
   ].filter(Boolean);
-  return lines.join('\r\n');
+}
+export function icsForMany(list, name = 'KoKrŠNeK') {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KoKrSNeK//CS', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    `X-WR-CALNAME:${name}`, 'X-WR-TIMEZONE:Europe/Prague'];
+  for (const ev of list) lines.push(...icsEvent(ev, stamp));
+  lines.push('END:VCALENDAR');
+  // Řádky delší než 75 znaků se podle normy zalamují (některé kalendáře to vyžadují).
+  return lines.map((l) => {
+    const out = []; let rest = l;
+    while (rest.length > 74) { out.push(rest.slice(0, 74)); rest = ' ' + rest.slice(74); }
+    out.push(rest); return out.join('\r\n');
+  }).join('\r\n');
+}
+export const icsFor = (ev) => icsForMany([ev], ev.title);
+
+// Sdílení souboru .ics přes nabídku telefonu, jinak stažení.
+export async function shareIcs(text, filename, title) {
+  const file = new File([text], filename, { type: 'text/calendar' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title }); return 'shared'; }
+    catch (e) { if (e.name === 'AbortError') return 'cancel'; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return 'downloaded';
 }

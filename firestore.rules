@@ -54,13 +54,18 @@ service cloud.firestore {
           || (isAdminEmail() && request.resource.data.status == 'approved' && request.resource.data.role == 'admin')
         );
 
-      // Správce schvaluje a mění role; každý si smí změnit jen svoje jméno.
+      // Správce schvaluje a mění role; každý si smí změnit jen svoje jméno
+      // a tajný token pro odběr kalendáře.
       allow update: if isV2Admin()
         || (request.auth != null && request.auth.uid == uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'icsToken'])
             && request.resource.data.name is string
             && request.resource.data.name.size() > 0
-            && request.resource.data.name.size() <= 30);
+            && request.resource.data.name.size() <= 30
+            && (!('icsToken' in request.resource.data)
+                || (request.resource.data.icsToken is string
+                    && request.resource.data.icsToken.size() >= 20
+                    && request.resource.data.icsToken.size() <= 80)));
 
       allow delete: if isV2Admin() || (request.auth != null && request.auth.uid == uid);
     }

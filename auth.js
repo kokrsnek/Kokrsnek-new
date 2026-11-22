@@ -84,6 +84,15 @@ export async function createMember(name) {
   });
 }
 
+// Tajný token pro odběr kalendáře (adresa kalendar.ics?t=…). Nový token = stará adresa přestane fungovat.
+export async function newIcsToken() {
+  const b = crypto.getRandomValues(new Uint8Array(24));
+  const t = btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await updateDoc(doc(db, 'v2_members', session.user.uid), { icsToken: t });
+  session.member = { ...session.member, icsToken: t };
+  return t;
+}
+
 export const changeMyName = (name) => updateDoc(doc(db, 'v2_members', session.user.uid), { name: name.trim() });
 
 // Správa členů (jen správce).

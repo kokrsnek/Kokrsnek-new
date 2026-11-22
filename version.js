@@ -3,6 +3,26 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.04',
+    date: '22. 11. 2026',
+    items: [
+      'Kalendář: vedle nadpisu je ikona „Akce v kalendáři“ — stejně jako ve Službách: Odebírat v iPhonu, Přidat do Google kalendáře, Stáhnout jednorázově, Zkopírovat adresu a Zneplatnit adresu.',
+      'Odběr se sám aktualizuje, když se akce změní nebo přibude (obsahuje akce od loňska a všechny naplánované). Každý člen má vlastní tajnou adresu.',
+      'Stáhnout jednorázově: nadcházející akce nebo celý kalendář jako soubor, otevře nabídku sdílení telefonu.',
+      'Tlačítko „Do kalendáře“ v detailu akce teď také otevře nabídku sdílení (dřív jen stáhlo soubor).'
+    ]
+  },
+  {
+    version: '1.03',
+    date: '22. 11. 2026',
+    items: [
+      'Hledání prohledává všechny akce najednou — nadcházející, probíhající i proběhlé (rozdělené do skupin, proběhlé podle roku).',
+      'Velkou kartu akce jde listovat: swipe doprava ukáže předchozí akci, swipe doleva další. Pod kartou jsou i tlačítka „dřívější / pozdější“ a „nejbližší“ pro návrat.',
+      'U proběhlé akce na kartě: kdo tam byl a tlačítko na album fotek.',
+      'Navigovat vede u známých míst party (Hastrman, Bouda, Funibrouk, Sjíždění) přímo na GPS, ne na hledání podle názvu. Poznává i GPS nebo odkaz na mapu zapsaný v místě akce.'
+    ]
+  },
+  {
     version: '1.02',
     date: '22. 11. 2026',
     items: [

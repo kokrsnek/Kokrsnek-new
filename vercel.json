@@ -1,10 +1,19 @@
 {
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!kalendar\\.ics).*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/kalendar.ics",
+      "destination": "https://us-central1-kokrsnek-4bdc7.cloudfunctions.net/kalendar"
     }
   ]
 }

@@ -33,3 +33,6 @@ export const PARTY_NAMES = [
 ];
 
 // Číslo verze a seznam změn jsou ve version.js.
+
+// Adresa nové aplikace (odkazy v odběru kalendáře).
+export const APP_URL = 'https://kokrsnek-new.vercel.app';
