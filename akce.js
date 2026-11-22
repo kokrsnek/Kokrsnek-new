@@ -3,6 +3,7 @@ import { esc, icon, fmtWhen, relDays, fmtSpan, MONTHS_NOM, MONTHS_SHORT, DAYS_SH
 import { tabbar, faces, toast, spinner } from './ui.js';
 import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
+import { prefetchEvent, neighboursOf } from './store.js';
 import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAttendance, cachedAttendance } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 
@@ -115,7 +116,7 @@ export function render(root, { tab }) {
           : (att ? attendButtons(ev, att) : '<div class="note">Načítám docházku…</div>')}
         <div class="hero-nav">
           <button data-hnav="-1" aria-label="Předchozí akce">‹ dřívější</button>
-          ${sh !== 0 ? '<button data-hnav="0" class="home">nejbližší</button>' : '<span class="hint">swipem listuj</span>'}
+          ${sh !== 0 ? '<button data-hnav="0" class="home">nejbližší</button>' : '<span></span>'}
           <button data-hnav="1" aria-label="Další akce">pozdější ›</button>
         </div>
       </div>
@@ -211,7 +212,11 @@ export function render(root, { tab }) {
         heroId = hero.id; heroAtt = cachedAttendance(hero.id);
         heroUnsub = watchAttendance(hero, (a) => { if (heroId !== hero.id) return; heroAtt = a; const el = body.querySelector('.hero'); if (el) el.outerHTML = heroHtml(hero); bindHero(hero); });
       }
-      if (hero) bindHero(hero);
+      if (hero) {
+        bindHero(hero);
+        // Sousední karty (±2) načíst předem, ať se při swipu ukážou kompletní.
+        neighboursOf(hero, 2).forEach((n) => { if (cachedAttendance(n.id) || loading.has(n.id)) return; loading.add(n.id); loadAttendance(n).catch(() => {}); });
+      }
       // Docházka u dalších nadcházejících akcí (kvůli štítku Jdu/Nejdu).
       rest.slice(0, 15).forEach((ev) => {
         if (cachedAttendance(ev.id) || loading.has(ev.id)) return;

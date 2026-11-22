@@ -33,5 +33,5 @@ export function attendButtons(ev, att) {
   return `<div class="two">
     <button class="btn ${going ? 'yes' : ''}" data-att="attend" ${ro ? 'aria-disabled="true"' : ''}>${going ? '✓ Jdu' : 'Jdu'}</button>
     <button class="btn ${declined ? 'no' : ''}" data-att="decline" ${ro ? 'aria-disabled="true"' : ''}>${declined ? '✕ Nejdu' : 'Nejdu'}</button>
-  </div>${ro ? '<div class="note" style="margin-top:8px">Zkušební provoz — docházku zatím měň ve staré aplikaci.</div>' : ''}`;
+  </div>`;
 }

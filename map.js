@@ -90,3 +90,24 @@ export async function showMap(box, place, href) {
   setTimeout(() => map.invalidateSize(), 60);
   return true;
 }
+
+// Předem stáhne souřadnice, knihovnu mapy a dlaždice kolem místa,
+// aby se mapa u sousední akce po swipu ukázala hned.
+export async function prefetchMap(place) {
+  if (!place) return;
+  const c = await geocode(place);
+  if (!c) return;
+  loadLeaflet().catch(() => {});
+  const z = 14;
+  const n = 2 ** z;
+  const xt = Math.floor((c.lng + 180) / 360 * n);
+  const lr = c.lat * Math.PI / 180;
+  const yt = Math.floor((1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2 * n);
+  const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
+  for (let dx = -2; dx <= 2; dx++) for (let dy = -1; dy <= 1; dy++) {
+    const img = new Image();
+    img.src = MAPY_API_KEY
+      ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/${z}/${xt + dx}/${yt + dy}?apikey=${encodeURIComponent(MAPY_API_KEY)}`
+      : `https://${'abc'[(xt + dx + yt + dy + 30) % 3]}.tile.openstreetmap.org/${z}/${xt + dx}/${yt + dy}.png`;
+  }
+}

@@ -102,7 +102,9 @@ export async function loadAttendance(ev) {
 
 export function watchAttendance(ev, cb) {
   const p = paths(ev);
-  let going = [], declined = [];
+  const cached = attendCache.get(ev.id);
+  if (cached) cb(cached);
+  let going = cached ? [...cached.going] : [], declined = cached ? [...cached.declined] : [];
   const push = () => {
     const r = { going, declined: declined.filter((n) => !going.includes(n)), at: Date.now() };
     attendCache.set(ev.id, r);
@@ -127,11 +129,18 @@ export async function setAttendance(ev, target) {
 }
 
 // ---------- komentáře ----------
+const commentCache = new Map(), itemCache = new Map(), albumCache = new Map();
+const mapComments = (s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))
+  .map((c) => ({ ...c, when: toDate(c.at) || new Date(0) }))
+  .sort((a, b) => a.when - b.when);
+const mapItems = (s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))
+  .sort((a, b) => (toDate(a.at)?.getTime() || 0) - (toDate(b.at)?.getTime() || 0));
+
 export function watchComments(ev, cb) {
+  if (commentCache.has(ev.id)) cb(commentCache.get(ev.id));
   return onSnapshot(collection(db, ...paths(ev).comments), (s) => {
-    const list = s.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .map((c) => ({ ...c, when: toDate(c.at) || new Date(0) }))
-      .sort((a, b) => a.when - b.when);
+    const list = mapComments(s);
+    commentCache.set(ev.id, list);
     cb(list);
   }, (err) => { console.error('Komentáře:', err); cb([]); });
 }
@@ -146,9 +155,10 @@ export async function deleteComment(ev, id) {
 
 // ---------- co přinést ----------
 export function watchItems(ev, cb) {
+  if (itemCache.has(ev.id)) cb(itemCache.get(ev.id));
   return onSnapshot(collection(db, ...paths(ev).items), (s) => {
-    const list = s.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (toDate(a.at)?.getTime() || 0) - (toDate(b.at)?.getTime() || 0));
+    const list = mapItems(s);
+    itemCache.set(ev.id, list);
     cb(list);
   }, () => cb([]));
 }
@@ -170,12 +180,40 @@ export async function setAlbum(ev, url) {
 }
 
 // Album: přednost má odkaz u akce, pak záznam ve staré kolekci photoAlbums.
+export function cachedAlbum(ev) {
+  return ev.photoAlbum || albumCache.get(ev.id);
+}
 export async function loadAlbum(ev) {
   if (ev.photoAlbum) return ev.photoAlbum;
+  if (albumCache.has(ev.id)) return albumCache.get(ev.id);
   try {
     const s = await getDoc(doc(db, 'photoAlbums', ev.id));
-    return s.exists() ? (s.data().photoAlbum || '') : '';
+    const u = s.exists() ? (s.data().photoAlbum || '') : '';
+    albumCache.set(ev.id, u);
+    return u;
   } catch (e) { return ''; }
+}
+
+// Předběžné načtení všeho k akci (pro sousední akce, ať je swipe hned kompletní).
+const prefetched = new Map();
+export function prefetchEvent(ev) {
+  if (!ev) return;
+  const last = prefetched.get(ev.id);
+  if (last && Date.now() - last < 120000) return;
+  prefetched.set(ev.id, Date.now());
+  const p = paths(ev);
+  if (!attendCache.has(ev.id)) loadAttendance(ev).catch(() => {});
+  if (!commentCache.has(ev.id)) getDocs(collection(db, ...p.comments)).then((s) => commentCache.set(ev.id, mapComments(s))).catch(() => {});
+  if (!itemCache.has(ev.id)) getDocs(collection(db, ...p.items)).then((s) => itemCache.set(ev.id, mapItems(s))).catch(() => {});
+  loadAlbum(ev).catch(() => {});
+}
+// Sousední akce (±n) podle pořadí v seznamu.
+export function neighboursOf(ev, n = 2) {
+  const i = events.list.findIndex((x) => x.id === ev.id);
+  if (i < 0) return [];
+  const out = [];
+  for (let k = 1; k <= n; k++) { if (events.list[i - k]) out.push(events.list[i - k]); if (events.list[i + k]) out.push(events.list[i + k]); }
+  return out;
 }
 
 // ---------- vlastní (testovací) akce ----------

@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.13',
+    date: '22. 11. 2026',
+    items: [
+      'Dvě akce zpět a dvě dopředu se načítají předem (docházka, komentáře, věci, album i mapa), takže po swipu v otevřené akci i na velké kartě je všechno hned vidět.',
+      'Pryč jsou popisky o zkušebním provozu u docházky a v detailu akce a nápověda „swipem listuj“.'
+    ]
+  },
+  {
     version: '1.12',
     date: '22. 11. 2026',
     items: [

@@ -4,11 +4,11 @@ import { avatar, toast, confirmDanger, spinner } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
-  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs
+  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
-import { showMap } from './map.js';
+import { showMap, prefetchMap } from './map.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
@@ -48,7 +48,6 @@ export function render(root, { id }) {
       <div class="scroll" style="padding-top:18px">
         <div class="eyebrow ${past ? '' : 'live'}" style="color:${past ? 'var(--muted)' : ''}">${past ? 'Proběhlo · ' + esc(relDays(ev.start)) : esc(relDays(ev.start))}${ev.isTest ? ' · testovací akce' : ''}</div>
         <h1 class="title" style="margin:6px 0 14px">${esc(ev.title)}</h1>
-        ${ro && !past ? `<div class="banner">${icon('lock', 18)}<span>Zkušební provoz: tahle akce patří starému kalendáři, takže se tu zatím jen čte.</span></div>` : ''}
         <div class="info">
           <div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(ev.start))}${ev.start.getFullYear() !== new Date().getFullYear() ? ' ' + ev.start.getFullYear() : ''}</b><span>${esc(whenLine(ev))}</span></div>${past ? '' : '<button class="link" data-ics>Do kalendáře</button>'}</div>
           ${ev.place ? `<div data-placerow>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="${esc(mapUrl(ev.place))}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
@@ -99,7 +98,11 @@ export function render(root, { id }) {
     };
 
     bindSwipe();
-    loadAlbum(ev).then((u) => { album = u; drawAlbum(); });
+    const ca = cachedAlbum(ev);
+    if (ca !== undefined) { album = ca; drawAlbum(); }
+    loadAlbum(ev).then((u) => { if (u !== album) { album = u; drawAlbum(); } });
+    // Dvě akce zpět a dvě dopředu načíst předem.
+    setTimeout(() => neighboursOf(ev, 2).forEach((n) => { prefetchEvent(n); prefetchMap(n.place); }), 400);
     // Když se mapa ukáže, název místa je přímo v ní — řádek s místem se schová.
     if (ev.place) showMap(root.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
       const pr = root.querySelector('[data-placerow]');
