@@ -169,3 +169,20 @@ export function mapUrl(place) {
   }
   return base + encodeURIComponent(place);
 }
+
+// Souřadnice z textu místa (GPS v textu nebo známé místo party), jinak null.
+export function placeCoords(place) {
+  if (!place) return null;
+  const dec = place.match(/(-?\d{1,3}\.\d+)\s*([NSns])?[,\s]+(-?\d{1,3}\.\d+)\s*([EWew])?/);
+  if (dec) {
+    let lat = parseFloat(dec[1]), lng = parseFloat(dec[3]);
+    if (dec[2] && dec[2].toUpperCase() === 'S') lat = -lat;
+    if (dec[4] && dec[4].toUpperCase() === 'W') lng = -lng;
+    return { lat, lng };
+  }
+  for (const word of looseName(place).split(/\s+/)) {
+    const k = KNOWN_PLACES[word.replace(/[^a-z]/g, '')];
+    if (k) { const [lat, lng] = k.split(',').map(Number); return { lat, lng }; }
+  }
+  return null;
+}

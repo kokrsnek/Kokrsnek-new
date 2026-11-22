@@ -8,6 +8,7 @@ import {
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
+import { showMap } from './map.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
@@ -51,11 +52,17 @@ export function render(root, { id }) {
         </div>
         ${descText(ev) ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(descText(ev))}</div>` : ''}
 
-        <div class="h2"><span>Kdo jde</span><span class="sub" data-attcount></span></div>
-        <div data-att>${spinner()}</div>
+        <div data-mapbox></div>
 
-        <div class="h2"><span>Co přinést</span><span class="sub" data-itemcount></span></div>
-        <div data-items>${spinner()}</div>
+        <div data-attsec>
+          <div class="h2"><span>${past ? 'Zúčastnili se' : 'Kdo jde'}</span><span class="sub" data-attcount></span></div>
+          <div data-att>${spinner()}</div>
+        </div>
+
+        <div data-itemsec>
+          <div class="h2"><span>${past ? 'Přinesli' : 'Co přinést'}</span><span class="sub" data-itemcount></span></div>
+          <div data-items>${spinner()}</div>
+        </div>
 
         <div class="h2"><span>Komentáře</span><span class="sub" data-comcount></span></div>
         <div data-coms>${spinner()}</div>
@@ -87,6 +94,7 @@ export function render(root, { id }) {
     };
 
     loadAlbum(ev).then((u) => { album = u; drawAlbum(); });
+    if (ev.place) showMap(root.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place));
     unsubs.push(watchAttendance(ev, (a) => { att = a; drawAtt(); }));
     unsubs.push(watchComments(ev, (c) => { comments = c; drawComs(); }));
     unsubs.push(watchItems(ev, (i) => { items = i; drawItems(); }));
@@ -123,6 +131,12 @@ export function render(root, { id }) {
     const el = root.querySelector('[data-att]');
     if (!el) return;
     const past = isPast(ev);
+    if (past) {
+      root.querySelector('[data-attsec]').style.display = att.going.length ? '' : 'none';
+      root.querySelector('[data-attcount]').textContent = att.going.length ? String(att.going.length) : '';
+      el.innerHTML = `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>`;
+      return;
+    }
     root.querySelector('[data-attcount]').textContent = att.going.length ? `${att.going.length} ${att.going.length === 1 ? 'jde' : (att.going.length < 5 ? 'jdou' : 'jde')}` : '';
     el.innerHTML = `
       ${att.going.length ? `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>` : '<div class="sub">Zatím nikdo.</div>'}
@@ -136,6 +150,13 @@ export function render(root, { id }) {
     if (!el) return;
     const me = myName();
     const ro = !canWrite(ev);
+    if (isPast(ev)) {
+      const brought = items.filter((i) => i.takenBy);
+      root.querySelector('[data-itemsec]').style.display = brought.length ? '' : 'none';
+      root.querySelector('[data-itemcount]').textContent = '';
+      el.innerHTML = `<div class="list">${brought.map((it) => `<div><span style="min-width:0;overflow-wrap:anywhere">${esc(it.name)}</span><span style="display:inline-flex;align-items:center;gap:6px;color:var(--ink2);font-size:14px;flex:0 0 auto">${avatar(it.takenBy, 22)}${esc(it.takenBy)}</span></div>`).join('')}</div>`;
+      return;
+    }
     root.querySelector('[data-itemcount]').textContent = items.length ? `${items.filter((i) => i.takenBy).length}/${items.length} zajištěno` : '';
     el.innerHTML = `${items.length ? `<div class="list">${items.map((it) => `<div>
         <span style="min-width:0;overflow-wrap:anywhere">${esc(it.name)}</span>
