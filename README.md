@@ -24,9 +24,7 @@ U akcí převzatých z kalendáře jsou tlačítka Jdu / Nejdu i komentáře zam
 
 ## Nastavení (jednorázově)
 
-1. **Správcovský e-mail.** Doplň svůj e-mail (ten, se kterým se přihlásíš přes Google) na dvě místa:
-   - `config.js` → `ADMIN_EMAILS`
-   - `firestore.rules` → funkce `isAdminEmail()`, **malými písmeny**
+1. **Správcovský e-mail** je `l.juracka@gmail.com` — v `config.js` (`ADMIN_EMAILS`) a ve `firestore.rules` (`isAdminEmail()`, malými písmeny). Další správce jde přidat přímo v aplikaci (Parta → člen → Udělat správcem).
 
 2. **Firebase konzole → Authentication → Sign-in method.** Zapni **Google** a **Email/Password**. Anonymous nech zapnuté, používá ho stará aplikace.
 
@@ -42,7 +40,7 @@ U akcí převzatých z kalendáře jsou tlačítka Jdu / Nejdu i komentáře zam
 
 5. **Firebase konzole → Authentication → Settings → Authorized domains.** Přidej novou adresu (např. `kokrsnek-nova.vercel.app`). Bez toho přihlášení přes Google skončí chybou.
 
-6. **Google Cloud → API klíče.** Pokud máš klíče omezené na weby (HTTP referrers), přidej k nim novou adresu. Týká se klíče Firebase i klíče pro Google Kalendář.
+6. **Google Cloud → API klíče.** Pokud máš klíče omezené na weby (HTTP referrers), přidej k nim novou adresu. Týká se klíče Firebase i klíče pro Google Kalendář. Pro kalendář se používá klíč „scriptable widget“ z projektu kokrsnek-4bdc7 (jen Google Calendar API, bez omezení na weby, aby fungoval i widget).
 
 7. **Spuštění:**
    1. Otevři novou adresu a přihlas se přes Google správcovským e-mailem.
@@ -80,7 +78,7 @@ Cloud Functions na cesty `v2_…` nereagují. Testování proto nepošle nikomu 
 
 ## Verze
 
-Aktuální verze je 1.00. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
+Aktuální verze je 1.01. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
 
 
 Všechny soubory leží v jedné složce, aby šly nahrát na GitHub i z iPhonu.

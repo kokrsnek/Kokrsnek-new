@@ -13,7 +13,7 @@ export const firebaseConfig = {
 };
 
 // Google Kalendář — jen pro import akcí (Parta → Import z Google Kalendáře).
-export const GOOGLE_API_KEY = 'AIzaSyA0OiRZIoYf3uSQMWksV-gvUCFX_GnzSzo';
+export const GOOGLE_API_KEY = 'AIzaSyBpgUzhWDC3YMQh4wX818DSaLIvWNQl_oA';
 export const GOOGLE_CALENDAR_ID = 'kokrsnek@gmail.com';
 
 // Správci: kdo se přihlásí s tímhle (ověřeným) e-mailem, je rovnou schválený

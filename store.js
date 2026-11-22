@@ -243,7 +243,12 @@ export async function fetchCalendar(onProgress = () => {}) {
       ...(pageToken ? { pageToken } : {})
     }).toString();
     const res = await fetch(u);
-    if (!res.ok) throw new Error('Google Kalendář odpověděl ' + res.status);
+    if (!res.ok) {
+      // Přesný důvod od Googlu (např. zablokovaná adresa nebo vypnuté API).
+      let why = '';
+      try { const j = await res.json(); why = j?.error?.message || ''; } catch (e) { /* bez textu */ }
+      throw new Error(`Google Kalendář odpověděl ${res.status}${why ? ' — ' + why : ''}`);
+    }
     const data = await res.json();
     all = all.concat((data.items || []).filter((it) => it.status !== 'cancelled' && it.start && (it.start.dateTime || it.start.date)));
     pageToken = data.nextPageToken || null;

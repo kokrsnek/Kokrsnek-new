@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.01',
+    date: '22. 11. 2026',
+    items: [
+      'Import z Google Kalendáře používá klíč „scriptable widget“ z projektu kokrsnek-4bdc7 — původní klíč patřil jinému projektu a novou adresu odmítal (chyba 403).',
+      'Když import selže, ukáže se i přesný důvod od Googlu, ne jen číslo chyby.'
+    ]
+  },
+  {
     version: '1.00',
     date: '22. 11. 2026',
     items: [
