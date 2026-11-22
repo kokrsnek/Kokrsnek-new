@@ -3,6 +3,21 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.36',
+    date: '22. 11. 2026',
+    items: [
+      'Úvodní animace trvá 6 s: po otištění razítka se kolem něj zvedne prach a celá scéna se pořádně otřese, závěr zůstane o sekundu déle.'
+    ]
+  },
+  {
+    version: '1.35',
+    date: '22. 11. 2026',
+    items: [
+      'Úvodní animace trvá 5 s: záběr u ohně zůstane o sekundu déle a ve 3. sekundě se šikmo otiskne razítko KoKrŠNeK.',
+      'Animace se teď ukáže při každém otevření aplikace (i se zapnutým „Omezit pohyb“). Klepnutím jde přeskočit.'
+    ]
+  },
+  {
     version: '1.34',
     date: '22. 11. 2026',
     items: [
