@@ -6,6 +6,9 @@ import { watchEvents, events, cachedAttendance, loadAttendance, icsForMany, shar
 import { session, newIcsToken } from './auth.js';
 import { APP_URL } from './config.js';
 
+// Směr, odkud má nový měsíc přijet (po swipu nebo šipkách): 1 = zprava, -1 = zleva.
+let enterFrom = 0;
+
 export function render(root, { year, month }) {
   const now = new Date();
   const y = year ?? now.getFullYear();
@@ -22,16 +25,51 @@ export function render(root, { year, month }) {
       <button class="ibtn" data-today aria-label="Dnes" style="width:auto;padding:0 14px;font-weight:600;font-size:14px">Dnes</button>
     </div>
     <div class="mhead">
-      <a class="ibtn ghost" href="${href(prev)}" aria-label="Předchozí měsíc">${icon('back')}</a>
-      <div class="t">${MONTHS_NOM[m]} ${y}</div>
-      <a class="ibtn ghost" href="${href(next)}" aria-label="Další měsíc">${icon('next')}</a>
+      <button class="ibtn ghost" data-mon="-1" aria-label="Předchozí měsíc">${icon('back')}</button>
+      <button class="t mpick" data-pick aria-label="Vybrat měsíc a rok">${MONTHS_NOM[m]} ${y} <span aria-hidden="true">▾</span></button>
+      <button class="ibtn ghost" data-mon="1" aria-label="Další měsíc">${icon('next')}</button>
     </div>
-    <div data-grid>${spinner()}</div>
+    <div class="calswipe"><div data-grid class="${enterFrom ? (enterFrom > 0 ? 'cal-in-r' : 'cal-in-l') : ''}">${spinner()}</div></div>
     <div class="scroll" data-day style="padding-top:14px"></div>
     ${tabbar('akce')}
   </div>`;
   // Kalendář akcí do telefonu: odběr (sám se aktualizuje), Google, jednorázové stažení.
   root.querySelector('[data-sharecal]').onclick = () => calendarSheet();
+  enterFrom = 0;
+
+  // Přechod na jiný měsíc: mřížka odjede na stranu, nový měsíc přijede z druhé.
+  const gridEl = root.querySelector('[data-grid]');
+  const goMonth = (dir) => {
+    const d = new Date(y, m + dir, 1);
+    gridEl.style.transition = 'transform .18s ease-in, opacity .18s';
+    gridEl.style.transform = `translateX(${-dir * 100}%)`;
+    gridEl.style.opacity = '0';
+    enterFrom = dir;
+    setTimeout(() => location.replace(href(d)), 170);
+  };
+  root.querySelectorAll('[data-mon]').forEach((b) => { b.onclick = () => goMonth(+b.dataset.mon); });
+  root.querySelector('[data-pick]').onclick = () => monthPicker(y, m, (yy, mm) => {
+    enterFrom = (yy * 12 + mm) > (y * 12 + m) ? 1 : -1;
+    location.replace(`#/kalendar/${yy}-${mm + 1}`);
+  });
+
+  // Swipe doleva = další měsíc, doprava = předchozí.
+  const area = root.querySelector('.calswipe');
+  let sx = 0, sy = 0, sdx = 0, strack = null;
+  area.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; sdx = 0; strack = null; gridEl.style.transition = 'none'; }, { passive: true });
+  area.addEventListener('touchmove', (e) => {
+    const t = e.touches[0]; const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (strack === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) strack = Math.abs(dx) > Math.abs(dy);
+    if (!strack) return;
+    sdx = dx;
+    gridEl.style.transform = `translateX(${dx}px)`;
+    gridEl.style.opacity = String(Math.max(0.3, 1 - Math.abs(dx) / 400));
+  }, { passive: true });
+  area.addEventListener('touchend', () => {
+    if (strack && Math.abs(sdx) > 60) { goMonth(sdx < 0 ? 1 : -1); return; }
+    gridEl.style.transition = 'transform .2s, opacity .2s';
+    gridEl.style.transform = ''; gridEl.style.opacity = '';
+  });
 
   root.querySelector('[data-today]').onclick = () => { location.hash = '#/kalendar'; if (y === now.getFullYear() && m === now.getMonth()) { sel = startOfDay(now); draw(); } };
 
@@ -143,4 +181,44 @@ async function calendarSheet() {
       toast('Nepovedlo se (' + (x.code || x.message) + ').');
     }
   });
+}
+
+// Výběr roku a měsíce: řada let nahoře, pod ní měsíce s počtem akcí.
+function monthPicker(curY, curM, onPick) {
+  const nowY = new Date().getFullYear();
+  const years = events.list.map((e) => e.start.getFullYear());
+  const minY = Math.min(nowY - 1, ...(years.length ? years : [nowY]));
+  const maxY = Math.max(nowY + 1, ...(years.length ? years : [nowY]));
+  let selY = curY;
+  const bd = document.createElement('div');
+  bd.className = 'backdrop';
+  bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vybrat měsíc"><div class="grab"></div>
+    <h3>Vyber měsíc</h3>
+    <div class="ypick" data-years></div>
+    <div class="mgrid" data-months></div>
+  </div>`;
+  bd.addEventListener('click', (e) => { if (e.target === bd) bd.remove(); });
+  document.body.appendChild(bd);
+  const yBox = bd.querySelector('[data-years]');
+  const mBox = bd.querySelector('[data-months]');
+  const SHORT = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'];
+  const drawYears = () => {
+    const ys = [];
+    for (let yy = maxY; yy >= minY; yy--) ys.push(yy);
+    yBox.innerHTML = ys.map((yy) => `<button class="${yy === selY ? 'on' : ''}" data-y="${yy}">${yy}</button>`).join('');
+    const on = yBox.querySelector('.on');
+    if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+  };
+  const drawMonths = () => {
+    const counts = new Array(12).fill(0);
+    events.list.forEach((e) => { if (e.start.getFullYear() === selY) counts[e.start.getMonth()]++; });
+    const today = new Date();
+    mBox.innerHTML = SHORT.map((n, i) => {
+      const cls = [i === curM && selY === curY ? 'on' : '', i === today.getMonth() && selY === today.getFullYear() ? 'today' : ''].join(' ');
+      return `<button class="${cls}" data-m="${i}"><b>${n}</b><span>${counts[i] ? counts[i] + ' ' + (counts[i] === 1 ? 'akce' : counts[i] < 5 ? 'akce' : 'akcí') : '·'}</span></button>`;
+    }).join('');
+  };
+  yBox.onclick = (e) => { const b = e.target.closest('[data-y]'); if (!b) return; selY = +b.dataset.y; drawYears(); drawMonths(); };
+  mBox.onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; bd.remove(); onPick(selY, +b.dataset.m); };
+  drawYears(); drawMonths();
 }

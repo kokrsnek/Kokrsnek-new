@@ -84,3 +84,50 @@ export function tabbar(active) {
 }
 
 export const spinner = () => '<div class="spin" aria-label="Načítám"></div>';
+
+// Spodní nabídky (.sheet): klepnutí na čárku nahoře zavře, potažení dolů taky.
+// Zavírá se „klepnutím na pozadí“, takže každá nabídka se uklidí po svém
+// (např. choose() vrátí null).
+export function installSheetGestures() {
+  let sheet = null, y0 = 0, dy = 0, moved = false, fromGrab = false;
+  const close = (s) => {
+    const bd = s.closest('.backdrop');
+    if (!bd) return;
+    s.style.transition = 'transform .2s ease-in';
+    s.style.transform = 'translateY(110%)';
+    setTimeout(() => bd.dispatchEvent(new MouseEvent('click', { bubbles: true })), 190);
+  };
+  document.addEventListener('touchstart', (e) => {
+    const s = e.target.closest('.sheet');
+    if (!s) return;
+    fromGrab = !!e.target.closest('.grab');
+    // Táhnout jde za čárku, za horní okraj nabídky, nebo kdekoli, když je obsah odscrollovaný nahoru.
+    const r = s.getBoundingClientRect();
+    const t = e.touches[0];
+    if (!fromGrab && t.clientY - r.top > 70 && s.scrollTop > 0) return;
+    if (!fromGrab && e.target.closest('input, textarea, select')) return;
+    sheet = s; y0 = t.clientY; dy = 0; moved = false;
+    s.style.transition = 'none';
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!sheet) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy > 6) moved = true;
+    if (moved && dy > 0 && (sheet.scrollTop <= 0 || fromGrab)) {
+      sheet.style.transform = `translateY(${dy}px)`;
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+  document.addEventListener('touchend', () => {
+    if (!sheet) return;
+    const s = sheet; sheet = null;
+    if (moved && dy > 90) { close(s); return; }
+    s.style.transition = 'transform .2s ease-out';
+    s.style.transform = '';
+  });
+  // Klepnutí (i myší) na čárku.
+  document.addEventListener('click', (e) => {
+    const g = e.target.closest('.sheet .grab');
+    if (g) close(g.closest('.sheet'));
+  });
+}

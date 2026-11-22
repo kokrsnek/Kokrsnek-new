@@ -13,6 +13,8 @@ export function render(root, { tab }) {
   let heroAtt = null, heroUnsub = null, heroId = null;
   let shift = 0;            // posun velké karty: 0 = nejbližší akce, -1 = předchozí, +1 = další
   let enterDir = '';         // směr animace po swipu
+  let homing = false;
+  let animating = false;     // přechod mezi kartami právě běží        // právě probíhá návrat na nejbližší (karta po kartě)
   const loading = new Set();
 
   const today = new Date();
@@ -269,23 +271,29 @@ export function render(root, { tab }) {
       }
     }
     // Dokončení přechodu: aktuální karta odjede, nová zapadne na místo.
-    function finish(dir, steps = dir) {
-      if (busy) return;
+    function finish(dir, steps = dir, fast = false) {
+      if (busy || animating) return;
       if (!ensureGhost(dir, steps)) { place(0, true); toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.'); return; }
-      busy = true;
-      place(-dir * W(), true);
-      ghost.style.transition = 'transform .28s ease-out';
+      busy = true; animating = true;
+      const ms = fast ? 170 : 280;
+      el.style.transition = `transform ${ms}ms ease-out`;
+      el.style.transform = arc(-dir * W());
+      ghost.style.transition = `transform ${ms}ms ease-out`;
       ghost.style.transform = arc(0);
-      setTimeout(() => { shift += steps; enterDir = ''; draw(); }, 290);
+      setTimeout(() => { shift += steps; enterDir = ''; animating = false; draw(); }, ms + 10);
     }
     // Návrat na nejbližší akci se stejnou animací (tlačítko „nejbližší“, klepnutí na Akce).
+    // Karta po kartě: každá akce mezi aktuální a nejbližší se krátce mihne.
     el._home = () => {
-      if (shift === 0) return false;
-      finish(shift > 0 ? -1 : 1, -shift);
+      if (shift === 0) { homing = false; return false; }
+      homing = true;
+      finish(shift > 0 ? -1 : 1, shift > 0 ? -1 : 1, true);
       return true;
     };
+    if (homing) setTimeout(() => { if (!el._home()) homing = false; }, 0);
 
     el.addEventListener('touchstart', (e) => {
+      homing = false;
       if (busy) return;
       const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null; swiped = false;
     }, { passive: true });
@@ -328,13 +336,18 @@ export function render(root, { tab }) {
   }
 
   // Klepnutí na „Akce“ ve spodní liště: zavřít hledání a vrátit kartu na nejbližší akci.
-  root.querySelector('.tabbar a[href="#/akce"]').addEventListener('click', (e) => {
-    e.preventDefault();
+  // Reaguje už na dotyk (touchend) — iPhone první klepnutí po posouvání stránky
+  // jako „click“ nepošle, takže by to jinak fungovalo až napodruhé.
+  const akceTab = root.querySelector('.tabbar a[href="#/akce"]');
+  let tabTouched = 0;
+  const goHome = () => {
     if (searchOpen) root.querySelector('[data-search]').click();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const el = body.querySelector('.hero');
     if (el && el._home) el._home();
-  });
+  };
+  akceTab.addEventListener('touchend', (e) => { e.preventDefault(); tabTouched = Date.now(); goHome(); }, { passive: false });
+  akceTab.addEventListener('click', (e) => { e.preventDefault(); if (Date.now() - tabTouched > 600) goHome(); });
 
   const unsub = watchEvents(draw);
   const tick = setInterval(draw, 60000);

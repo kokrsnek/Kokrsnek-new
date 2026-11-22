@@ -3,6 +3,23 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.08',
+    date: '22. 11. 2026',
+    items: [
+      'Kalendář: měsíce jde listovat swipem — doleva další měsíc, doprava předchozí. Mřížka při tom odjede a nový měsíc přijede z druhé strany (stejně u šipek).',
+      'Klepnutí na název měsíce s rokem otevře výběr: řada let nahoře a pod ní všech 12 měsíců s počtem akcí. Rovnou tak skočíš třeba do roku 2010.'
+    ]
+  },
+  {
+    version: '1.07',
+    date: '22. 11. 2026',
+    items: [
+      'Spodní nabídky (kalendář, potvrzení, fotoalbum…) jdou zavřít klepnutím na čárku nahoře nebo potažením dolů.',
+      'Návrat na nejbližší akci jde karta po kartě — všechny akce mezi aktuální a nejbližší se postupně protočí.',
+      'Tlačítko „Akce“ ve spodní liště reaguje hned na první klepnutí (dřív na iPhonu po posouvání až na druhé).'
+    ]
+  },
+  {
     version: '1.06',
     date: '22. 11. 2026',
     items: [

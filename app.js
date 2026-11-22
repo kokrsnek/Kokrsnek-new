@@ -1,7 +1,7 @@
 // Vstupní bod: přihlášení → členství → obrazovky podle adresy za #.
 import { initAuth, onSession, session, isApproved } from './auth.js';
 import { stopEvents } from './store.js';
-import { spinner } from './ui.js';
+import { spinner, installSheetGestures } from './ui.js';
 import * as login from './login.js';
 import * as akce from './akce.js';
 import * as kalendar from './kalendar.js';
@@ -57,6 +57,7 @@ function route(force = false) {
 window.addEventListener('hashchange', () => route(true));
 onSession(() => route(false));
 installPlus();
+installSheetGestures();
 initAuth();
 route(true);
 
