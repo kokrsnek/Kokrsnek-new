@@ -25,6 +25,21 @@ function when(at) {
   return `${d.getDate()}. ${d.getMonth() + 1}.${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}`;
 }
 const isToday = (c) => { const d = toDate(c.at); return d && sameDay(d, new Date()); };
+// Malý výřez mapy (dlaždice OpenStreetMap) se špendlíkem uprostřed.
+// Dlaždice o úroveň podrobnější zobrazené v poloviční velikosti → ostré i na iPhonu.
+function miniMap(lat, lng, w = 132, h = 76, z = 15) {
+  const Z = z + 1, n = 256 * 2 ** Z;
+  const px = (lng + 180) / 360 * n;
+  const r = lat * Math.PI / 180;
+  const py = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n;
+  const left = px / 2 - w / 2, top = py / 2 - h / 2; // v CSS px (dlaždice = 128 px)
+  const tiles = [];
+  for (let tx = Math.floor(left / 128); tx * 128 < left + w; tx++)
+    for (let ty = Math.floor(top / 128); ty * 128 < top + h; ty++)
+      tiles.push(`<img src="https://tile.openstreetmap.org/${Z}/${tx}/${ty}.png" alt="" loading="lazy" style="left:${Math.round(tx * 128 - left)}px;top:${Math.round(ty * 128 - top)}px">`);
+  return `<span class="cimap" style="width:${w}px;height:${h}px">${tiles.join('')}<i class="cimpin"></i><small>© OSM</small></span>`;
+}
+const gplace = (c) => `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
 const gmaps = (c) => c.lat != null ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.place || '')}`;
 
 export function render(root, { tab = 'feed', openNew = false }) {
@@ -60,7 +75,9 @@ export function render(root, { tab = 'feed', openNew = false }) {
     return `<div class="ci" data-ci="${esc(c.id)}">
       <div class="cihead">${avatar(c.user || '?', 36)}
         <div style="min-width:0;flex:1"><div class="t">${esc(c.user || '?')}${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}</div><div class="s">${esc(when(c.at))}</div></div>
-        <a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Navigovat">${icon('pin', 18)}</a>
+        ${c.lat != null && c.lng != null
+          ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
+          : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
       </div>
       <div class="ciplace">${esc(c.place || '')}</div>
       ${c.note ? `<div class="cinote">${esc(c.note)}</div>` : ''}

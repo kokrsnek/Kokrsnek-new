@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.27',
+    date: '22. 11. 2026',
+    items: [
+      'Kde jsi?: místo ikonky polohy má každý check-in malý výřez mapy (OpenStreetMap) se špendlíkem. Klepnutím se místo otevře v Google Mapách.'
+    ]
+  },
+  {
     version: '1.26',
     date: '22. 11. 2026',
     items: [
