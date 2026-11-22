@@ -138,7 +138,12 @@ export function renderThread(root, { id }) {
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
     const extra = Math.round(screen.height - window.innerHeight);
     const tall = !kb && ios && standalone && screen.height > screen.width && extra > 20 && extra < 120;
-    scr.style.bottom = tall ? `-${extra}px` : '';
+    // Samotné roztažení nestačí, iOS pod původní výškou stránky nic nevykreslí.
+    // Proto se (jen po dobu otevřeného chatu) roztáhne i celá stránka, jako ve Službách.
+    const de = document.documentElement;
+    de.classList.toggle('tall-fix', tall);
+    if (tall) de.style.setProperty('--app-h', screen.height + 'px'); else de.style.removeProperty('--app-h');
+    scr.style.bottom = '';
     scr.style.setProperty('--chat-h', Math.round(h) + 'px');
     scr.style.transform = kb && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
     if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
@@ -289,5 +294,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); };
+  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
 }

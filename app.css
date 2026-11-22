@@ -394,3 +394,8 @@ body{overflow-x:hidden}
 .avwrap{position:relative;display:inline-flex;flex:0 0 auto}
 .onldot{position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;background:#34C759;box-shadow:0 0 0 2.5px var(--card)}
 .onldot.inline{position:static;display:inline-block;width:9px;height:9px;box-shadow:none;margin-right:3px;vertical-align:0}
+
+/* iPhone na ploše: iOS dá stránce menší výšku než displej → po dobu chatu roztáhnout na celý displej */
+:root.tall-fix{height:var(--app-h);overflow:hidden}
+:root.tall-fix body{height:calc(var(--app-h) - env(safe-area-inset-top,0px));overflow:hidden}
+:root.tall-fix .chatscreen:not(.kb){bottom:auto;height:var(--app-h)}

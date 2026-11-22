@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.24',
+    date: '22. 11. 2026',
+    items: [
+      'Chat na iPhonu: dolní okraj se už neusekne, po dobu chatu se na celý displej roztáhne i samotná stránka.'
+    ]
+  },
+  {
     version: '1.23',
     date: '22. 11. 2026',
     items: [
