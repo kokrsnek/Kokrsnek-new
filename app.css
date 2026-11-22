@@ -337,7 +337,7 @@ body{overflow-x:hidden}
 .react{background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:1px 7px;font-size:13px;color:var(--ink)}
 .react.on{border-color:var(--accent-hi);background:var(--accent-soft)}
 .react span{font-size:11px;color:var(--muted);margin-left:2px}
-.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bar);padding:8px 12px max(8px, calc(var(--safe-bottom) - 14px))}
+.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bar);padding:8px 12px max(8px, calc(var(--safe-bottom) + 4px))}
 .chatscreen.kb .composer{padding-bottom:8px}
 .composer .inrow{align-items:flex-end}
 .composer textarea.input{min-height:44px;height:44px;max-height:140px;padding:11px 14px;border-radius:22px;resize:none}

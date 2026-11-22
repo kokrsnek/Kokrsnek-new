@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.23',
+    date: '22. 11. 2026',
+    items: [
+      'Chat na iPhonu (aplikace na ploše): pole pro psaní je u fyzické dolní hrany displeje. iOS dával stránce menší výšku než displej, chat se teď natáhne až dolů (stejná oprava jako ve Službách).'
+    ]
+  },
+  {
     version: '1.22',
     date: '22. 11. 2026',
     items: [

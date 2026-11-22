@@ -131,11 +131,21 @@ export function renderThread(root, { id }) {
     // výška z JS se použije jen při otevřené klávesnici.
     const kb = !!vv && h < window.innerHeight - 120;
     scr.classList.toggle('kb', kb);
+    // iPhone na ploše: iOS dá stránce menší výšku než má displej a dole
+    // zůstane prázdný pruh. Chat se proto natáhne až k fyzické dolní hraně
+    // (stejná oprava jako v aplikaci Služby).
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+    const extra = Math.round(screen.height - window.innerHeight);
+    const tall = !kb && ios && standalone && screen.height > screen.width && extra > 20 && extra < 120;
+    scr.style.bottom = tall ? `-${extra}px` : '';
     scr.style.setProperty('--chat-h', Math.round(h) + 'px');
     scr.style.transform = kb && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
     if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
   };
   fit();
+  // iOS výšku někdy upraví až chvíli po otevření, bez události.
+  const fitT = [300, 1000, 2500].map((t) => setTimeout(fit, t));
   const vvT = window.visualViewport || window;
   vvT.addEventListener('resize', fit); vvT.addEventListener('scroll', fit);
   // Soukromá konverzace: online (zelená tečka) nebo kdy byl naposledy aktivní.
@@ -279,5 +289,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); };
+  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); };
 }
