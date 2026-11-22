@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.05',
+    date: '22. 11. 2026',
+    items: [
+      'Listování velkou kartou: při swipu z druhé strany po stejném oblouku přijíždí akce, na kterou přecházíš, a po puštění zapadne na místo. Stejně to funguje i u tlačítek „dřívější / pozdější“.',
+      'Když už další (nebo starší) akce není, karta se jen pruží zpátky a ukáže se upozornění.'
+    ]
+  },
+  {
     version: '1.04',
     date: '22. 11. 2026',
     items: [

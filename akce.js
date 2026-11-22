@@ -75,7 +75,7 @@ export function render(root, { tab }) {
       <div class="r">${past ? (ev.photoAlbum ? icon('photo', 18) : '') : pill(ev) || esc(relDays(ev.start))}</div>
     </a>`;
 
-  function heroHtml(ev) {
+  function heroHtml(ev, att = heroAtt, sh = shift) {
     const now = new Date();
     const live = isLive(ev, now);
     const past = !live && isPast(ev, now);
@@ -94,9 +94,9 @@ export function render(root, { tab }) {
       const tot = Math.max(1, ev.start - from);
       pct = Math.max(2, Math.min(100, ((now - from) / tot) * 100));
       left = `zbývá ${fmtSpan(ev.start - now)}`;
-      eyebrow = shift === 0 ? `Další akce · ${relDays(ev.start, now)}` : `Plánovaná akce · ${relDays(ev.start, now)}`;
+      eyebrow = sh === 0 ? `Další akce · ${relDays(ev.start, now)}` : `Plánovaná akce · ${relDays(ev.start, now)}`;
     }
-    const going = heroAtt?.going || [];
+    const going = att?.going || [];
     const cls = enterDir ? ` enter-${enterDir}` : '';
     return `<div class="card hero${past ? ' was' : ''}${cls}" data-open="${esc(ev.id)}">
       <div style="display:flex;gap:14px;align-items:flex-start">
@@ -111,15 +111,15 @@ export function render(root, { tab }) {
         ${ev.place ? `<div class="meta">${icon('pin', 16)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.place)}</span></div>` : ''}
       </div>
       ${past ? '' : `<div class="progress ${live ? 'live' : ''}"><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
-        <div class="lbl"><span>${esc(left)}</span><span>${heroAtt ? `jde <b>${going.length}</b>` : ''}</span></div></div>`}
+        <div class="lbl"><span>${esc(left)}</span><span>${att ? `jde <b>${going.length}</b>` : ''}</span></div></div>`}
       ${going.length ? `<div style="display:flex;align-items:center;gap:10px">${faces(going)}<span class="sub" style="margin:0">${past ? `${going.includes(me) ? 'Byl jsi tam' : 'Bez tebe'} · ${going.length} ${going.length === 1 ? 'účastník' : going.length < 5 ? 'účastníci' : 'účastníků'}` : going.includes(me) ? 'Ty a další' : 'Zatím bez tebe'}</span></div>` : ''}
       <div data-nodetail>
         ${past
           ? (ev.photoAlbum ? `<a class="btn block" href="${esc(ev.photoAlbum)}" target="_blank" rel="noopener">${icon('photo', 18)}Album fotek</a>` : '')
-          : (heroAtt ? attendButtons(ev, heroAtt) : '<div class="note">Načítám docházku…</div>')}
+          : (att ? attendButtons(ev, att) : '<div class="note">Načítám docházku…</div>')}
         <div class="hero-nav">
           <button data-hnav="-1" aria-label="Předchozí akce">‹ dřívější</button>
-          ${shift !== 0 ? '<button data-hnav="0" class="home">nejbližší</button>' : '<span class="hint">swipem listuj</span>'}
+          ${sh !== 0 ? '<button data-hnav="0" class="home">nejbližší</button>' : '<span class="hint">swipem listuj</span>'}
           <button data-hnav="1" aria-label="Další akce">pozdější ›</button>
         </div>
       </div>
@@ -135,6 +135,16 @@ export function render(root, { tab }) {
     const idx = Math.max(0, Math.min(list.length - 1, base + shift));
     shift = idx - base;
     return list[idx];
+  }
+
+  // Akce, která by byla na kartě při posunu o delta (nebo null, když už další není).
+  function neighbour(delta) {
+    const list = events.list;
+    const next = nextEvent(new Date());
+    const base = next ? list.indexOf(next) : list.length - 1;
+    const target = delta === 0 ? base : base + shift + delta;
+    if (target < 0 || target >= list.length) return null;
+    return { ev: list[target], sh: target - base };
   }
 
   function moveHero(delta) {
@@ -188,7 +198,7 @@ export function render(root, { tab }) {
       const hero = heroEvent(now);
       const next = nextEvent(now);
       const rest = next ? up.filter((e) => e.id !== next.id) : up;
-      let html = hero ? heroHtml(hero) : '';
+      let html = hero ? `<div class="hero-wrap">${heroHtml(hero)}</div>` : '';
       let lastKey = '';
       for (const ev of rest) {
         const k = `${ev.start.getFullYear()}-${ev.start.getMonth()}`;
@@ -230,39 +240,86 @@ export function render(root, { tab }) {
     }
   }
 
+  // Poloha karty na oblouku: posun do strany + natočení kolem bodu pod kartou.
+  const arc = (x) => `translateX(${x}px) rotate(${x / 40}deg)`;
+
   function bindHero(ev) {
     const el = body.querySelector('.hero');
-    if (!el) return;
-    let x0 = 0, y0 = 0, dx = 0, track = null, swiped = false;
+    const wrap = body.querySelector('.hero-wrap');
+    if (!el || !wrap) return;
+    let x0 = 0, y0 = 0, dx = 0, track = null, swiped = false, ghost = null, ghostDir = 0, busy = false;
+    const W = () => wrap.offsetWidth + 24;
+
+    // Karta, na kterou se přechází, přijíždí z opačné strany.
+    function ensureGhost(dir) {
+      if (ghostDir === dir && ghost) return ghost;
+      if (ghost) ghost.remove();
+      ghost = null; ghostDir = dir;
+      const n = neighbour(dir);
+      if (!n) return null;
+      const box = document.createElement('div');
+      box.className = 'hero-ghost';
+      box.innerHTML = heroHtml(n.ev, cachedAttendance(n.ev.id), n.sh);
+      wrap.appendChild(box);
+      ghost = box;
+      return ghost;
+    }
+    function place(x, animate) {
+      const t = animate ? 'transform .28s ease-out, opacity .28s' : 'none';
+      el.style.transition = t;
+      el.style.transform = arc(x);
+      if (ghost) {
+        ghost.style.transition = t;
+        ghost.style.transform = arc(x + ghostDir * W());
+      }
+    }
+    // Dokončení přechodu: aktuální karta odjede, nová zapadne na místo.
+    function finish(dir) {
+      if (busy) return;
+      if (!ensureGhost(dir)) { place(0, true); toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.'); return; }
+      busy = true;
+      place(-dir * W(), true);
+      ghost.style.transition = 'transform .28s ease-out';
+      ghost.style.transform = arc(0);
+      setTimeout(() => { shift += dir; enterDir = ''; draw(); }, 290);
+    }
+    el._finish = finish;
+
     el.addEventListener('touchstart', (e) => {
+      if (busy) return;
       const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null; swiped = false;
-      el.style.transition = 'none';
     }, { passive: true });
     el.addEventListener('touchmove', (e) => {
+      if (busy) return;
       const t = e.touches[0];
       const ddx = t.clientX - x0, ddy = t.clientY - y0;
       if (track === null && (Math.abs(ddx) > 8 || Math.abs(ddy) > 8)) track = Math.abs(ddx) > Math.abs(ddy);
       if (!track) return;
       dx = ddx;
-      el.style.transform = `translateX(${dx}px) rotate(${dx / 60}deg)`;
-      el.style.opacity = String(Math.max(0.4, 1 - Math.abs(dx) / 500));
+      // swipe doprava = dřívější akce (přijíždí zleva), doleva = pozdější (zprava)
+      const dir = dx > 0 ? -1 : 1;
+      const g = ensureGhost(dir);
+      place(g ? dx : dx * 0.35, false);
     }, { passive: true });
     el.addEventListener('touchend', () => {
-      el.style.transition = '';
-      if (track && Math.abs(dx) > 60) {
+      if (busy) return;
+      if (track) {
         swiped = true;
-        // swipe doprava = dřívější akce, swipe doleva = pozdější akce
-        moveHero(dx > 0 ? -1 : 1);
-        return;
+        setTimeout(() => { swiped = false; }, 60);
+        if (Math.abs(dx) > 70) { finish(dx > 0 ? -1 : 1); return; }
+        place(0, true);
+        setTimeout(() => { if (ghost && !busy) { ghost.remove(); ghost = null; ghostDir = 0; } }, 300);
       }
-      el.style.transform = ''; el.style.opacity = '';
-      if (track) swiped = true;
-      setTimeout(() => { swiped = false; }, 50);
     });
     el.onclick = (e) => {
-      if (swiped) return;
+      if (swiped || busy) return;
       const nav = e.target.closest('[data-hnav]');
-      if (nav) { moveHero(+nav.dataset.hnav); return; }
+      if (nav) {
+        const d = +nav.dataset.hnav;
+        if (d === 0) { moveHero(0); return; }
+        finish(d);
+        return;
+      }
       const b = e.target.closest('[data-att]');
       if (b) { changeAttendance(ev, b.dataset.att, heroAtt); return; }
       if (e.target.closest('[data-nodetail]')) return;
