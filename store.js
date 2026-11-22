@@ -180,6 +180,9 @@ export async function setAlbum(ev, url) {
 }
 
 // Album: přednost má odkaz u akce, pak záznam ve staré kolekci photoAlbums.
+export const cachedComments = (id) => commentCache.get(id);
+export const cachedItems = (id) => itemCache.get(id);
+
 export function cachedAlbum(ev) {
   return ev.photoAlbum || albumCache.get(ev.id);
 }

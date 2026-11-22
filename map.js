@@ -21,7 +21,7 @@ function loadLeaflet() {
   return leaflet;
 }
 
-const CACHE_KEY = 'kokrsnek2Geo';
+const CACHE_KEY = 'kokrsnek2Geo2';
 function cacheGet(place) {
   try { return (JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'))[place] ?? undefined; } catch (e) { return undefined; }
 }
@@ -40,14 +40,21 @@ async function geocode(place) {
   if (cached !== undefined) return cached;
   // Odkaz na mapu nebo dlouhý popis místo adresy nedohledáme.
   if (/https?:\/\//.test(place) || place.length > 120) return null;
+  // Zkusí celou adresu, pak bez prvního údaje (název podniku), pak jen poslední dva.
+  const parts = place.split(',').map((x) => x.trim()).filter(Boolean);
+  const tries = [place];
+  if (parts.length > 1) tries.push(parts.slice(1).join(', '));
+  if (parts.length > 2) tries.push(parts.slice(-2).join(', '));
   try {
-    const u = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=cs&countrycodes=cz,sk,at,de,pl,hr,it&q=' + encodeURIComponent(place);
-    const res = await fetch(u, { headers: { Accept: 'application/json' } });
-    if (!res.ok) return null;
-    const j = await res.json();
-    const r = j && j[0] ? { lat: +j[0].lat, lng: +j[0].lon } : null;
-    cacheSet(place, r);
-    return r;
+    for (const q of tries) {
+      const u = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=cs&countrycodes=cz,sk,at,de,pl,hr,it&q=' + encodeURIComponent(q);
+      const res = await fetch(u, { headers: { Accept: 'application/json' } });
+      if (!res.ok) return null;
+      const j = await res.json();
+      if (j && j[0]) { const r = { lat: +j[0].lat, lng: +j[0].lon }; cacheSet(place, r); return r; }
+    }
+    cacheSet(place, null);
+    return null;
   } catch (e) { return null; }
 }
 

@@ -4,7 +4,8 @@ import { avatar, toast, confirmDanger, spinner } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
-  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum
+  deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum,
+  cachedAttendance, cachedComments, cachedItems
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
@@ -24,19 +25,33 @@ function descText(ev) {
 let enterFrom = 0;
 
 export function render(root, { id }) {
-  let ev = null, att = null, comments = null, items = null, album = null;
-  const unsubs = [];
-  let started = false;
-
+  let page = null, started = false;
   root.innerHTML = `<div class="screen">${spinner()}</div>`;
+  const unsubEv = watchEvents(() => {
+    const found = findEvent(id);
+    if (!found) {
+      if (events.loaded) root.innerHTML = `<div class="screen"><div class="top"><a class="ibtn" href="#/akce" aria-label="Zpět">${icon('back')}</a></div><div class="empty">Tahle akce neexistuje nebo byla smazána.</div></div>`;
+      return;
+    }
+    if (!started) { started = true; page = mountDetail(root, found, true); }
+    else page.update(found);
+  });
+  return () => { unsubEv(); if (page) page.cleanup(); };
+}
+
+// Vykreslí celou stránku akce do host. live = skutečná stránka (sledování dat,
+// tlačítka, swipe); jinak náhled pro swipe z předem načtených dat.
+function mountDetail(host, ev, live) {
+  let att = null, comments = null, items = null, album = null;
+  const unsubs = [];
 
   function shell() {
     const past = isPast(ev);
     const ro = !canWrite(ev);
     const mine = ev.isTest && (ev.createdBy === myName() || isAdmin());
-    const enterCls = enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
-    enterFrom = 0;
-    root.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">
+    const enterCls = live && enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
+    if (live) enterFrom = 0;
+    host.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">
       <div class="cover" data-cover>
         <a class="ibtn l" href="#/akce" aria-label="Zpět">${icon('back')}</a>
         <div class="rr">
@@ -77,18 +92,34 @@ export function render(root, { id }) {
       </div>
     </div>`;
 
-    const icsBtn = root.querySelector('[data-ics]');
+    const ca = cachedAlbum(ev);
+    if (ca !== undefined) { album = ca; drawAlbum(); }
+    // Mapa: když se ukáže, název místa je přímo v ní — řádek s místem se schová.
+    if (ev.place) showMap(host.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
+      const pr = host.querySelector('[data-placerow]');
+      if (ok && pr) pr.remove();
+    });
+
+    // Náhled (při swipu): jen vykreslit z předem načtených dat, bez sledování a tlačítek.
+    if (!live) {
+      const a = cachedAttendance(ev.id); if (a) { att = a; drawAtt(); }
+      const c = cachedComments(ev.id); if (c) { comments = c; drawComs(); }
+      const it = cachedItems(ev.id); if (it) { items = it; drawItems(); }
+      return;
+    }
+
+    const icsBtn = host.querySelector('[data-ics]');
     if (icsBtn) icsBtn.onclick = () => {
       shareIcs(icsFor(ev), (ev.title || 'akce').replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40) + '.ics', ev.title);
     };
-    root.querySelector('[data-share]').onclick = async () => {
+    host.querySelector('[data-share]').onclick = async () => {
       const text = `${ev.title}\n${fmtWhen(ev)}${ev.place ? '\n' + ev.place : ''}`;
       try {
         if (navigator.share) await navigator.share({ title: ev.title, text });
         else { await navigator.clipboard.writeText(text); toast('Zkopírováno'); }
       } catch (e) { /* sdílení zavřeno */ }
     };
-    const form = root.querySelector('[data-comform]');
+    const form = host.querySelector('[data-comform]');
     if (form) form.onsubmit = async (e) => {
       e.preventDefault();
       const t = form.t.value.trim();
@@ -98,16 +129,9 @@ export function render(root, { id }) {
     };
 
     bindSwipe();
-    const ca = cachedAlbum(ev);
-    if (ca !== undefined) { album = ca; drawAlbum(); }
     loadAlbum(ev).then((u) => { if (u !== album) { album = u; drawAlbum(); } });
     // Dvě akce zpět a dvě dopředu načíst předem.
     setTimeout(() => neighboursOf(ev, 2).forEach((n) => { prefetchEvent(n); prefetchMap(n.place); }), 400);
-    // Když se mapa ukáže, název místa je přímo v ní — řádek s místem se schová.
-    if (ev.place) showMap(root.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
-      const pr = root.querySelector('[data-placerow]');
-      if (ok && pr) pr.remove();
-    });
     unsubs.push(watchAttendance(ev, (a) => { att = a; drawAtt(); }));
     unsubs.push(watchComments(ev, (c) => { comments = c; drawComs(); }));
     unsubs.push(watchItems(ev, (i) => { items = i; drawItems(); }));
@@ -120,7 +144,7 @@ export function render(root, { id }) {
   }
 
   function drawAlbum() {
-    const row = root.querySelector('[data-albumrow]');
+    const row = host.querySelector('[data-albumrow]');
     if (!row) return;
     if (!album) {
       if (!canAddAlbum(ev) || ev.start > new Date()) return;
@@ -131,21 +155,21 @@ export function render(root, { id }) {
     }
     // Album se otevírá klepnutím na obrázek nahoře (celá plocha), řádek v seznamu není potřeba.
     row.style.display = 'none';
-    const ct = root.querySelector('[data-covertext]');
+    const ct = host.querySelector('[data-covertext]');
     if (ct) ct.innerHTML = `<a class="coverlink" href="${esc(album)}" target="_blank" rel="noopener">${icon('photo', 40, 1.5)}<span>Otevřít album</span></a>`;
   }
 
   function drawAtt() {
-    const el = root.querySelector('[data-att]');
+    const el = host.querySelector('[data-att]');
     if (!el) return;
     const past = isPast(ev);
     if (past) {
-      root.querySelector('[data-attsec]').style.display = att.going.length ? '' : 'none';
-      root.querySelector('[data-attcount]').textContent = att.going.length ? String(att.going.length) : '';
+      host.querySelector('[data-attsec]').style.display = att.going.length ? '' : 'none';
+      host.querySelector('[data-attcount]').textContent = att.going.length ? String(att.going.length) : '';
       el.innerHTML = `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>`;
       return;
     }
-    root.querySelector('[data-attcount]').textContent = att.going.length ? `${att.going.length} ${att.going.length === 1 ? 'jde' : (att.going.length < 5 ? 'jdou' : 'jde')}` : '';
+    host.querySelector('[data-attcount]').textContent = att.going.length ? `${att.going.length} ${att.going.length === 1 ? 'jde' : (att.going.length < 5 ? 'jdou' : 'jde')}` : '';
     el.innerHTML = `
       ${att.going.length ? `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>` : '<div class="sub">Zatím nikdo.</div>'}
       ${att.declined.length ? `<div class="sub" style="margin:10px 0 6px">Nejdou</div><div class="chips">${att.declined.map((n) => `<span class="chip dash">${esc(n)}</span>`).join('')}</div>` : ''}
@@ -154,18 +178,18 @@ export function render(root, { id }) {
   }
 
   function drawItems() {
-    const el = root.querySelector('[data-items]');
+    const el = host.querySelector('[data-items]');
     if (!el) return;
     const me = myName();
     const ro = !canWrite(ev);
     if (isPast(ev)) {
       const brought = items.filter((i) => i.takenBy);
-      root.querySelector('[data-itemsec]').style.display = brought.length ? '' : 'none';
-      root.querySelector('[data-itemcount]').textContent = '';
+      host.querySelector('[data-itemsec]').style.display = brought.length ? '' : 'none';
+      host.querySelector('[data-itemcount]').textContent = '';
       el.innerHTML = `<div class="list">${brought.map((it) => `<div><span style="min-width:0;overflow-wrap:anywhere">${esc(it.name)}</span><span style="display:inline-flex;align-items:center;gap:6px;color:var(--ink2);font-size:14px;flex:0 0 auto">${avatar(it.takenBy, 22)}${esc(it.takenBy)}</span></div>`).join('')}</div>`;
       return;
     }
-    root.querySelector('[data-itemcount]').textContent = items.length ? `${items.filter((i) => i.takenBy).length}/${items.length} zajištěno` : '';
+    host.querySelector('[data-itemcount]').textContent = items.length ? `${items.filter((i) => i.takenBy).length}/${items.length} zajištěno` : '';
     el.innerHTML = `${items.length ? `<div class="list">${items.map((it) => `<div>
         <span style="min-width:0;overflow-wrap:anywhere">${esc(it.name)}</span>
         ${it.takenBy
@@ -179,11 +203,11 @@ export function render(root, { id }) {
   }
 
   function drawComs() {
-    const el = root.querySelector('[data-coms]');
+    const el = host.querySelector('[data-coms]');
     if (!el) return;
     const me = myName();
     const ro = !canWrite(ev);
-    root.querySelector('[data-comcount]').textContent = comments.length ? String(comments.length) : '';
+    host.querySelector('[data-comcount]').textContent = comments.length ? String(comments.length) : '';
     // Odpovědi hned pod komentář, na který odpovídají.
     const top = comments.filter((c) => !c.parentId || !comments.some((p) => p.id === c.parentId));
     const ordered = [];
@@ -203,10 +227,10 @@ export function render(root, { id }) {
   // Swipe mezi akcemi: doleva = pozdější akce, doprava = dřívější (jako velká karta).
   // Během tahu z druhé strany přijíždí náhled sousední akce.
   function bindSwipe() {
-    const scr = root.querySelector('.screen');
+    const scr = host.querySelector('.screen');
     const arcD = (x) => `translateX(${x}px) rotate(${x / 90}deg)`;
     let x0 = 0, y0 = 0, dx = 0, track = null, skip = false, ghost = null, gDir = 0, done = false;
-    const W = () => root.getBoundingClientRect().width + 24;
+    const W = () => host.getBoundingClientRect().width + 24;
     const neighbourEv = (dir) => {
       const list = events.list;
       const i = list.findIndex((x) => x.id === ev.id);
@@ -218,20 +242,13 @@ export function render(root, { id }) {
       ghost = null; gDir = dir;
       const t = neighbourEv(dir);
       if (!t) return null;
-      const r = root.getBoundingClientRect();
+      const r = host.getBoundingClientRect();
       const g = document.createElement('div');
       g.className = 'det-ghost';
       g.style.left = r.left + 'px';
       g.style.width = r.width + 'px';
-      const past = isPast(t);
-      g.innerHTML = `<div class="cover">${icon(t.photoAlbum ? 'photo' : 'calendar', 44, 1.5)}</div>
-        <div style="padding:18px 20px 0">
-          <div class="eyebrow ${past ? '' : 'live'}" style="color:${past ? 'var(--muted)' : ''}">${past ? 'Proběhlo · ' : ''}${esc(relDays(t.start))}</div>
-          <h1 class="title" style="margin:6px 0 14px">${esc(t.title)}</h1>
-          <div class="info"><div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(t.start))}${t.start.getFullYear() !== new Date().getFullYear() ? ' ' + t.start.getFullYear() : ''}</b><span>${esc(whenLine(t))}</span></div></div>
-          ${t.place ? `<div>${icon('pin')}<div class="k"><b>${esc(t.place)}</b></div></div>` : ''}</div>
-        </div>`;
-      root.appendChild(g);
+      host.appendChild(g);
+      mountDetail(g, t, false);
       ghost = g;
       return g;
     }
@@ -275,18 +292,13 @@ export function render(root, { id }) {
     });
   }
 
-  const unsubEv = watchEvents(() => {
-    const found = findEvent(id);
-    if (!found) {
-      if (events.loaded) root.innerHTML = `<div class="screen"><div class="top"><a class="ibtn" href="#/akce" aria-label="Zpět">${icon('back')}</a></div><div class="empty">Tahle akce neexistuje nebo byla smazána.</div></div>`;
-      started = false;
-      return;
+  shell();
+  return {
+    cleanup() { unsubs.forEach((u) => u()); },
+    update(found) {
+      const albumChanged = found.photoAlbum && found.photoAlbum !== album;
+      ev = found;
+      if (albumChanged) { album = found.photoAlbum; drawAlbum(); }
     }
-    const albumChanged = started && found.photoAlbum && found.photoAlbum !== album;
-    ev = found;
-    if (!started) { started = true; shell(); }
-    else if (albumChanged) { album = found.photoAlbum; drawAlbum(); }
-  });
-
-  return () => { unsubEv(); unsubs.forEach((u) => u()); };
+  };
 }
