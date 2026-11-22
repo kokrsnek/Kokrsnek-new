@@ -84,6 +84,13 @@ service cloud.firestore {
       }
     }
 
+    // Lajky u akcí (stejné místo jako stará aplikace). Každý smí dát nebo
+    // vzít jen svůj vlastní lajk — dokument se jmenuje jeho jménem.
+    match /events/{ev}/likes/{name} {
+      allow read: if isV2Approved();
+      allow write: if isV2Approved() && get(memberPath()).data.name == name;
+    }
+
     // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).
     match /presence/{name} {
       allow read, write: if isV2Approved();

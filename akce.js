@@ -3,7 +3,8 @@ import { esc, icon, fmtWhen, relDays, fmtSpan, MONTHS_NOM, MONTHS_SHORT, DAYS_SH
 import { tabbar, faces, toast, spinner } from './ui.js';
 import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
-import { prefetchEvent, neighboursOf } from './store.js';
+import { prefetchEvent, neighboursOf, cachedLikes, loadLikes, watchLikes, toggleLike } from './store.js';
+import { eventWeather, cachedWeather } from './weather.js';
 import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAttendance, cachedAttendance } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 
@@ -11,7 +12,7 @@ const PAGE = 60;
 
 export function render(root, { tab }) {
   let searchOpen = false, q = '', shown = PAGE;
-  let heroAtt = null, heroUnsub = null, heroId = null;
+  let heroAtt = null, heroUnsub = null, heroId = null, likeUnsub = null;
   let shift = 0;            // posun velké karty: 0 = nejbližší akce, -1 = předchozí, +1 = další
   let enterDir = '';         // směr animace po swipu
   let animating = false;     // přechod mezi kartami právě běží        // právě probíhá návrat na nejbližší (karta po kartě)
@@ -69,8 +70,32 @@ export function render(root, { tab }) {
         <div class="t">${esc(ev.title)}</div>
         <div class="s">${esc(fmtWhen(ev))}${ev.place ? ' · ' + esc(ev.place) : ''}</div>
       </div>
-      <div class="r">${past ? (ev.photoAlbum ? icon('photo', 18) : '') : pill(ev) || esc(relDays(ev.start))}</div>
+      <div class="r">${past ? (ev.photoAlbum ? icon('photo', 18) : '') : pill(ev) || esc(relDays(ev.start))}${past ? '' : `<span class="rowlike" data-rl="${esc(ev.id)}">${likeTxt(ev)}</span>`}</div>
     </a>`;
+  function likeTxt(ev) { const l = cachedLikes(ev.id); return l && l.length ? '❤️ ' + l.length : ''; }
+
+  function wxChips(ev) {
+    const w = cachedWeather(ev);
+    if (!w || w.past) return '';
+    return `<span class="wxchip">${w.icon} ${w.min === w.max ? w.min : w.min + '–' + w.max} °C</span>${w.prob != null && w.prob >= 10 ? `<span class="wxchip">💧 ${w.prob} %</span>` : ''}`;
+  }
+  function likeBtn(ev) {
+    const l = cachedLikes(ev.id) || [];
+    const on = l.includes(myName());
+    return `<button class="likebtn${on ? ' on' : ''}" data-like aria-label="${on ? 'Zrušit lajk' : 'Líbí se mi'}">${on ? '❤️' : '🤍'} ${l.length}</button>`;
+  }
+  // Počasí a lajky dorazí později — doplní se do karty, která ještě patří té akci.
+  function fillHero(ev) {
+    const upd = () => {
+      const el = body.querySelector(`.hero[data-open="${CSS.escape(ev.id)}"]`);
+      if (!el) return;
+      const wx = el.querySelector('[data-hwx]'); if (wx) wx.innerHTML = wxChips(ev);
+      const lb = el.querySelector('[data-like]'); if (lb) lb.outerHTML = likeBtn(ev);
+    };
+    eventWeather(ev).then(upd);
+    if (likeUnsub) likeUnsub();
+    likeUnsub = watchLikes(ev, upd);
+  }
 
   function heroHtml(ev, att = heroAtt, sh = shift) {
     const now = new Date();
@@ -105,11 +130,12 @@ export function render(root, { tab }) {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div class="meta">${icon('calendar', 16)}${esc(fmtWhen(ev))}${ev.start.getFullYear() !== now.getFullYear() ? ' ' + ev.start.getFullYear() : ''}</div>
+        ${past ? '' : `<div class="wxchips" data-hwx>${wxChips(ev)}</div>`}
         ${ev.place ? `<div class="meta">${icon('pin', 16)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.place)}</span></div>` : ''}
       </div>
       ${past ? '' : `<div class="progress ${live ? 'live' : ''}"><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
         <div class="lbl"><span>${esc(left)}</span><span>${att ? `jde <b>${going.length}</b>` : ''}</span></div></div>`}
-      ${going.length ? `<div style="display:flex;align-items:center;gap:10px">${faces(going)}<span class="sub" style="margin:0">${past ? `${going.includes(me) ? 'Byl jsi tam' : 'Bez tebe'} · ${going.length} ${going.length === 1 ? 'účastník' : going.length < 5 ? 'účastníci' : 'účastníků'}` : going.includes(me) ? 'Ty a další' : 'Zatím bez tebe'}</span></div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;min-height:36px">${going.length ? `${faces(going)}<span class="sub" style="margin:0;min-width:0">${past ? `${going.includes(me) ? 'Byl jsi tam' : 'Bez tebe'} · ${going.length} ${going.length === 1 ? 'účastník' : going.length < 5 ? 'účastníci' : 'účastníků'}` : going.includes(me) ? 'Ty a další' : 'Zatím bez tebe'}</span>` : ''}${likeBtn(ev)}</div>
       <div data-nodetail>
         ${past
           ? (ev.photoAlbum ? `<a class="btn block" href="${esc(ev.photoAlbum)}" target="_blank" rel="noopener">${icon('photo', 18)}Album fotek</a>` : '')
@@ -214,10 +240,15 @@ export function render(root, { tab }) {
       }
       if (hero) {
         bindHero(hero);
+        fillHero(hero);
+        neighboursOf(hero, 2).forEach((n) => { eventWeather(n); loadLikes(n); });
         // Sousední karty (±2) načíst předem, ať se při swipu ukážou kompletní.
         neighboursOf(hero, 2).forEach((n) => { if (cachedAttendance(n.id) || loading.has(n.id)) return; loading.add(n.id); loadAttendance(n).catch(() => {}); });
       }
       // Docházka u dalších nadcházejících akcí (kvůli štítku Jdu/Nejdu).
+      rest.slice(0, 15).forEach((ev) => {
+        if (!cachedLikes(ev.id)) loadLikes(ev).then(() => { const x = body.querySelector(`[data-rl="${CSS.escape(ev.id)}"]`); if (x) x.textContent = likeTxt(ev); });
+      });
       rest.slice(0, 15).forEach((ev) => {
         if (cachedAttendance(ev.id) || loading.has(ev.id)) return;
         loading.add(ev.id);
@@ -356,6 +387,8 @@ export function render(root, { tab }) {
       }
       const b = e.target.closest('[data-att]');
       if (b) { changeAttendance(ev, b.dataset.att, heroAtt); return; }
+      const lk = e.target.closest('[data-like]');
+      if (lk) { toggleLike(ev).catch(() => toast('Lajk se nepodařilo uložit.')); lk.outerHTML = likeBtn(ev); return; }
       if (e.target.closest('[data-nodetail]')) return;
       location.hash = '#/akce/' + encodeURIComponent(ev.id);
     };
@@ -377,5 +410,5 @@ export function render(root, { tab }) {
 
   const unsub = watchEvents(draw);
   const tick = setInterval(draw, 60000);
-  return () => { unsub(); clearInterval(tick); if (heroUnsub) heroUnsub(); };
+  return () => { unsub(); clearInterval(tick); if (heroUnsub) heroUnsub(); if (likeUnsub) likeUnsub(); };
 }

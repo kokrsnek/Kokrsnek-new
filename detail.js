@@ -1,13 +1,15 @@
 // Detail akce: informace, docházka, co přinést, album, soubory, komentáře.
 import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
-import { avatar, toast, confirmDanger, spinner, choose } from './ui.js';
+import { avatar, toast, confirmDanger, spinner, choose, faces } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
   deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum,
   cachedAttendance, cachedComments, cachedItems,
-  cachedCover, loadCover, setCover, removeCover, shrinkPhoto
+  cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike
 } from './store.js';
+import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf } from './weather.js';
+import { plural } from './util.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
 import { showMap, prefetchMap } from './map.js';
@@ -75,6 +77,8 @@ function mountDetail(host, ev, live) {
           <div data-albumrow style="display:none"></div>
           ${(ev.driveFiles || []).map((f) => `<a class="rowlink" href="${esc(f.url)}" target="_blank" rel="noopener">${icon('file')}<div class="k"><b>${esc(f.title)}</b></div>${icon('next', 18)}</a>`).join('')}
         </div>
+        <div data-wx></div>
+        <div data-likes></div>
         ${descText(ev) ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(descText(ev))}</div>` : ''}
 
         <div data-mapbox></div>
@@ -120,8 +124,18 @@ function mountDetail(host, ev, live) {
       const a = cachedAttendance(ev.id); if (a) { att = a; drawAtt(); }
       const c = cachedComments(ev.id); if (c) { comments = c; drawComs(); }
       const it = cachedItems(ev.id); if (it) { items = it; drawItems(); }
+      drawWx(cachedWeather(ev)); drawLikes(cachedLikes(ev.id));
       return;
     }
+    drawWx(cachedWeather(ev));
+    eventWeather(ev).then(drawWx);
+    unsubs.push(watchLikes(ev, drawLikes));
+    host.querySelector('[data-likes]').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-like]');
+      if (!b) return;
+      toggleLike(ev).catch(() => toast('Lajk se nepodařilo uložit.'));
+      drawLikes(cachedLikes(ev.id));
+    });
 
     // Fotka v hlavičce: vybrat / změnit / odebrat.
     const cbtn = host.querySelector('[data-coverbtn]');
@@ -211,6 +225,43 @@ function mountDetail(host, ev, live) {
     row.style.display = 'none';
     const ct = host.querySelector('[data-covertext]');
     if (ct) ct.innerHTML = `<a class="coverlink" href="${esc(album)}" target="_blank" rel="noopener"><span class="coveric">${icon('photo', 40, 1.5)}</span><span class="coverlbl">Otevřít album</span></a>`;
+  }
+
+  // Počasí: u proběhlé akce řádek „Počasí bylo…“, jinak karta po hodinách.
+  function drawWx(w) {
+    const box = host.querySelector('[data-wx]');
+    if (!box || !w) return;
+    host.querySelectorAll('[data-wxrow]').forEach((x) => x.remove());
+    const range = w.min === w.max ? `${w.min} °C` : `${w.min}–${w.max} °C`;
+    if (w.past) {
+      box.innerHTML = '';
+      host.querySelector('.info')?.insertAdjacentHTML('beforeend', `<div data-wxrow><span class="wxic">${w.icon}</span><div class="k"><b>Počasí bylo ${range}</b><span>${w.mm > 0 ? String(w.mm).replace('.', ',') + ' mm srážek' : 'bez srážek'} · ${esc(w.desc.toLowerCase())}</span></div></div>`);
+      return;
+    }
+    const parts = ev.place.split(',').map((x) => x.trim()).filter(Boolean);
+    const where = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+    box.innerHTML = `<div class="wxcard">
+      <div class="hd"><div style="min-width:0"><div class="lbl">POČASÍ NA AKCI${where ? ' · ' + esc(where.toUpperCase()) : ''}</div><div class="desc">${esc(w.desc)}</div></div><div class="big">${w.startIcon} ${w.now}°</div></div>
+      <div class="wxhours" style="grid-template-columns:repeat(${hourColumns(w, 8).length},1fr)">${hourColumns(w, 8).map((h) => `<div><span>${h.h}</span><span class="e">${h.code != null ? wxIconOf(h.code) : ''}</span><b>${h.t}°</b><span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span></div>`).join('')}</div>
+    </div>`;
+  }
+
+  function drawLikes(list) {
+    const box = host.querySelector('[data-likes]');
+    if (!box) return;
+    const l = list || [];
+    const on = l.includes(myName());
+    const n = l.length;
+    const past = isPast(ev);
+    const title = n ? (past ? `Líbilo se ${n} ${plural(n, 'člověku', 'lidem', 'lidem')}` : `${n} ${plural(n, 'člověku', 'lidem', 'lidem')} se akce líbí`) : 'Zatím bez lajku';
+    const others = l.filter((x) => x !== myName());
+    const who = n ? (on ? ['ty', ...others] : others) : [];
+    const sub = who.length ? who.slice(0, 3).join(', ') + (who.length > 3 ? ` a další ${who.length - 3}` : '') : 'Dej srdíčko jako první';
+    box.innerHTML = `<div class="likesec">
+      <div class="lbig${on ? ' on' : ''}">${on ? '❤️' : '🤍'}</div>
+      <div class="tx"><b>${esc(title)}</b>${n > 3 ? `<div style="margin-top:5px">${faces(l, 6)}</div>` : `<span>${esc(sub)}</span>`}</div>
+      <button class="likebtn${on ? ' on' : ''}" data-like>${on ? '❤️ Líbí se mi' : '🤍 Líbí se mi'}</button>
+    </div>`;
   }
 
   function drawAtt() {

@@ -71,17 +71,53 @@ export function paths(ev) {
       attendees: ['v2_akce', ev.id, 'attendees'],
       declines: ['v2_akce', ev.id, 'declines'],
       comments: ['v2_akce', ev.id, 'comments'],
-      items: ['v2_akce', ev.id, 'items']
+      items: ['v2_akce', ev.id, 'items'],
+      likes: ['v2_akce', ev.id, 'likes']
     };
   }
   return {
     attendees: ['events', ev.id, 'attendees'],
     declines: ['events', ev.id, 'declines'],
     comments: ['events', ev.id, 'comments'],
-    items: ['bringLists', ev.id, 'items']
+    items: ['bringLists', ev.id, 'items'],
+    likes: ['events', ev.id, 'likes']
   };
 }
 export const canWrite = (ev) => !!ev && (ev.isTest || !TEST_MODE);
+
+// ---------- lajky (stejné místo jako stará aplikace: events/{id}/likes/{jméno}) ----------
+// Lajkovat jde i u akcí z kalendáře — stará aplikace na nový lajk pošle partě notifikaci.
+const likeCache = new Map(); // id → [jména]
+export const cachedLikes = (id) => likeCache.get(id);
+export function watchLikes(ev, cb) {
+  return onSnapshot(collection(db, ...paths(ev).likes), (s) => {
+    const names = s.docs.map((d) => d.data().user || d.id);
+    likeCache.set(ev.id, names);
+    cb(names);
+  }, () => cb(likeCache.get(ev.id) || []));
+}
+export async function loadLikes(ev) {
+  if (likeCache.has(ev.id)) return likeCache.get(ev.id);
+  try {
+    const s = await getDocs(collection(db, ...paths(ev).likes));
+    const names = s.docs.map((d) => d.data().user || d.id);
+    likeCache.set(ev.id, names);
+    return names;
+  } catch (e) { return []; }
+}
+export async function toggleLike(ev) {
+  const me = myName();
+  if (!me) return;
+  const ref = doc(db, ...paths(ev).likes, me);
+  const list = likeCache.get(ev.id) || [];
+  if (list.includes(me)) {
+    likeCache.set(ev.id, list.filter((n) => n !== me));
+    await deleteDoc(ref);
+  } else {
+    likeCache.set(ev.id, [...list, me]);
+    await setDoc(ref, { user: me, at: new Date(), eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', via: 'v2' });
+  }
+}
 
 // ---------- docházka ----------
 const attendCache = new Map(); // id → { going: [], declined: [], at }

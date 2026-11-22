@@ -33,7 +33,7 @@ function cacheSet(place, val) {
   } catch (e) { /* nevadí */ }
 }
 
-async function geocode(place) {
+export async function geocode(place) {
   const known = placeCoords(place);
   if (known) return known;
   const cached = cacheGet(place);

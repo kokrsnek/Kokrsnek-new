@@ -12,6 +12,7 @@ import * as chat from './chat.js';
 import * as kde from './kde.js';
 import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
+import { startWeatherEffect } from './weather.js';
 
 const root = document.getElementById('app');
 let cleanup = null;
@@ -47,6 +48,7 @@ function route(force = false) {
   if (!session.member) return lastKey !== 'who' ? mount('who', () => login.renderWho(root)) : null;
   if (!isApproved()) return lastKey !== 'pending' ? mount('pending', () => login.renderPending(root)) : null;
   startPresence();
+  startWeatherEffect();
 
   const path = (location.hash || '').replace(/^#/, '') || '/akce';
   for (const [re, fn] of ROUTES) {

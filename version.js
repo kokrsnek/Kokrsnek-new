@@ -3,6 +3,16 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.29',
+    date: '22. 11. 2026',
+    items: [
+      'Počasí: na kartě nejbližší akce teplota a šance na srážky, v detailu nadcházející akce karta po hodinách (předpověď asi 2 týdny dopředu).',
+      'U proběhlé akce řádek „Počasí bylo…“ se skutečnou teplotou a srážkami.',
+      'Lajky jako ve staré aplikaci: srdíčko na kartě akce, počet v seznamu a v detailu kdo dal lajk. Sčítají se se starou aplikací a parta dostane notifikaci.',
+      'Déšť nebo sníh přes aplikaci podle počasí tam, kde právě jsi.'
+    ]
+  },
+  {
     version: '1.28',
     date: '22. 11. 2026',
     items: [
