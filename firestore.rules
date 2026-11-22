@@ -70,6 +70,20 @@ service cloud.firestore {
       allow delete: if isV2Admin() || (request.auth != null && request.auth.uid == uid);
     }
 
+    // Chat a check-iny party — nová aplikace je píše naostro (stejně jako stará).
+    match /chats/{thread} {
+      allow read, write: if isV2Approved();
+      match /messages/{msg} {
+        allow read, write: if isV2Approved();
+      }
+    }
+    match /placeCheckins/{id} {
+      allow read, write: if isV2Approved();
+      match /comments/{c} {
+        allow read, write: if isV2Approved();
+      }
+    }
+
     // Testovací chat a check-iny nové aplikace (zkušební provoz — parta je nevidí).
     match /v2_chats/{thread}/messages/{msg} {
       allow read, write: if isV2Approved();

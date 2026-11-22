@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.19',
+    date: '22. 11. 2026',
+    items: [
+      'Chat a Kde jsi? běží naostro: zprávy, fotky, reakce, check-iny, Přijdu taky / Jsem poblíž, emoji a komentáře jdou do skutečných dat party — stará aplikace je vidí a parta dostává notifikace jako obvykle.',
+      'Testovací vlákno a testovací check-iny zmizely. Akce zůstávají ve zkušebním provozu.',
+      '„Jsem poblíž“ posílá autorovi check-inu i polohu (jako stará aplikace). Fotky do chatu a ke check-inům se zmenšují na menší velikost.'
+    ]
+  },
+  {
     version: '1.18',
     date: '22. 11. 2026',
     items: [

@@ -219,20 +219,20 @@ export async function removeCover(id) {
   coverCache.set(id, '');
 }
 // Zmenší fotku na max. 1280 px a uloží jako JPEG (pod ~800 kB kvůli limitu Firestore).
-export function shrinkPhoto(file) {
+export function shrinkPhoto(file, maxSide = 1280, maxLen = 800000) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let max = 1280, q = 0.8, out = '';
+      let max = maxSide, q = 0.8, out = '';
       for (let i = 0; i < 6; i++) {
         const k = Math.min(1, max / Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
         out = c.toDataURL('image/jpeg', q);
-        if (out.length < 800000) return resolve(out);
+        if (out.length < maxLen) return resolve(out);
         max = Math.round(max * 0.8); q = Math.max(0.55, q - 0.08);
       }
       resolve(out);

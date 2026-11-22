@@ -1,10 +1,10 @@
 // Chat: seznam vláken (Celá parta, soukromé, testovací) a konverzace.
 // Skutečná vlákna party (chats/{id}/messages) se čtou. Ve zkušebním provozu
-// se píše jen do testovacího vlákna v2_chats/test, ať parta nedostává notifikace.
+// se píše jen do testovacího vlákna v2_chats/test; s CHAT_LIVE se píše naostro.
 import { esc, icon, fmtTime, sameDay, dayDiff, toDate, DAYS_FULL, looseName } from './util.js';
 import { tabbar, avatar, toast, spinner } from './ui.js';
 import { myName } from './auth.js';
-import { TEST_MODE, PARTY_NAMES } from './config.js';
+import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
 import { shrinkPhoto } from './store.js';
 
@@ -18,7 +18,7 @@ export const dmThreadId = (a, b) => [norm(a), norm(b)].sort().join('__');
 function threadPath(id) {
   return id === TEST_THREAD ? ['v2_chats', TEST_THREAD, 'messages'] : ['chats', id, 'messages'];
 }
-const canWriteThread = (id) => id === TEST_THREAD || !TEST_MODE;
+const canWriteThread = (id) => id === TEST_THREAD || !TEST_MODE || CHAT_LIVE;
 
 function threadTitle(id) {
   if (id === PARTY_THREAD) return 'Celá parta';
@@ -48,7 +48,7 @@ export function renderList(root) {
   </div>`;
   const box = root.querySelector('[data-list]');
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
-  const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), TEST_THREAD];
+  const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
   let alive = true;
 
@@ -233,7 +233,7 @@ export function renderThread(root, { id }) {
       const files = [...(file.files || [])];
       file.value = '';
       for (const f of files) {
-        try { const img = await shrinkPhoto(f); await send({ image: img }); } catch (x) { toast('Fotku se nepodařilo odeslat.'); }
+        try { const img = await shrinkPhoto(f, 1024, 300000); await send({ image: img }); } catch (x) { toast('Fotku se nepodařilo odeslat.'); }
       }
     };
   }

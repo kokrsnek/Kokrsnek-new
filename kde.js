@@ -4,14 +4,15 @@
 import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
 import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
-import { TEST_MODE, MAPY_API_KEY } from './config.js';
+import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, writeBatch, callFunction } from './firebase.js';
 import { shrinkPhoto } from './store.js';
 import { loadLeaflet } from './map.js';
 
 const EMOJIS = ['👍', '🍺', '❤️', '😂', '🔥'];
 const isTestDoc = (c) => c._col === 'v2_checkins';
-const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE;
+const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE || CHAT_LIVE;
+const LIVE = CHAT_LIVE || !TEST_MODE;
 const colOf = (c) => c._col;
 
 function when(at) {
@@ -117,8 +118,21 @@ export function render(root, { tab = 'feed', openNew = false }) {
     try {
       if (act === 'coming' || act === 'near') {
         const arr = new Set(c[act] || []);
-        arr.has(me) ? arr.delete(me) : arr.add(me);
-        await updateDoc(ref, { [act]: [...arr] });
+        const adding = !arr.has(me);
+        adding ? arr.add(me) : arr.delete(me);
+        const upd = { [act]: [...arr] };
+        // „Jsem poblíž“ pošle autorovi i polohu (jako stará aplikace); při zrušení se smaže.
+        if (act === 'near') {
+          const nl = { ...(c.nearLoc || {}) };
+          if (adding) {
+            const pos = await new Promise((res) => navigator.geolocation
+              ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { timeout: 8000, maximumAge: 60000 })
+              : res(null));
+            if (pos) nl[me] = pos;
+          } else delete nl[me];
+          upd.nearLoc = nl;
+        }
+        await updateDoc(ref, upd);
       } else if (act === 'emoji') {
         emojiPick(async (em) => {
           const e2 = { ...(c.emojis || {}) };
@@ -196,7 +210,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
   unsubs.push(onSnapshot(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(60)), (s) => {
     real = s.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() })); draw();
   }, (err) => { console.error('Check-iny:', err); real = []; draw(); }));
-  unsubs.push(onSnapshot(query(collection(db, 'v2_checkins'), orderBy('at', 'desc'), limit(30)), (s) => {
+  if (!LIVE) unsubs.push(onSnapshot(query(collection(db, 'v2_checkins'), orderBy('at', 'desc'), limit(30)), (s) => {
     test = s.docs.map((d) => ({ id: d.id, _col: 'v2_checkins', ...d.data() })); draw();
   }, () => {}));
 
@@ -208,7 +222,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
 // Tvoje místa: nejčastější a nejnovější z vlastních check-inů (do 6).
 async function favoritePlaces(me) {
   const map = new Map();
-  for (const col of ['placeCheckins', 'v2_checkins']) {
+  for (const col of LIVE ? ['placeCheckins'] : ['placeCheckins', 'v2_checkins']) {
     try {
       const s = await getDocs(query(collection(db, col), where('user', '==', me), limit(300)));
       s.forEach((d) => {
@@ -284,7 +298,7 @@ function renderForm(scr, me, coords, sugs, guess, favs) {
     <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
     <input type="file" accept="image/*" data-file hidden>
     <div class="ciphrow" data-phrow></div>
-    ${TEST_MODE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
+    ${!LIVE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
   </div>
   <div class="cibtns"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Odeslat</button></div>`;
   const $ = (q) => scr.querySelector(q);
@@ -306,7 +320,7 @@ function renderForm(scr, me, coords, sugs, guess, favs) {
     const f = $('[data-file]').files[0];
     $('[data-file]').value = '';
     if (!f) return;
-    try { photo = await shrinkPhoto(f); drawPh(); } catch (e) { toast('Fotku se nepodařilo načíst.'); }
+    try { photo = await shrinkPhoto(f, 1024, 300000); drawPh(); } catch (e) { toast('Fotku se nepodařilo načíst.'); }
   };
   const close = () => scr.remove();
   $('[data-x]').onclick = close;
@@ -319,7 +333,7 @@ function renderForm(scr, me, coords, sugs, guess, favs) {
       lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, gPlaceId: gp ? gp.id || '' : '',
       at: new Date().toISOString(), photo, photoPath: '', via: 'v2' };
     try {
-      await addDoc(collection(db, TEST_MODE ? 'v2_checkins' : 'placeCheckins'), data);
+      await addDoc(collection(db, LIVE ? 'placeCheckins' : 'v2_checkins'), data);
       close();
       toast('Check-in odeslán 📍');
       if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
