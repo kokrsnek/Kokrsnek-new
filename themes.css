@@ -1,0 +1,121 @@
+/* Další styly vzhledu. Výchozí (Původní) je v app.css. Přepíná se
+   atributem data-theme na <html> — Parta → Vzhled. */
+
+/* ---------- Chata: krémová, lesní zelená, cihlová, patkové nadpisy ---------- */
+:root[data-theme="chata"]{
+  --bg:#F4EFE6; --card:#FFFDF8; --surface:#EDE5D6; --bar:#FFFDF8; --line:#E2D9C8; --line2:#CFC3AC;
+  --ink:#2A2620; --ink2:#4E4639; --muted:#6E6557;
+  --accent:#2F5D46; --accent-hi:#2F5D46; --accent-text:#2F5D46; --accent-soft:#E3ECE4;
+  --coral:#B4532A; --coral-text:#B4532A; --danger:#B4532A; --no-soft:#F6E4DA;
+  --on-accent:#FFFFFF; --shadow:rgba(42,38,32,.18); --scrim:rgba(42,38,32,.45);
+  --cover:#2F5D46; --cover-ink:#E3ECE4; --cover-btn:rgba(255,253,248,.92);
+  --warn-bg:#FBF1DC; --warn-line:#C9A85B; --warn-ink:#7A5A12;
+  --day-out:#B8AE9C; --check:#2F5D46; --toast-bg:#2A2620; --toast-ink:#F4EFE6;
+  --gbtn-bg:#FFFDF8; --gbtn-ink:#2A2620; --gbtn-line:#2A2620; --statusbar:#2F5D46;
+  --r:14px; --r-lg:18px; --r-xl:20px; --btn-r:100px; --ibtn-r:50%;
+  --font:'Work Sans',system-ui,sans-serif; --display:'Fraunces',Georgia,serif;
+}
+[data-theme="chata"] .ibtn{background:transparent;border:1.5px solid var(--ink)}
+[data-theme="chata"] .cover .ibtn{background:var(--cover-btn);border:none}
+[data-theme="chata"] .ibtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme="chata"] .seg{background:transparent;border:none;padding:0;gap:18px;grid-auto-columns:max-content;margin-bottom:10px}
+[data-theme="chata"] .seg button{border-radius:0;height:34px;padding:0;color:var(--muted);font-size:15px}
+[data-theme="chata"] .seg button.on{background:transparent;color:var(--ink);box-shadow:inset 0 -2px 0 var(--coral)}
+[data-theme="chata"] .datetile{background:var(--accent);border:none}
+[data-theme="chata"] .datetile .m,[data-theme="chata"] .datetile .d{color:#F4EFE6}
+[data-theme="chata"] .datetile.sm{background:transparent!important}
+[data-theme="chata"] .datetile.sm .m{color:var(--muted)}
+[data-theme="chata"] .datetile.sm .d{color:var(--ink)}
+[data-theme="chata"] .card,[data-theme="chata"] .row{box-shadow:0 1px 0 var(--line)}
+[data-theme="chata"] .fab{border-radius:100px}
+[data-theme="chata"] .tabbar a.on{color:var(--coral)}
+
+/* ---------- Festival: černá, citronově žlutá, růžová, tučná velká písmena ---------- */
+:root[data-theme="festival"]{
+  --bg:#0D0D10; --card:#1E1E24; --surface:#26262E; --bar:#141418; --line:#34343D; --line2:#46464F;
+  --ink:#F7F5EE; --ink2:#D6D3DC; --muted:#A3A0AD;
+  --accent:#F5D90A; --accent-hi:#F5D90A; --accent-text:#F5D90A; --accent-soft:rgba(245,217,10,.14);
+  --coral:#FF5C8A; --coral-text:#FF5C8A; --danger:#FF5C8A; --no-soft:rgba(255,92,138,.14);
+  --on-accent:#0D0D10; --shadow:rgba(0,0,0,.6); --scrim:rgba(0,0,0,.7);
+  --cover:#2A2233; --cover-ink:#F5D90A; --cover-btn:rgba(13,13,16,.85);
+  --warn-bg:rgba(124,196,255,.1); --warn-line:#7CC4FF; --warn-ink:#A9D8FF;
+  --day-out:#4E4C57; --check:#F5D90A; --toast-bg:#F5D90A; --toast-ink:#0D0D10;
+  --gbtn-bg:#F7F5EE; --gbtn-ink:#0D0D10; --gbtn-line:transparent; --statusbar:transparent;
+  --r:16px; --r-lg:20px; --r-xl:26px; --btn-r:16px; --ibtn-r:12px;
+  --display-tt:uppercase; --display-w:800;
+  --font:'DM Sans',system-ui,sans-serif; --display:'Bricolage Grotesque','DM Sans',sans-serif;
+}
+[data-theme="festival"] .ibtn{border:none}
+[data-theme="festival"] .title{letter-spacing:-.02em;line-height:1}
+[data-theme="festival"] .brand{letter-spacing:-.03em;text-transform:none}
+/* Hlavní karta jako žlutá vstupenka */
+[data-theme="festival"] .hero{
+  --card:#F5D90A; --ink:#0D0D10; --ink2:#2A2A22; --muted:#4A4530; --line:rgba(13,13,16,.2); --line2:rgba(13,13,16,.35);
+  --surface:rgba(13,13,16,.08); --coral:#0D0D10; --coral-text:#0D0D10; --accent-hi:#0D0D10; --accent-text:#0D0D10;
+  --accent-soft:rgba(13,13,16,.12); --no-soft:rgba(255,92,138,.35);
+  color:var(--ink); border:none;
+}
+[data-theme="festival"] .hero .title{font-size:30px}
+[data-theme="festival"] .hero .datetile{background:#0D0D10;border:none}
+[data-theme="festival"] .hero .datetile .m{color:#FF5C8A}
+[data-theme="festival"] .hero .datetile .d{color:#F5D90A}
+[data-theme="festival"] .hero .face{border-color:#F5D90A}
+[data-theme="festival"] .datetile.sm .d{color:var(--coral)}
+
+/* Dlaždice místo řádků: dvě vedle sebe, velké číslo dne */
+[data-theme="festival"] .rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+[data-theme="festival"] .rows .row{position:relative;flex-direction:column;align-items:flex-start;gap:6px;margin:0;min-height:150px;padding:14px;border:none;border-radius:20px}
+[data-theme="festival"] .rows .row .datetile.sm{order:-1;width:auto;height:auto;background:transparent!important;display:block}
+[data-theme="festival"] .rows .row .datetile .m{display:none}
+[data-theme="festival"] .rows .row .datetile .d{font-size:44px;font-weight:800;line-height:.9;letter-spacing:-.03em;color:var(--coral)}
+[data-theme="festival"] .rows .row:nth-child(even) .datetile .d{color:var(--accent)}
+[data-theme="festival"] .rows .row.past .datetile .d{color:var(--muted)}
+[data-theme="festival"] .rows .row .wd{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+[data-theme="festival"] .rows .row .tx{width:100%}
+[data-theme="festival"] .rows .row .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;font-size:15px;line-height:1.2}
+[data-theme="festival"] .rows .row .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:12px;margin-top:4px}
+[data-theme="festival"] .rows .row .r{position:absolute;top:12px;right:12px;margin:0;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:55%}
+[data-theme="festival"] .rows .row .r .pill{height:22px;font-size:11px;padding:0 8px}
+[data-theme="festival"] .rows .row .r .pill.go{background:var(--coral);border-color:var(--coral);color:#0D0D10;transform:rotate(4deg)}
+[data-theme="festival"] .section-h{font-family:var(--display);font-weight:800;font-size:18px;text-transform:uppercase;color:var(--ink);padding-top:20px}
+
+/* ---------- Hlídka: světlá, námořnická modrá, oranžová, úzké velké písmo ---------- */
+:root[data-theme="hlidka"]{
+  --bg:#EEF1F5; --card:#FFFFFF; --surface:#E6EBF3; --bar:#FFFFFF; --line:#DCE2EA; --line2:#C5CEDB;
+  --ink:#14213D; --ink2:#3A4660; --muted:#5A6678;
+  --accent:#1D2B4F; --accent-hi:#1D2B4F; --accent-text:#1D2B4F; --accent-soft:#E6EBF3;
+  --coral:#C84E0F; --coral-text:#C84E0F; --danger:#C84E0F; --no-soft:#FBE9DF;
+  --on-accent:#FFFFFF; --shadow:rgba(20,33,61,.2); --scrim:rgba(20,33,61,.45);
+  --cover:#1D2B4F; --cover-ink:#C9D2E6; --cover-btn:rgba(255,255,255,.16);
+  --warn-bg:#FFF3C4; --warn-line:#C9A227; --warn-ink:#6B5300;
+  --day-out:#A9B3C2; --check:#1D2B4F; --toast-bg:#14213D; --toast-ink:#FFFFFF;
+  --gbtn-bg:#FFFFFF; --gbtn-ink:#14213D; --gbtn-line:#C5CEDB; --statusbar:#1D2B4F;
+  --r:10px; --r-lg:12px; --r-xl:14px; --btn-r:10px; --ibtn-r:10px;
+  --display-tt:uppercase; --display-w:800;
+  --font:'Barlow',system-ui,sans-serif; --display:'Barlow Condensed','Barlow',sans-serif;
+}
+/* Tmavě modrý pruh nahoře */
+[data-theme="hlidka"] .screen{padding-top:0}
+[data-theme="hlidka"] .top{
+  background:#1D2B4F; padding-top:calc(20px + var(--safe-top)); padding-bottom:16px; margin-bottom:12px;
+  --ink:#FFFFFF; --muted:#C9D2E6; --surface:rgba(255,255,255,.12); --line:transparent; color:#FFFFFF;
+}
+[data-theme="hlidka"] .top .ibtn.on{background:#FFFFFF;color:#1D2B4F}
+[data-theme="hlidka"] .cover{padding-top:var(--safe-top)}
+[data-theme="hlidka"] .cover .ibtn{color:#FFFFFF}
+[data-theme="hlidka"] .sheethead{padding-top:calc(14px + var(--safe-top))}
+[data-theme="hlidka"] .screen[style*="padding-top"]{padding-top:0!important}
+[data-theme="hlidka"] .seg button{font-family:var(--display);text-transform:uppercase;letter-spacing:.04em;font-size:15px}
+[data-theme="hlidka"] .hero{border:2px solid var(--accent);box-shadow:0 0 0 4px rgba(29,43,79,.12)}
+[data-theme="hlidka"] .btn{font-family:var(--display);text-transform:uppercase;letter-spacing:.03em;font-size:16px}
+[data-theme="hlidka"] .eyebrow{background:var(--coral);color:#fff;display:inline-block;align-self:flex-start;padding:3px 10px;border-radius:100px}
+[data-theme="hlidka"] .eyebrow.live{background:var(--accent)}
+[data-theme="hlidka"] .tabbar a.on{color:var(--coral)}
+
+/* ---------- Výběr stylu v Partě ---------- */
+.themes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.theme-opt{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:var(--r-lg);border:1.5px solid var(--line);background:var(--card);color:var(--ink);text-align:left;font-weight:700;font-size:14px}
+.theme-opt.on{border-color:var(--accent-hi);box-shadow:0 0 0 3px var(--accent-soft)}
+.theme-opt .sw{height:64px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;padding:8px;font-size:15px;overflow:hidden}
+.theme-opt .sw i{display:block;height:8px;border-radius:100px}
+.theme-opt small{font-weight:500;color:var(--muted);font-size:12px}

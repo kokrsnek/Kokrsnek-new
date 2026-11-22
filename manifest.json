@@ -1,0 +1,15 @@
+{
+  "name": "KoKrŠNeK",
+  "short_name": "KoKrŠNeK",
+  "description": "Akce, chat a check-iny party KoKrŠNeK",
+  "lang": "cs",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1C1B20",
+  "theme_color": "#1C1B20",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

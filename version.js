@@ -1,0 +1,21 @@
+// Číslo verze a seznam změn. Při každé nové verzi:
+//  1) přidej nový záznam NA ZAČÁTEK seznamu CHANGELOG,
+//  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
+export const CHANGELOG = [
+  {
+    version: '1.00',
+    date: '22. 11. 2026',
+    items: [
+      'První verze nové aplikace KoKrŠNeK — zkušební provoz vedle staré aplikace.',
+      'Přihlášení přes Google nebo e-mail, nový účet schvaluje správce. Volba jména „Kdo jsi?“ připojí docházku, komentáře a věci ze staré aplikace.',
+      'Akce: Nadcházející a Proběhlé, hledání, velká karta nejbližší akce s odpočtem a Jdu / Nejdu.',
+      'Kalendář: měsíční přehled přes ikonu v hlavičce, zeleně dny, kdy jdeš.',
+      'Detail akce: termín, přidání do kalendáře v telefonu, navigace, album, soubory, kdo jde, co přinést a komentáře.',
+      'Nová akce: ve zkušebním provozu jako testovací akce, kterou vidí jen nová aplikace.',
+      'Parta: schvalování členů, správci, import akcí z Google Kalendáře.',
+      'Vzhled: čtyři styly — Původní, Chata, Festival (s dlaždicemi) a Hlídka.'
+    ]
+  }
+];
+
+export const VERSION = CHANGELOG[0].version;

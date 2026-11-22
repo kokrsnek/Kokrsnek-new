@@ -1,0 +1,84 @@
+// Společné prvky rozhraní: toast, dialogy, lišta dole, avatar.
+import { esc, icon, initial, avatarColor } from './util.js';
+
+let toastTimer = null;
+export function toast(text, ms = 2600) {
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), ms);
+}
+
+// Spodní dialog s tlačítky. buttons: [{ label, value, kind: 'primary'|'yes'|'no'|'danger'|'' }]
+// Vrací hodnotu stisknutého tlačítka, při zavření mimo dialog null.
+export function choose({ title, text = '', buttons }) {
+  return new Promise((resolve) => {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="grab"></div>
+      <h3>${esc(title)}</h3>
+      ${text ? `<p>${esc(text)}</p>` : ''}
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${buttons.map((b, i) => `<button class="btn block big ${b.kind || ''}" data-i="${i}">${esc(b.label)}</button>`).join('')}
+      </div>
+    </div>`;
+    const done = (v) => { bd.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') done(null); };
+    bd.addEventListener('click', (e) => {
+      if (e.target === bd) return done(null);
+      const b = e.target.closest('[data-i]');
+      if (b) done(buttons[+b.dataset.i].value);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bd);
+    bd.querySelector('button')?.focus();
+  });
+}
+
+// Ano / Ne / Zrušit — stejně jako u Dojdu/Nedojdu ve staré aplikaci.
+export async function confirmYesNo(question) {
+  const v = await choose({
+    title: question,
+    buttons: [
+      { label: 'Ano', value: 'yes', kind: 'primary' },
+      { label: 'Ne', value: 'no' },
+      { label: 'Zrušit', value: 'cancel', kind: 'dashed' }
+    ]
+  });
+  return v || 'cancel';
+}
+
+export async function confirmDanger(title, text, label = 'Smazat') {
+  const v = await choose({ title, text, buttons: [{ label, value: true, kind: 'no' }, { label: 'Zrušit', value: false }] });
+  return v === true;
+}
+
+export function avatar(name, size = 34) {
+  const fs = Math.round(size * 0.4);
+  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${fs}px;background:${avatarColor(name)}">${esc(initial(name))}</span>`;
+}
+
+export function faces(names, max = 5) {
+  const shown = names.slice(0, max);
+  const more = names.length - shown.length;
+  return `<div class="faces">${shown.map((n) => `<span class="face" title="${esc(n)}" style="background:${avatarColor(n)}">${esc(initial(n))}</span>`).join('')}${more > 0 ? `<span class="face" style="background:var(--surface);color:var(--ink2)">+${more}</span>` : ''}</div>`;
+}
+
+const TABS = [
+  { id: 'akce', label: 'Akce', icon: 'calendar', href: '#/akce' },
+  { id: 'kde', label: 'Kde jsi?', icon: 'pin', href: '#/kde' },
+  { id: 'chat', label: 'Chat', icon: 'chat', href: '#/chat' },
+  { id: 'parta', label: 'Parta', icon: 'people', href: '#/parta' }
+];
+export function tabbar(active) {
+  return `<div class="tabbar"><nav aria-label="Hlavní menu">${TABS.map((t) =>
+    `<a href="${t.href}" class="${t.id === active ? 'on' : ''}" ${t.id === active ? 'aria-current="page"' : ''}>${icon(t.icon, 24, 2)}<span>${t.label}</span></a>`
+  ).join('')}</nav></div>`;
+}
+
+export const spinner = () => '<div class="spin" aria-label="Načítám"></div>';

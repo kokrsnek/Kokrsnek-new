@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- stará aplikace (beze změny) ----------
+    // Po zadání hesla party dostane anonymní identita razítko partyMember:true.
+    function isPartyMember() {
+      return request.auth != null && request.auth.token.partyMember == true;
+    }
+
+    // ---------- nová aplikace ----------
+    // E-mail správce — stejný jako v config.js (ADMIN_EMAILS), malými písmeny.
+    function isAdminEmail() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['l.juracka@gmail.com'];
+    }
+
+    function memberPath() {
+      return /databases/$(database)/documents/v2_members/$(request.auth.uid);
+    }
+
+    // Schválený člen nové aplikace (přihlášený přes Google nebo e-mail).
+    // Anonymní identity staré aplikace se tu odfiltrují hned na začátku,
+    // aby kvůli nim Firestore zbytečně nečetl v2_members.
+    function isV2Approved() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && exists(memberPath())
+        && get(memberPath()).data.status == 'approved';
+    }
+
+    function isV2Admin() {
+      return isV2Approved() && get(memberPath()).data.role == 'admin';
+    }
+
+    // Všechno: stará aplikace čte i zapisuje, nová (zkušební provoz) jen čte.
+    match /{document=**} {
+      allow read, write: if isPartyMember();
+      allow read: if isV2Approved();
+    }
+
+    // Členové nové aplikace.
+    match /v2_members/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isV2Approved());
+
+      // Žádost o přijetí (pending), nebo rovnou správce, pokud e-mail sedí.
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 30
+        && (
+          (request.resource.data.status == 'pending' && request.resource.data.role == 'member')
+          || (isAdminEmail() && request.resource.data.status == 'approved' && request.resource.data.role == 'admin')
+        );
+
+      // Správce schvaluje a mění role; každý si smí změnit jen svoje jméno.
+      allow update: if isV2Admin()
+        || (request.auth != null && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 30);
+
+      allow delete: if isV2Admin() || (request.auth != null && request.auth.uid == uid);
+    }
+
+    // Akce nové aplikace. Import z kalendáře smí jen správce; testovací akce
+    // smí zakládat každý schválený člen a upravovat ten, kdo je založil.
+    match /v2_akce/{id} {
+      allow read: if isV2Approved();
+      allow create: if isV2Admin()
+        || (isV2Approved() && request.resource.data.isTest == true
+            && request.resource.data.createdByUid == request.auth.uid);
+      allow update: if isV2Admin()
+        || (isV2Approved() && resource.data.isTest == true
+            && resource.data.createdByUid == request.auth.uid
+            && request.resource.data.isTest == true);
+      allow delete: if isV2Admin()
+        || (isV2Approved() && resource.data.isTest == true
+            && resource.data.createdByUid == request.auth.uid);
+
+      // Docházka, komentáře a věci u testovacích akcí.
+      match /{sub=**} {
+        allow read: if isV2Approved();
+        allow write: if isV2Approved()
+          && get(/databases/$(database)/documents/v2_akce/$(id)).data.isTest == true;
+      }
+    }
+  }
+}
