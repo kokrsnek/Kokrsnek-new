@@ -198,41 +198,77 @@ export function render(root, { id }) {
   }
 
   // Swipe mezi akcemi: doleva = pozdější akce, doprava = dřívější (jako velká karta).
+  // Během tahu z druhé strany přijíždí náhled sousední akce.
   function bindSwipe() {
     const scr = root.querySelector('.screen');
-    let x0 = 0, y0 = 0, dx = 0, track = null, skip = false;
+    const arcD = (x) => `translateX(${x}px) rotate(${x / 90}deg)`;
+    let x0 = 0, y0 = 0, dx = 0, track = null, skip = false, ghost = null, gDir = 0, done = false;
+    const W = () => root.getBoundingClientRect().width + 24;
+    const neighbourEv = (dir) => {
+      const list = events.list;
+      const i = list.findIndex((x) => x.id === ev.id);
+      return list[i + dir] || null;
+    };
+    function ensureGhost(dir) {
+      if (ghost && gDir === dir) return ghost;
+      if (ghost) ghost.remove();
+      ghost = null; gDir = dir;
+      const t = neighbourEv(dir);
+      if (!t) return null;
+      const r = root.getBoundingClientRect();
+      const g = document.createElement('div');
+      g.className = 'det-ghost';
+      g.style.left = r.left + 'px';
+      g.style.width = r.width + 'px';
+      const past = isPast(t);
+      g.innerHTML = `<div class="cover">${icon(t.photoAlbum ? 'photo' : 'calendar', 44, 1.5)}</div>
+        <div style="padding:18px 20px 0">
+          <div class="eyebrow ${past ? '' : 'live'}" style="color:${past ? 'var(--muted)' : ''}">${past ? 'Proběhlo · ' : ''}${esc(relDays(t.start))}</div>
+          <h1 class="title" style="margin:6px 0 14px">${esc(t.title)}</h1>
+          <div class="info"><div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(t.start))}${t.start.getFullYear() !== new Date().getFullYear() ? ' ' + t.start.getFullYear() : ''}</b><span>${esc(whenLine(t))}</span></div></div>
+          ${t.place ? `<div>${icon('pin')}<div class="k"><b>${esc(t.place)}</b></div></div>` : ''}</div>
+        </div>`;
+      root.appendChild(g);
+      ghost = g;
+      return g;
+    }
+    const place = (x, ms) => {
+      const tr = ms ? `transform ${ms}ms ease-out, opacity ${ms}ms` : 'none';
+      scr.style.transition = tr;
+      scr.style.transform = arcD(x);
+      if (ghost) { ghost.style.transition = tr; ghost.style.transform = arcD(x + gDir * W()); }
+    };
     scr.addEventListener('touchstart', (e) => {
-      skip = !!e.target.closest('input, textarea, button, .sheet');
+      if (done) return;
+      skip = !!e.target.closest('input, textarea, button, .sheet, .mapbox');
       const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null;
-      scr.style.transition = 'none';
     }, { passive: true });
     scr.addEventListener('touchmove', (e) => {
-      if (skip) return;
+      if (skip || done) return;
       const t = e.touches[0];
       const ddx = t.clientX - x0, ddy = t.clientY - y0;
       if (track === null && (Math.abs(ddx) > 10 || Math.abs(ddy) > 10)) track = Math.abs(ddx) > Math.abs(ddy) * 1.3;
       if (!track) return;
       dx = ddx;
-      scr.style.transform = `translateX(${dx}px) rotate(${dx / 90}deg)`;
-      scr.style.opacity = String(Math.max(0.5, 1 - Math.abs(dx) / 600));
+      const g = ensureGhost(dx < 0 ? 1 : -1);
+      place(g ? dx : dx * 0.35, 0);
     }, { passive: true });
     scr.addEventListener('touchend', () => {
-      if (skip || !track) return;
+      if (skip || !track || done) return;
       const dir = dx < 0 ? 1 : -1;
-      const list = events.list;
-      const i = list.findIndex((x) => x.id === ev.id);
-      const target = list[i + dir];
-      if (Math.abs(dx) > 80 && target) {
-        scr.style.transition = 'transform .22s ease-in, opacity .22s';
-        scr.style.transform = `translateX(${-dir * 110}%) rotate(${-dir * 8}deg)`;
-        scr.style.opacity = '0';
-        enterFrom = dir;
-        setTimeout(() => location.replace('#/akce/' + encodeURIComponent(target.id)), 200);
+      const target = neighbourEv(dir);
+      if (Math.abs(dx) > 80 && target && ghost) {
+        done = true;
+        place(-dir * W(), 230);
+        ghost.style.transition = 'transform 230ms ease-out';
+        ghost.style.transform = arcD(0);
+        // Nová stránka se vykreslí přesně tam, kde stojí náhled.
+        setTimeout(() => location.replace('#/akce/' + encodeURIComponent(target.id)), 240);
         return;
       }
       if (Math.abs(dx) > 80 && !target) toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.');
-      scr.style.transition = 'transform .2s ease-out, opacity .2s';
-      scr.style.transform = ''; scr.style.opacity = '';
+      place(0, 200);
+      setTimeout(() => { if (ghost && !done) { ghost.remove(); ghost = null; gDir = 0; } }, 220);
     });
   }
 

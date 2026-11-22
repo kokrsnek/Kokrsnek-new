@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.12',
+    date: '22. 11. 2026',
+    items: [
+      'Otevřená akce: při swipu z druhé strany rovnou přijíždí náhled sousední akce (název, datum, místo) a po puštění se otevře.',
+      'Mapa v detailu umí podklad Mapy.com (turistická mapa) — stačí doplnit API klíč do config.js. Bez klíče zůstává OpenStreetMap.',
+      'Návrat na nejbližší akci (tlačítko Akce nebo „nejbližší“) je jeden plynulý pohyb — karty mezi tím projedou po oblouku najednou, bez trhání a skoků. U dlouhého skoku se ukážou jen první a poslední karty.'
+    ]
+  },
+  {
     version: '1.11',
     date: '22. 11. 2026',
     items: [

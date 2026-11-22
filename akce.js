@@ -13,7 +13,6 @@ export function render(root, { tab }) {
   let heroAtt = null, heroUnsub = null, heroId = null;
   let shift = 0;            // posun velké karty: 0 = nejbližší akce, -1 = předchozí, +1 = další
   let enterDir = '';         // směr animace po swipu
-  let homing = false;
   let animating = false;     // přechod mezi kartami právě běží        // právě probíhá návrat na nejbližší (karta po kartě)
   const loading = new Set();
 
@@ -282,18 +281,40 @@ export function render(root, { tab }) {
       ghost.style.transform = arc(0);
       setTimeout(() => { shift += steps; enterDir = ''; animating = false; draw(); }, ms + 10);
     }
-    // Návrat na nejbližší akci se stejnou animací (tlačítko „nejbližší“, klepnutí na Akce).
-    // Karta po kartě: každá akce mezi aktuální a nejbližší se krátce mihne.
+    // Návrat na nejbližší akci jedním plynulým pohybem: všechny karty mezi
+    // aktuální a nejbližší stojí vedle sebe na oblouku a celý pás se protočí
+    // najednou (bez překreslování mezi kroky). U dlouhého skoku se ukážou jen
+    // první dvě a poslední tři karty.
     el._home = () => {
-      if (shift === 0) { homing = false; return false; }
-      homing = true;
-      finish(shift > 0 ? -1 : 1, shift > 0 ? -1 : 1, true);
+      if (shift === 0 || busy || animating) return false;
+      busy = true; animating = true;
+      if (ghost) { ghost.remove(); ghost = null; ghostDir = 0; }
+      const d = shift > 0 ? -1 : 1;
+      const n = Math.abs(shift);
+      const ks = n <= 6 ? Array.from({ length: n }, (_, i) => i + 1) : [1, 2, n - 2, n - 1, n];
+      const m = ks.length, w = W();
+      const boxes = ks.map((k, i) => {
+        const nb = neighbour(d * k);
+        const box = document.createElement('div');
+        box.className = 'hero-ghost';
+        box.innerHTML = nb ? heroHtml(nb.ev, cachedAttendance(nb.ev.id), nb.sh) : '';
+        box.style.transition = 'none';
+        box.style.transform = arc((i + 1) * d * w);
+        wrap.appendChild(box);
+        return { box, p: i + 1 };
+      });
+      el.style.transition = 'none';
+      void wrap.offsetWidth;
+      const T = Math.min(320 + 120 * m, 1000);
+      const ease = `transform ${T}ms cubic-bezier(.45,0,.2,1)`;
+      el.style.transition = ease;
+      el.style.transform = arc(-d * m * w);
+      boxes.forEach(({ box, p }) => { box.style.transition = ease; box.style.transform = arc((p - m) * d * w); });
+      setTimeout(() => { shift = 0; animating = false; enterDir = ''; draw(); }, T + 20);
       return true;
     };
-    if (homing) setTimeout(() => { if (!el._home()) homing = false; }, 0);
 
     el.addEventListener('touchstart', (e) => {
-      homing = false;
       if (busy) return;
       const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null; swiped = false;
     }, { passive: true });

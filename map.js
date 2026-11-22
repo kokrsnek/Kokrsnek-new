@@ -2,6 +2,7 @@
 // Souřadnice: GPS v textu / známé místo party, jinak dohledání adresy
 // (Nominatim) — výsledek se pamatuje v zařízení, ať se neptáme pořád dokola.
 import { placeCoords, esc, icon } from './util.js';
+import { MAPY_API_KEY } from './config.js';
 
 let leaflet = null;
 function loadLeaflet() {
@@ -59,14 +60,30 @@ export async function showMap(box, place, href) {
   if (!box.isConnected) return false;
   // Název místa bez GPS a odkazů (ty jsou na mapě vidět i tak).
   const label = place.replace(/https?:\/\/\S+/g, '').replace(/-?\d{1,3}\.\d+\s*[NSns]?[,\s]+-?\d{1,3}\.\d+\s*[EWew]?/g, '').replace(/\s{2,}/g, ' ').replace(/^[\s,·-]+|[\s,·-]+$/g, '') || 'Místo akce';
-  box.innerHTML = `<a class="mapbox" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${esc(label)} — otevřít v mapách"><div class="map"></div><span class="mapname">${icon('pin', 15, 2.2)}<span>${esc(label)}</span></span><span class="mapbtn">Navigovat</span></a>`;
+  const mapy = !!MAPY_API_KEY;
+  // Celá plocha mapy vede na navigaci; logo Mapy.com a copyright jsou samostatné odkazy (podmínka Mapy.com).
+  box.innerHTML = `<div class="mapbox">
+    <div class="map"></div>
+    <a class="mapcover" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${esc(label)} — otevřít v mapách"></a>
+    <span class="mapname">${icon('pin', 15, 2.2)}<span>${esc(label)}</span></span>
+    <a class="mapbtn" href="${esc(href)}" target="_blank" rel="noopener">Navigovat</a>
+    ${mapy
+      ? `<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener" aria-label="Mapy.com"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a>
+         <a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>`
+      : '<span class="mapcopy">© OpenStreetMap</span>'}
+  </div>`;
   const el = box.querySelector('.map');
   const map = L.map(el, {
-    center: [c.lat, c.lng], zoom: 14, zoomControl: false, attributionControl: true,
+    center: [c.lat, c.lng], zoom: 14, zoomControl: false, attributionControl: false,
     dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false
   });
-  map.attributionControl.setPrefix('');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
+  if (mapy) {
+    // Turistická mapa Mapy.com (retina dlaždice na displejích s vyšším rozlišením).
+    const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
+    L.tileLayer(`https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}`, { maxZoom: 19, minZoom: 0, tileSize: 256 }).addTo(map);
+  } else {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+  }
   L.marker([c.lat, c.lng], {
     icon: L.divIcon({ className: 'mappin', html: '<svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 43s15-14.6 15-26A15 15 0 0 0 2 17c0 11.4 15 26 15 26z" fill="#E2664F" stroke="#fff" stroke-width="2.5"/><circle cx="17" cy="17" r="5.5" fill="#fff"/></svg>', iconSize: [34, 44], iconAnchor: [17, 43] })
   }).addTo(map);
