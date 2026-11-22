@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.25',
+    date: '22. 11. 2026',
+    items: [
+      'Chat na iPhonu: oprava třesení při posouvání konverzace (oprava výšky se přepínala dokola). Roztažení na celý displej teď funguje stejně jako ve Službách.'
+    ]
+  },
+  {
     version: '1.24',
     date: '22. 11. 2026',
     items: [

@@ -97,6 +97,8 @@ export function renderList(root) {
 }
 
 // ---------- konverzace ----------
+let tallFixOn = false;
+
 export function renderThread(root, { id }) {
   const me = myName();
   const group = id === PARTY_THREAD || id === TEST_THREAD;
@@ -124,29 +126,30 @@ export function renderThread(root, { id }) {
   // Obrazovka chatu přesně na výšku viditelné plochy (iPhone na ploše jinak
   // nechává dole pruh; s klávesnicí se zmenší, aby pole zprávy zůstalo vidět).
   const scr = root.querySelector('.chatscreen');
+  // Výška chatu na iPhonu — stejný postup jako v aplikaci Služby:
+  // 1) iPhone na ploše dá stránce menší výšku než displej (dole zůstane pruh).
+  //    Jakmile se to jednou zjistí, stránka se po dobu chatu roztáhne na celý
+  //    displej a oprava už zůstane zapnutá (po roztažení iOS hlásí plnou výšku,
+  //    takže by se jinak přepínala dokola a obrazovka by se třásla).
+  // 2) Při vysunuté klávesnici se chat drží přesně viditelné plochy nad ní.
+  let vvBase = 0, wasKb = false;
   const fit = () => {
     const vv = window.visualViewport;
     const h = vv ? vv.height : window.innerHeight;
-    // Bez klávesnice sahá chat přes celý displej (top:0 + bottom:0 v CSS),
-    // výška z JS se použije jen při otevřené klávesnici.
-    const kb = !!vv && h < window.innerHeight - 120;
-    scr.classList.toggle('kb', kb);
-    // iPhone na ploše: iOS dá stránce menší výšku než má displej a dole
-    // zůstane prázdný pruh. Chat se proto natáhne až k fyzické dolní hraně
-    // (stejná oprava jako v aplikaci Služby).
+    if (h > vvBase) vvBase = h;
+    const kb = !!vv && vvBase - h > 80;
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
     const extra = Math.round(screen.height - window.innerHeight);
-    const tall = !kb && ios && standalone && screen.height > screen.width && extra > 20 && extra < 120;
-    // Samotné roztažení nestačí, iOS pod původní výškou stránky nic nevykreslí.
-    // Proto se (jen po dobu otevřeného chatu) roztáhne i celá stránka, jako ve Službách.
+    if (!tallFixOn && !kb && ios && standalone && screen.height > screen.width && window.innerHeight > window.innerWidth && extra > 20 && extra < 120) tallFixOn = true;
     const de = document.documentElement;
-    de.classList.toggle('tall-fix', tall);
-    if (tall) de.style.setProperty('--app-h', screen.height + 'px'); else de.style.removeProperty('--app-h');
-    scr.style.bottom = '';
+    de.classList.toggle('tall-fix', tallFixOn);
+    if (tallFixOn) de.style.setProperty('--app-h', screen.height + 'px');
+    scr.classList.toggle('kb', kb);
     scr.style.setProperty('--chat-h', Math.round(h) + 'px');
-    scr.style.transform = kb && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
-    if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
+    scr.style.top = kb && vv.offsetTop ? Math.round(vv.offsetTop) + 'px' : '';
+    if (kb && !wasKb && box) box.scrollTop = box.scrollHeight;
+    wasKb = kb;
   };
   fit();
   // iOS výšku někdy upraví až chvíli po otevření, bez události.
