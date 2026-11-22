@@ -448,3 +448,25 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 .wxfx .snow{border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.6);animation-name:wxsnow}
 @keyframes wxrain{to{transform:translate(var(--dx),110vh) rotate(var(--rot))}}
 @keyframes wxsnow{to{transform:translate(var(--dx),110vh)}}
+
+/* Profilové fotky */
+.av.img,.face.img{background-size:cover;background-position:center;color:transparent!important}
+.avbtn{position:relative;flex:0 0 auto;background:none;border:none;padding:0;border-radius:50%;cursor:pointer}
+.avbtn .av{width:52px;height:52px}
+.avcam{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+/* Emoji */
+.kemo{display:inline-flex;vertical-align:-0.2em;flex:0 0 auto}
+.kemo svg{display:block}
+.semo{line-height:1}
+.react{display:inline-flex;align-items:center;gap:2px;padding:2px 7px 2px 4px}
+.reacts{flex-wrap:wrap}
+.com .reacts{margin:4px 0 0 4px}
+.ciem>span{display:inline-flex;align-items:center;gap:1px}
+.ciem small{font-size:11px;color:var(--muted);font-weight:700}
+.emotabs{display:flex;gap:6px;margin-bottom:12px}
+.emotabs button{font:inherit;font-size:13px;font-weight:700;padding:6px 14px;border-radius:999px;border:none;background:var(--surface);color:var(--muted)}
+.emotabs button.on{background:var(--accent);color:var(--on-accent)}
+.emogrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;justify-items:center}
+.emogrid button{width:54px;height:54px;border-radius:50%;border:2px solid transparent;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:0}
+.emogrid button.on{border-color:var(--accent-hi);background:var(--accent-soft)}
+.emogrid button:active{transform:scale(.92)}

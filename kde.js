@@ -1,6 +1,7 @@
 // Kde jsi?: check-iny party (Feed a Mapa) a nový check-in.
 // Skutečné check-iny (placeCheckins) se čtou. Ve zkušebním provozu se nové
 // check-iny, reakce a komentáře zapisují jen do v2_checkins (test).
+import { emo, emojiSheet } from './emoji.js';
 import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
 import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
@@ -9,7 +10,6 @@ import { db, collection, doc, query, where, orderBy, limit, onSnapshot, addDoc, 
 import { shrinkPhoto } from './store.js';
 import { loadLeaflet } from './map.js';
 
-const EMOJIS = ['👍', '🍺', '❤️', '😂', '🔥'];
 const isTestDoc = (c) => c._col === 'v2_checkins';
 const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE || CHAT_LIVE;
 const LIVE = CHAT_LIVE || !TEST_MODE;
@@ -88,8 +88,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
       <div class="ciact">
         ${!mine && today ? `<button class="pill ${(c.coming || []).includes(me) ? 'go' : ''}" data-act="coming" ${w ? '' : 'disabled'}>Přijdu taky</button>
           <button class="pill ${(c.near || []).includes(me) ? 'go' : ''}" data-act="near" ${w ? '' : 'disabled'}>Jsem poblíž</button>` : ''}
-        <span class="ciem">${Object.entries(emCount).map(([e, n]) => `<span>${e}${n > 1 ? n : ''}</span>`).join('')}</span>
-        ${w ? `<button class="pill" data-act="emoji" aria-label="Reakce">🙂</button>` : ''}
+        <span class="ciem">${Object.entries(emCount).sort((a, b) => b[1] - a[1]).map(([e, n]) => `<span>${emo(e, 18)}${n > 1 ? `<small>${n}</small>` : ''}</span>`).join('')}</span>
+        ${w ? `<button class="pill" data-act="emoji" aria-label="Reakce">${(c.emojis || {})[me] ? emo(c.emojis[me], 16) : '🙂'}</button>` : ''}
         <button class="pill" data-act="com">${icon('chat', 14)} ${c.commentCount || (cs ? cs.length : 0) || ''}</button>
         ${mine && w ? `<button class="pill" data-act="del" aria-label="Smazat">${icon('trash', 14)}</button>` : ''}
       </div>
@@ -151,11 +151,13 @@ export function render(root, { tab = 'feed', openNew = false }) {
         }
         await updateDoc(ref, upd);
       } else if (act === 'emoji') {
-        emojiPick(async (em) => {
+        const cur = (c.emojis || {})[me];
+        const r = await emojiSheet({ selected: cur ? [cur] : [], title: 'Reakce na check-in' });
+        if (r && r.emoji) {
           const e2 = { ...(c.emojis || {}) };
-          if (e2[me] === em) delete e2[me]; else e2[me] = em;
+          if (e2[me] === r.emoji) delete e2[me]; else e2[me] = r.emoji;
           await updateDoc(ref, { emojis: e2 });
-        });
+        }
       } else if (act === 'del') {
         if (await confirmDanger('Smazat check-in?', c.place || '')) await deleteDoc(ref);
       }
@@ -176,18 +178,6 @@ export function render(root, { tab = 'feed', openNew = false }) {
       await b.commit();
     } catch (x) { f.t.value = text; toast('Komentář se nepodařilo odeslat.'); }
   });
-
-  function emojiPick(cb) {
-    const bd = document.createElement('div');
-    bd.className = 'backdrop';
-    bd.innerHTML = `<div class="sheet"><div class="grab"></div><div class="emojirow">${EMOJIS.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div></div>`;
-    bd.addEventListener('click', (e) => {
-      if (e.target === bd) return bd.remove();
-      const b = e.target.closest('[data-e]');
-      if (b) { bd.remove(); cb(b.dataset.e).catch(() => toast('Nepovedlo se.')); }
-    });
-    document.body.appendChild(bd);
-  }
 
   // ---------- Mapa ----------
   async function drawMap() {

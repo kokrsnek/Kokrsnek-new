@@ -3,6 +3,7 @@ import { initAuth, onSession, session, isApproved } from './auth.js';
 import { stopEvents } from './store.js';
 import { spinner, installSheetGestures } from './ui.js';
 import * as login from './login.js';
+let avatarsOn = false;
 import * as akce from './akce.js';
 import * as kalendar from './kalendar.js';
 import * as detail from './detail.js';
@@ -13,6 +14,8 @@ import * as kde from './kde.js';
 import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
 import { startWeatherEffect } from './weather.js';
+import { watchAvatars } from './store.js';
+import { setAvatarImages } from './ui.js';
 
 const root = document.getElementById('app');
 let cleanup = null;
@@ -49,6 +52,7 @@ function route(force = false) {
   if (!isApproved()) return lastKey !== 'pending' ? mount('pending', () => login.renderPending(root)) : null;
   startPresence();
   startWeatherEffect();
+  if (!avatarsOn) { avatarsOn = true; watchAvatars(setAvatarImages); }
 
   const path = (location.hash || '').replace(/^#/, '') || '/akce';
   for (const [re, fn] of ROUTES) {

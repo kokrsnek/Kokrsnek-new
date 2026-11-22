@@ -58,15 +58,31 @@ export async function confirmDanger(title, text, label = 'Smazat') {
   return v === true;
 }
 
+// Profilové fotky (v2_avatars/{jméno}) — když ji člověk má, ukáže se místo písmena.
+const avatarImgs = new Map();
+const avStyle = (n) => { const img = avatarImgs.get(n); return img ? `;background-image:url('${img}')` : ''; };
+export function setAvatarImages(map) {
+  avatarImgs.clear();
+  Object.entries(map).forEach(([n, img]) => { if (img) avatarImgs.set(n, img); });
+  // Doplnit / odebrat fotky u už vykreslených avatarů.
+  document.querySelectorAll('[data-avn]').forEach((el) => {
+    const img = avatarImgs.get(el.dataset.avn);
+    el.classList.toggle('img', !!img);
+    el.style.backgroundImage = img ? `url('${img}')` : '';
+  });
+}
+export const avatarImage = (name) => avatarImgs.get(name) || null;
+
 export function avatar(name, size = 34) {
   const fs = Math.round(size * 0.4);
-  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${fs}px;background:${avatarColor(name)}">${esc(initial(name))}</span>`;
+  const has = avatarImgs.has(name);
+  return `<span class="av${has ? ' img' : ''}" data-avn="${esc(name)}" style="width:${size}px;height:${size}px;font-size:${fs}px;background-color:${avatarColor(name)}${avStyle(name)}">${esc(initial(name))}</span>`;
 }
 
 export function faces(names, max = 5) {
   const shown = names.slice(0, max);
   const more = names.length - shown.length;
-  return `<div class="faces">${shown.map((n) => `<span class="face" title="${esc(n)}" style="background:${avatarColor(n)}">${esc(initial(n))}</span>`).join('')}${more > 0 ? `<span class="face" style="background:var(--surface);color:var(--ink2)">+${more}</span>` : ''}</div>`;
+  return `<div class="faces">${shown.map((n) => `<span class="face${avatarImgs.has(n) ? ' img' : ''}" data-avn="${esc(n)}" title="${esc(n)}" style="background-color:${avatarColor(n)}${avStyle(n)}">${esc(initial(n))}</span>`).join('')}${more > 0 ? `<span class="face" style="background:var(--surface);color:var(--ink2)">+${more}</span>` : ''}</div>`;
 }
 
 const TABS = [

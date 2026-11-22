@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.30',
+    date: '22. 11. 2026',
+    items: [
+      'Vlastní emoji party (Pivo, Gril, Táborák, Hastrman, šnek KoKrŠNeK…) v záložce „Naše“, běžné emoji v záložce „Běžné“.',
+      'Emoji jdou použít v reakcích v chatu, u check-inů a nově i u komentářů akcí (dlouhé podržení komentáře).',
+      'Profilová fotka: v Partě klepni na své kolečko a vyber fotku. Ukáže se všude místo písmena (chat, komentáře, docházka, check-iny).'
+    ]
+  },
+  {
     version: '1.29',
     date: '22. 11. 2026',
     items: [

@@ -85,6 +85,19 @@ export function paths(ev) {
 }
 export const canWrite = (ev) => !!ev && (ev.isTest || !TEST_MODE);
 
+// ---------- profilové fotky (v2_avatars/{jméno}) ----------
+export function watchAvatars(cb) {
+  return onSnapshot(collection(db, 'v2_avatars'), (s) => {
+    const m = {}; s.docs.forEach((d) => { m[d.id] = d.data().img || null; }); cb(m);
+  }, () => {});
+}
+export async function setMyAvatar(img) {
+  const me = myName();
+  if (!me) return;
+  if (img) await setDoc(doc(db, 'v2_avatars', me), { img, at: new Date().toISOString() });
+  else await deleteDoc(doc(db, 'v2_avatars', me));
+}
+
 // ---------- lajky (stejné místo jako stará aplikace: events/{id}/likes/{jméno}) ----------
 // Lajkovat jde i u akcí z kalendáře — stará aplikace na nový lajk pošle partě notifikaci.
 const likeCache = new Map(); // id → [jména]
@@ -183,6 +196,16 @@ export function watchComments(ev, cb) {
 export async function addComment(ev, text) {
   if (!canWrite(ev)) throw new Error('readonly');
   await addDoc(collection(db, ...paths(ev).comments), { user: myName(), text: text.trim(), at: new Date().toISOString(), via: 'v2' });
+}
+// Reakce na komentář (emoji). Jde i u akcí z kalendáře — mění se jen pole reactions.
+export async function reactComment(ev, c, key) {
+  const me = myName();
+  if (!me) return;
+  const cur = { ...(c.reactions || {}) };
+  const l = new Set(cur[key] || []);
+  l.has(me) ? l.delete(me) : l.add(me);
+  if (l.size) cur[key] = [...l]; else delete cur[key];
+  await updateDoc(doc(db, ...paths(ev).comments, c.id), { reactions: cur });
 }
 export async function deleteComment(ev, id) {
   if (!canWrite(ev)) throw new Error('readonly');

@@ -8,10 +8,10 @@ import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
 import { shrinkPhoto } from './store.js';
 import { isOnline, lastSeenText, watchPresence, watchOne } from './presence.js';
+import { emo, sortedReactions, emojiSheet } from './emoji.js';
 
 export const PARTY_THREAD = 'parta-vsichni';
 const TEST_THREAD = 'test';
-const EMOJIS = ['👍', '❤️', '😂', '😮', '😢'];
 
 const norm = (s) => String(s || '').normalize('NFC').trim();
 export const dmThreadId = (a, b) => [norm(a), norm(b)].sort().join('__');
@@ -183,8 +183,8 @@ export function renderThread(root, { id }) {
       const mine = norm(m.from) === norm(me);
       const prev = msgs[i - 1];
       const showName = group && !mine && (!prev || prev.from !== m.from || !sameDay(toDate(prev.at) || d, d));
-      const reacts = EMOJIS.filter((e) => (m.reactions?.[e] || []).length).map((e) =>
-        `<button class="react ${m.reactions[e].includes(me) ? 'on' : ''}" data-react="${e}" data-id="${esc(m.id)}">${e}<span>${m.reactions[e].length}</span></button>`).join('');
+      const reacts = sortedReactions(m.reactions).map(([e, l]) =>
+        `<button class="react ${l.includes(me) ? 'on' : ''}" data-react="${esc(e)}" data-id="${esc(m.id)}">${emo(e, 16)}<span>${l.length}</span></button>`).join('');
       html += `<div class="msg ${mine ? 'mine' : ''}" data-id="${esc(m.id)}">
         ${!mine && group ? (showName ? avatar(m.from || '?', 28) : '<span class="avsp"></span>') : ''}
         <div class="mcol">
@@ -239,31 +239,24 @@ export function renderThread(root, { id }) {
     try { await updateDoc(doc(db, ...threadPath(id), mid), { reactions: cur }); } catch (x) { toast('Nepovedlo se.'); }
   }
 
-  function msgMenu(mid) {
+  async function msgMenu(mid) {
     const m = msgs.find((x) => x.id === mid);
     if (!m) return;
     const mine = norm(m.from) === norm(me);
-    const bd = document.createElement('div');
-    bd.className = 'backdrop';
-    bd.innerHTML = `<div class="sheet"><div class="grab"></div>
-      <div class="emojirow">${EMOJIS.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
-        <button class="btn big block" data-a="reply">Odpovědět</button>
-        ${m.text ? '<button class="btn big block" data-a="copy">Kopírovat text</button>' : ''}
-        ${mine ? '<button class="btn big block no" data-a="del">Smazat zprávu</button>' : ''}
-      </div></div>`;
-    bd.addEventListener('click', async (e) => {
-      if (e.target === bd) return bd.remove();
-      const em = e.target.closest('[data-e]');
-      if (em) { bd.remove(); toggleReact(mid, em.dataset.e); return; }
-      const a = e.target.closest('[data-a]')?.dataset.a;
-      if (!a) return;
-      bd.remove();
+    const selected = sortedReactions(m.reactions).filter(([, l]) => l.includes(me)).map(([e]) => e);
+    const r = await emojiSheet({ selected, actions: [
+      { id: 'reply', label: 'Odpovědět' },
+      ...(m.text ? [{ id: 'copy', label: 'Kopírovat text' }] : []),
+      ...(mine ? [{ id: 'del', label: 'Smazat zprávu', kind: 'no' }] : [])
+    ] });
+    if (!r) return;
+    if (r.emoji) { toggleReact(mid, r.emoji); return; }
+    {
+      const a = r.action;
       if (a === 'reply') { replyTo = { id: m.id, from: m.from, snippet: snippet(m).slice(0, 80) }; drawReply(); root.querySelector('[data-text]')?.focus(); }
       if (a === 'copy') { try { await navigator.clipboard.writeText(m.text); toast('Zkopírováno'); } catch (x) { /* nic */ } }
       if (a === 'del') { try { await deleteDoc(doc(db, ...threadPath(id), mid)); } catch (x) { toast('Nepovedlo se smazat.'); } }
-    });
-    document.body.appendChild(bd);
+    }
   }
 
   function drawReply() {

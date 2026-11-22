@@ -1,8 +1,8 @@
 // Parta: můj účet, schvalování členů, import akcí, odhlášení.
 import { esc, icon, fmtStamp } from './util.js';
-import { tabbar, avatar, toast, choose, confirmDanger, spinner } from './ui.js';
+import { tabbar, avatar, toast, choose, confirmDanger, spinner, avatarImage } from './ui.js';
 import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeMember, changeMyName } from './auth.js';
-import { importCalendar, events, watchEvents } from './store.js';
+import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE } from './config.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { THEMES, currentTheme, applyTheme, preloadAllFonts } from './theme.js';
@@ -16,7 +16,7 @@ export function render(root) {
     <div class="top"><div><div class="h1">Parta</div><div class="sub">${admin ? 'Jsi správce' : 'Člen party'}</div></div></div>
     <div class="scroll">
       <div class="card" style="display:flex;align-items:center;gap:14px">
-        ${avatar(me.name, 48)}
+        <button class="avbtn" data-avatar aria-label="Profilová fotka">${avatar(me.name, 52)}<span class="avcam">${icon('photo', 13, 2.4)}</span></button><input type="file" accept="image/*" data-avfile hidden>
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:17px">${esc(me.name)}</div><div class="sub" style="overflow:hidden;text-overflow:ellipsis">${esc(session.user.email || '')}</div></div>
         <button class="ibtn" data-rename aria-label="Změnit jméno">${icon('edit')}</button>
       </div>
@@ -79,6 +79,30 @@ export function render(root) {
     const v = await choose({ title: 'Odhlásit se?', buttons: [{ label: 'Odhlásit', value: true, kind: 'no' }, { label: 'Zrušit', value: false }] });
     if (v) logout();
   };
+  // Profilová fotka: klepnutí na avatar → vybrat novou / odebrat.
+  const avFile = root.querySelector('[data-avfile]');
+  root.querySelector('[data-avatar]').onclick = async () => {
+    if (!avatarImage(me.name)) { avFile.click(); return; }
+    const v = await choose({ title: 'Profilová fotka', buttons: [
+      { label: 'Vybrat jinou fotku', value: 'pick', kind: 'primary' },
+      { label: 'Odebrat fotku', value: 'del', kind: 'no' },
+      { label: 'Zrušit', value: null }
+    ] });
+    if (v === 'pick') avFile.click();
+    if (v === 'del') { try { await setMyAvatar(null); toast('Fotka odebrána'); } catch (x) { toast('Nepovedlo se.'); } }
+  };
+  avFile.onchange = async () => {
+    const f = avFile.files && avFile.files[0];
+    avFile.value = '';
+    if (!f) return;
+    try {
+      toast('Nahrávám fotku…');
+      const img = await squarePhoto(f, 256);
+      await setMyAvatar(img);
+      toast('Profilová fotka uložena');
+    } catch (x) { console.error(x); toast('Fotku se nepodařilo uložit.'); }
+  };
+
   root.querySelector('[data-rename]').onclick = async () => {
     const n = prompt('Jméno v partě (podle něj se páruje docházka a komentáře):', me.name);
     if (n == null || !n.trim() || n.trim() === me.name) return;
@@ -156,4 +180,24 @@ export function render(root) {
   unsubs.push(watchMembers((list) => { members = list; drawMembers(); }));
 
   return () => unsubs.forEach((u) => u());
+}
+
+// Čtvercový výřez ze středu fotky, zmenšený JPEG (do ~60 kB).
+function squarePhoto(file, side) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const s = Math.min(im.naturalWidth, im.naturalHeight);
+      const c = document.createElement('canvas');
+      c.width = c.height = side;
+      c.getContext('2d').drawImage(im, (im.naturalWidth - s) / 2, (im.naturalHeight - s) / 2, s, s, 0, 0, side, side);
+      URL.revokeObjectURL(url);
+      let q = 0.85, out = c.toDataURL('image/jpeg', q);
+      while (out.length > 80000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      resolve(out);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Fotku se nepodařilo načíst')); };
+    im.src = url;
+  });
 }

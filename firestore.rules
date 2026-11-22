@@ -91,6 +91,20 @@ service cloud.firestore {
       allow write: if isV2Approved() && get(memberPath()).data.name == name;
     }
 
+    // Reakce (emoji) na komentáře u akcí — smí se měnit jen pole reactions.
+    match /events/{ev}/comments/{c} {
+      allow update: if isV2Approved()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+    }
+
+    // Profilové fotky (zmenšené JPEG). Každý mění jen svoji.
+    match /v2_avatars/{name} {
+      allow read: if isV2Approved();
+      allow create, update: if isV2Approved() && get(memberPath()).data.name == name
+        && request.resource.data.img is string && request.resource.data.img.size() < 200000;
+      allow delete: if isV2Approved() && get(memberPath()).data.name == name;
+    }
+
     // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).
     match /presence/{name} {
       allow read, write: if isV2Approved();

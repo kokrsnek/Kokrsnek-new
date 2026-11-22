@@ -6,8 +6,9 @@ import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
   deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum,
   cachedAttendance, cachedComments, cachedItems,
-  cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike
+  cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike, reactComment
 } from './store.js';
+import { emo, sortedReactions, emojiSheet, onLongPress } from './emoji.js';
 import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf } from './weather.js';
 import { plural } from './util.js';
 import { changeAttendance, attendButtons } from './attend.js';
@@ -130,6 +131,25 @@ function mountDetail(host, ev, live) {
     drawWx(cachedWeather(ev));
     eventWeather(ev).then(drawWx);
     unsubs.push(watchLikes(ev, drawLikes));
+    // Komentáře: dlouhé podržení → emoji reakce (a kopírování); klepnutí na bublinku reakce ji přepne.
+    const comBox = host.querySelector('[data-coms]');
+    const findCom = (el) => (comments || []).find((x) => x.id === el.closest('[data-cid]')?.dataset.cid);
+    comBox.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-creact]');
+      if (!b) return;
+      const c = findCom(b);
+      if (c) reactComment(ev, c, b.dataset.creact).catch(() => toast('Reakci se nepodařilo uložit.'));
+    });
+    onLongPress(comBox, '.com[data-cid]', async (el) => {
+      const c = findCom(el);
+      if (!c) return;
+      const me = myName();
+      const selected = sortedReactions(c.reactions).filter(([, l]) => l.includes(me)).map(([k]) => k);
+      const r = await emojiSheet({ selected, actions: c.text ? [{ id: 'copy', label: 'Kopírovat text' }] : [] });
+      if (!r) return;
+      if (r.emoji) reactComment(ev, c, r.emoji).catch(() => toast('Reakci se nepodařilo uložit.'));
+      else if (r.action === 'copy') { try { await navigator.clipboard.writeText(c.text); toast('Zkopírováno'); } catch (x) { /* nic */ } }
+    });
     host.querySelector('[data-likes]').addEventListener('click', (e) => {
       const b = e.target.closest('[data-like]');
       if (!b) return;
@@ -318,12 +338,16 @@ function mountDetail(host, ev, live) {
     const ordered = [];
     const add = (c) => { ordered.push(c); comments.filter((r) => r.parentId === c.id && !ordered.includes(r)).forEach(add); };
     top.forEach(add);
-    el.innerHTML = ordered.length ? ordered.map((c) => `<div class="com" ${c.parentId ? 'style="margin-left:42px"' : ''}>
+    el.innerHTML = ordered.length ? ordered.map((c) => {
+      const rs = sortedReactions(c.reactions);
+      return `<div class="com" data-cid="${esc(c.id)}" ${c.parentId ? 'style="margin-left:42px"' : ''}>
         ${avatar(c.user || '?', 32)}
-        <div class="bub"><b style="font-size:13px">${esc(c.user || '?')}</b><div>${linkify(c.text || '')}</div>
+        <div style="min-width:0;flex:1"><div class="bub"><b style="font-size:13px">${esc(c.user || '?')}</b><div>${linkify(c.text || '')}</div>
           ${(c.images || []).map((src) => `<img src="${esc(src)}" alt="" loading="lazy">`).join('')}
           <div class="ts">${esc(fmtStamp(c.at))}${!ro && c.user === me ? ` · <button data-del="${esc(c.id)}" style="background:none;border:none;color:var(--muted);padding:0;font-size:11px;text-decoration:underline">smazat</button>` : ''}</div></div>
-      </div>`).join('') : '<div class="sub">Zatím žádné komentáře.</div>';
+          ${rs.length ? `<div class="reacts">${rs.map(([k, l]) => `<button class="react ${l.includes(me) ? 'on' : ''}" data-creact="${esc(k)}">${emo(k, 16)}<span>${l.length}</span></button>`).join('')}</div>` : ''}</div>
+      </div>`;
+    }).join('') : '<div class="sub">Zatím žádné komentáře.</div>';
     el.querySelectorAll('[data-del]').forEach((b) => {
       b.onclick = async () => { if (await confirmDanger('Smazat komentář?', '')) deleteComment(ev, b.dataset.del).catch(() => toast('Nepovedlo se smazat.')); };
     });
