@@ -20,6 +20,9 @@ function descText(ev) {
     .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
+// Směr, odkud přijíždí další otevřená akce po swipu (1 = zprava, -1 = zleva).
+let enterFrom = 0;
+
 export function render(root, { id }) {
   let ev = null, att = null, comments = null, items = null, album = null;
   const unsubs = [];
@@ -31,7 +34,9 @@ export function render(root, { id }) {
     const past = isPast(ev);
     const ro = !canWrite(ev);
     const mine = ev.isTest && (ev.createdBy === myName() || isAdmin());
-    root.innerHTML = `<div class="screen" style="padding-top:0">
+    const enterCls = enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
+    enterFrom = 0;
+    root.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">
       <div class="cover" data-cover>
         <a class="ibtn l" href="#/akce" aria-label="Zpět">${icon('back')}</a>
         <div class="rr">
@@ -46,7 +51,7 @@ export function render(root, { id }) {
         ${ro && !past ? `<div class="banner">${icon('lock', 18)}<span>Zkušební provoz: tahle akce patří starému kalendáři, takže se tu zatím jen čte.</span></div>` : ''}
         <div class="info">
           <div>${icon('calendar')}<div class="k"><b>${esc(fmtLongDate(ev.start))}${ev.start.getFullYear() !== new Date().getFullYear() ? ' ' + ev.start.getFullYear() : ''}</b><span>${esc(whenLine(ev))}</span></div>${past ? '' : '<button class="link" data-ics>Do kalendáře</button>'}</div>
-          ${ev.place ? `<div>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="${esc(mapUrl(ev.place))}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
+          ${ev.place ? `<div data-placerow>${icon('pin')}<div class="k"><b>${esc(ev.place)}</b></div><a href="${esc(mapUrl(ev.place))}" target="_blank" rel="noopener">Navigovat</a></div>` : ''}
           <div data-albumrow style="display:none"></div>
           ${(ev.driveFiles || []).map((f) => `<a class="rowlink" href="${esc(f.url)}" target="_blank" rel="noopener">${icon('file')}<div class="k"><b>${esc(f.title)}</b></div>${icon('next', 18)}</a>`).join('')}
         </div>
@@ -93,8 +98,13 @@ export function render(root, { id }) {
       try { await addComment(ev, t); } catch (ex) { form.t.value = t; toast('Komentář se nepodařilo odeslat.'); }
     };
 
+    bindSwipe();
     loadAlbum(ev).then((u) => { album = u; drawAlbum(); });
-    if (ev.place) showMap(root.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place));
+    // Když se mapa ukáže, název místa je přímo v ní — řádek s místem se schová.
+    if (ev.place) showMap(root.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
+      const pr = root.querySelector('[data-placerow]');
+      if (ok && pr) pr.remove();
+    });
     unsubs.push(watchAttendance(ev, (a) => { att = a; drawAtt(); }));
     unsubs.push(watchComments(ev, (c) => { comments = c; drawComs(); }));
     unsubs.push(watchItems(ev, (i) => { items = i; drawItems(); }));
@@ -116,15 +126,10 @@ export function render(root, { id }) {
       row.querySelector('[data-addalbum]').onclick = () => albumFlow(ev);
       return;
     }
-    row.style.display = '';
-    const a = document.createElement('a');
-    a.className = 'rowlink';
-    a.href = album; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = `${icon('photo')}<div class="k"><b>Album fotek</b></div>${icon('next', 18)}`;
-    row.replaceWith(a);
-    a.setAttribute('data-albumrow', '');
+    // Album se otevírá klepnutím na obrázek nahoře (celá plocha), řádek v seznamu není potřeba.
+    row.style.display = 'none';
     const ct = root.querySelector('[data-covertext]');
-    if (ct) ct.innerHTML = `<a href="${esc(album)}" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--cover-ink);text-decoration:none">${icon('photo', 40, 1.5)}<span>Otevřít album</span></a>`;
+    if (ct) ct.innerHTML = `<a class="coverlink" href="${esc(album)}" target="_blank" rel="noopener">${icon('photo', 40, 1.5)}<span>Otevřít album</span></a>`;
   }
 
   function drawAtt() {
@@ -189,6 +194,45 @@ export function render(root, { id }) {
       </div>`).join('') : '<div class="sub">Zatím žádné komentáře.</div>';
     el.querySelectorAll('[data-del]').forEach((b) => {
       b.onclick = async () => { if (await confirmDanger('Smazat komentář?', '')) deleteComment(ev, b.dataset.del).catch(() => toast('Nepovedlo se smazat.')); };
+    });
+  }
+
+  // Swipe mezi akcemi: doleva = pozdější akce, doprava = dřívější (jako velká karta).
+  function bindSwipe() {
+    const scr = root.querySelector('.screen');
+    let x0 = 0, y0 = 0, dx = 0, track = null, skip = false;
+    scr.addEventListener('touchstart', (e) => {
+      skip = !!e.target.closest('input, textarea, button, .sheet');
+      const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; track = null;
+      scr.style.transition = 'none';
+    }, { passive: true });
+    scr.addEventListener('touchmove', (e) => {
+      if (skip) return;
+      const t = e.touches[0];
+      const ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (track === null && (Math.abs(ddx) > 10 || Math.abs(ddy) > 10)) track = Math.abs(ddx) > Math.abs(ddy) * 1.3;
+      if (!track) return;
+      dx = ddx;
+      scr.style.transform = `translateX(${dx}px) rotate(${dx / 90}deg)`;
+      scr.style.opacity = String(Math.max(0.5, 1 - Math.abs(dx) / 600));
+    }, { passive: true });
+    scr.addEventListener('touchend', () => {
+      if (skip || !track) return;
+      const dir = dx < 0 ? 1 : -1;
+      const list = events.list;
+      const i = list.findIndex((x) => x.id === ev.id);
+      const target = list[i + dir];
+      if (Math.abs(dx) > 80 && target) {
+        scr.style.transition = 'transform .22s ease-in, opacity .22s';
+        scr.style.transform = `translateX(${-dir * 110}%) rotate(${-dir * 8}deg)`;
+        scr.style.opacity = '0';
+        enterFrom = dir;
+        setTimeout(() => location.replace('#/akce/' + encodeURIComponent(target.id)), 200);
+        return;
+      }
+      if (Math.abs(dx) > 80 && !target) toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.');
+      scr.style.transition = 'transform .2s ease-out, opacity .2s';
+      scr.style.transform = ''; scr.style.opacity = '';
     });
   }
 

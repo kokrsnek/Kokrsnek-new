@@ -262,3 +262,19 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--safe-to
 .mapbox .mapbtn{position:absolute;right:10px;bottom:10px;z-index:500;background:var(--card);color:var(--accent-text);border:1px solid var(--line);font-weight:700;font-size:13px;padding:7px 12px;border-radius:100px;box-shadow:0 4px 12px var(--shadow)}
 .mapbox .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
 .mappin{background:none;border:none}
+
+.mapbox .mapname{position:absolute;left:10px;bottom:10px;z-index:500;max-width:calc(100% - 140px);display:flex;align-items:center;gap:6px;background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:700;font-size:13px;padding:7px 12px 7px 9px;border-radius:100px;box-shadow:0 4px 12px var(--shadow)}
+.mapbox .mapname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mapbox .mapname svg{color:var(--coral);flex:0 0 auto}
+.mapbox .mapbtn{bottom:10px}
+.mapbox .leaflet-bottom.leaflet-right{top:0;bottom:auto}
+/* Album přes celou horní plochu detailu */
+.cover .coverlink{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--cover-ink);text-decoration:none;padding-top:var(--safe-top)}
+.cover .ibtn,.cover .rr{z-index:2}
+
+/* Swipe mezi otevřenými akcemi */
+.det-in-r{animation:detR .26s ease-out}
+.det-in-l{animation:detL .26s ease-out}
+@keyframes detR{from{transform:translateX(70%) rotate(6deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes detL{from{transform:translateX(-70%) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+body{overflow-x:hidden}

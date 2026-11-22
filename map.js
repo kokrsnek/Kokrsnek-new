@@ -1,7 +1,7 @@
 // Výřez mapy se špendlíkem v detailu akce (OpenStreetMap přes Leaflet).
 // Souřadnice: GPS v textu / známé místo party, jinak dohledání adresy
 // (Nominatim) — výsledek se pamatuje v zařízení, ať se neptáme pořád dokola.
-import { placeCoords, esc } from './util.js';
+import { placeCoords, esc, icon } from './util.js';
 
 let leaflet = null;
 function loadLeaflet() {
@@ -51,13 +51,15 @@ async function geocode(place) {
 }
 
 export async function showMap(box, place, href) {
-  if (!box) return;
+  if (!box) return false;
   const c = await geocode(place);
-  if (!c || !box.isConnected) return;
+  if (!c || !box.isConnected) return false;
   let L;
-  try { L = await loadLeaflet(); } catch (e) { return; }
-  if (!box.isConnected) return;
-  box.innerHTML = `<a class="mapbox" href="${esc(href)}" target="_blank" rel="noopener" aria-label="Otevřít místo v mapách"><div class="map"></div><span class="mapbtn">Navigovat</span></a>`;
+  try { L = await loadLeaflet(); } catch (e) { return false; }
+  if (!box.isConnected) return false;
+  // Název místa bez GPS a odkazů (ty jsou na mapě vidět i tak).
+  const label = place.replace(/https?:\/\/\S+/g, '').replace(/-?\d{1,3}\.\d+\s*[NSns]?[,\s]+-?\d{1,3}\.\d+\s*[EWew]?/g, '').replace(/\s{2,}/g, ' ').replace(/^[\s,·-]+|[\s,·-]+$/g, '') || 'Místo akce';
+  box.innerHTML = `<a class="mapbox" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${esc(label)} — otevřít v mapách"><div class="map"></div><span class="mapname">${icon('pin', 15, 2.2)}<span>${esc(label)}</span></span><span class="mapbtn">Navigovat</span></a>`;
   const el = box.querySelector('.map');
   const map = L.map(el, {
     center: [c.lat, c.lng], zoom: 14, zoomControl: false, attributionControl: true,
@@ -69,4 +71,5 @@ export async function showMap(box, place, href) {
     icon: L.divIcon({ className: 'mappin', html: '<svg width="34" height="44" viewBox="0 0 34 44"><path d="M17 43s15-14.6 15-26A15 15 0 0 0 2 17c0 11.4 15 26 15 26z" fill="#E2664F" stroke="#fff" stroke-width="2.5"/><circle cx="17" cy="17" r="5.5" fill="#fff"/></svg>', iconSize: [34, 44], iconAnchor: [17, 43] })
   }).addTo(map);
   setTimeout(() => map.invalidateSize(), 60);
+  return true;
 }

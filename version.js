@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.11',
+    date: '22. 11. 2026',
+    items: [
+      'Detail akce: název místa je přímo v mapě (vlevo dole, vedle „Navigovat“), takže řádek s místem se při zobrazené mapě schová. Když se mapa načíst nedá, řádek zůstane.',
+      'Album fotek se otevírá klepnutím kamkoli na horní plochu s obrázkem — samostatný řádek „Album fotek“ už v seznamu není.',
+      'Otevřenou akci jde swipem přepnout na sousední: doleva pozdější akce, doprava dřívější (stejně jako velká karta). Stránka odjede po oblouku a další přijede z druhé strany.'
+    ]
+  },
+  {
     version: '1.10',
     date: '22. 11. 2026',
     items: [
