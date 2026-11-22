@@ -309,7 +309,7 @@ body{overflow-x:hidden}
 .cover .coverlbl{background:rgba(20,20,24,.65);color:#fff;padding:7px 14px;border-radius:100px;font-weight:700;font-size:13px}
 
 /* ---------- Chat ---------- */
-.chatscreen{height:100vh;height:100dvh;min-height:0;max-height:100dvh;overflow:hidden}
+.chatscreen{position:fixed;top:0;left:0;right:0;margin:0 auto;max-width:560px;height:var(--chat-h,100dvh);min-height:0;overflow:hidden;background:var(--bg);z-index:5}
 .chattop{flex:0 0 auto;gap:12px;justify-content:flex-start;border-bottom:1px solid var(--line)}
 .msgs{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 14px 16px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
 .daysep{align-self:center;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 4px}
@@ -336,7 +336,8 @@ body{overflow-x:hidden}
 .react{background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:1px 7px;font-size:13px;color:var(--ink)}
 .react.on{border-color:var(--accent-hi);background:var(--accent-soft)}
 .react span{font-size:11px;color:var(--muted);margin-left:2px}
-.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bar);padding:8px 12px calc(8px + var(--safe-bottom))}
+.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--bar);padding:8px 12px max(8px, calc(var(--safe-bottom) - 14px))}
+.chatscreen.kb .composer{padding-bottom:8px}
 .composer .inrow{align-items:flex-end}
 .composer textarea.input{min-height:44px;height:44px;max-height:140px;padding:11px 14px;border-radius:22px;resize:none}
 .composer .ibtn{width:44px;height:44px;border-radius:50%}

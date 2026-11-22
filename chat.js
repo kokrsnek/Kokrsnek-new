@@ -121,6 +121,20 @@ export function renderThread(root, { id }) {
     </div>
   </div>`;
   const box = root.querySelector('[data-msgs]');
+  // Obrazovka chatu přesně na výšku viditelné plochy (iPhone na ploše jinak
+  // nechává dole pruh; s klávesnicí se zmenší, aby pole zprávy zůstalo vidět).
+  const scr = root.querySelector('.chatscreen');
+  const fit = () => {
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    scr.style.setProperty('--chat-h', Math.round(h) + 'px');
+    scr.style.transform = vv && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
+    scr.classList.toggle('kb', h < window.innerHeight - 120);
+    if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
+  };
+  fit();
+  const vvT = window.visualViewport || window;
+  vvT.addEventListener('resize', fit); vvT.addEventListener('scroll', fit);
   // Soukromá konverzace: online (zelená tečka) nebo kdy byl naposledy aktivní.
   let presUnsub = null, presTick = null;
   if (!group) {
@@ -262,5 +276,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); };
+  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); };
 }
