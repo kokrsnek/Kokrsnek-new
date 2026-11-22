@@ -7,7 +7,8 @@ export const CHANGELOG = [
     date: '22. 11. 2026',
     items: [
       'Mapa v detailu akce je z Mapy.com (turistická mapa) s jejich logem.',
-      'Swipe v otevřené akci: po zastavení karty už neproblikne mapa ani logo — přijetá stránka zůstane navrchu, dokud není nová úplně hotová.'
+      'Klepnutí na mapu otevře místo na Mapy.com, tlačítko „Navigovat“ spustí navigaci v Google Mapách.',
+      'Swipe v otevřené akci: po zastavení karty už neproblikne mapa (čeká se i na načtení mapových dlaždic) ani logo — přijetá stránka zůstane navrchu, dokud není nová úplně hotová.'
     ]
   },
   {
