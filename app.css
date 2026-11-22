@@ -95,7 +95,7 @@ input,textarea,select{font-size:16px}
 .tabbar a.on{color:var(--accent-text);font-weight:700}
 
 /* Detail */
-.cover{height:190px;background:var(--cover);display:flex;align-items:center;justify-content:center;position:relative;color:var(--cover-ink);font-size:13px}
+.cover{height:210px;overflow:hidden;background:var(--cover);display:flex;align-items:center;justify-content:center;position:relative;color:var(--cover-ink);font-size:13px}
 .cover .ibtn{position:absolute;top:calc(14px + var(--safe-top));background:var(--cover-btn);border:none}
 .cover .l{left:16px}.cover .rr{right:16px;display:flex;gap:8px;position:absolute;top:calc(14px + var(--safe-top))}
 .cover .rr .ibtn{position:static}
@@ -286,3 +286,24 @@ body{overflow-x:hidden}
 .mapbox .mapcopy{position:absolute;right:8px;top:6px;z-index:500;font-size:10px;color:#333;background:rgba(255,255,255,.75);padding:1px 6px;border-radius:6px;text-decoration:none}
 .mapbox .mapylogo{position:absolute;left:8px;top:6px;z-index:500;display:block;height:30px}
 .mapbox .mapylogo img{height:30px;display:block}
+
+/* Fotka a logo v hlavičce akce */
+.cover .coverimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.cover.hasphoto::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.35),rgba(0,0,0,0) 40%,rgba(0,0,0,0) 65%,rgba(0,0,0,.35))}
+.cover [data-covertext]{position:static;z-index:1}
+.cover>[data-covertext]>svg{position:relative;z-index:1}
+.cover .coverlbl{white-space:nowrap}
+.cover .coverlink{z-index:1}
+.cover.hasphoto [data-covertext]>svg{display:none}
+.cover.hasphoto .coverlink .coveric{display:none}
+.cover.hasphoto .coverlink{justify-content:flex-end;padding-bottom:18px}
+.cover.hasphoto .coverlbl{background:rgba(20,20,24,.65);color:#fff;padding:7px 14px;border-radius:100px;font-weight:700;font-size:13px}
+.cover .coverlogo{position:absolute;right:12px;bottom:8px;width:92px;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 8px rgba(0,0,0,.45))}
+.cover .ibtn.coverbtn{top:auto;bottom:14px;left:16px}
+
+/* Vygenerovaná ilustrace v hlavičce (když akce nemá fotku) */
+.cover .coverart{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.cover [data-covertext]>svg{display:none}
+.cover .coverlink .coveric{display:none}
+.cover .coverlink{justify-content:flex-end;padding-bottom:18px}
+.cover .coverlbl{background:rgba(20,20,24,.65);color:#fff;padding:7px 14px;border-radius:100px;font-weight:700;font-size:13px}

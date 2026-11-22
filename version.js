@@ -3,6 +3,16 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.15',
+    date: '22. 11. 2026',
+    items: [
+      'Fotka v hlavičce akce: tlačítkem s obrázkem vlevo dole vybereš fotku z telefonu (zmenší se a uloží k akci). Jde ji změnit nebo odebrat.',
+      'V pravém dolním rohu hlavičky je vždy průhledné logo KoKrŠNeK.',
+      'Když má akce album, je nad fotkou štítek „Otevřít album“ (klepnutí kamkoli na fotku album otevře).',
+      'Akce bez vlastní fotky dostane vygenerovanou ilustraci podle názvu a popisu (oheň, zima, voda, kola, pochod, bowling, grilovačka, hudba, bouda) v barvách ročního období podle data. Každá akce má drobné vlastní obměny.'
+    ]
+  },
+  {
     version: '1.14',
     date: '22. 11. 2026',
     items: [

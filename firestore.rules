@@ -70,6 +70,15 @@ service cloud.firestore {
       allow delete: if isV2Admin() || (request.auth != null && request.auth.uid == uid);
     }
 
+    // Fotky v hlavičce akcí (zmenšené JPEG jako dataURL, do ~1 MB).
+    match /v2_covers/{id} {
+      allow read: if isV2Approved();
+      allow create, update: if isV2Approved()
+        && request.resource.data.img is string
+        && request.resource.data.img.size() < 1000000;
+      allow delete: if isV2Approved();
+    }
+
     // Akce nové aplikace. Import z kalendáře smí jen správce; testovací akce
     // smí zakládat každý schválený člen a upravovat ten, kdo je založil.
     match /v2_akce/{id} {

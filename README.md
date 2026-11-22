@@ -29,7 +29,7 @@ U akcí převzatých z kalendáře jsou tlačítka Jdu / Nejdu i komentáře zam
 2. **Firebase konzole → Authentication → Sign-in method.** Zapni **Google** a **Email/Password**. Anonymous nech zapnuté, používá ho stará aplikace.
 
 3. **Firebase konzole → Firestore → Rules.** Vlož celý obsah `firestore.rules` a dej **Publish**.
-   - Pravidlo staré aplikace je v souboru beze změny. Přibylo jen čtení pro schválené členy nové aplikace a pravidla pro kolekce `v2_members` a `v2_akce`.
+   - Pravidlo staré aplikace je v souboru beze změny. Přibylo jen čtení pro schválené členy nové aplikace a pravidla pro kolekce `v2_members`, `v2_akce` a `v2_covers` (fotky v hlavičce akcí).
 
 4. **Nasazení na vlastní adresu.** Nová aplikace musí běžet na *jiné adrese* než stará, ne ve složce `kokrsnek.cz/nova`.
    - Proč: service worker staré aplikace hlídá celý web. Ukládal by si soubory nové aplikace natrvalo a přepsal by svou offline kopii.
@@ -78,7 +78,7 @@ Cloud Functions na cesty `v2_…` nereagují. Testování proto nepošle nikomu 
 
 ## Verze
 
-Aktuální verze je 1.14. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
+Aktuální verze je 1.15. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
 
 
 Všechny soubory leží v jedné složce, aby šly nahrát na GitHub i z iPhonu.

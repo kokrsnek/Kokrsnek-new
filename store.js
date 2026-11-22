@@ -197,6 +197,51 @@ export async function loadAlbum(ev) {
   } catch (e) { return ''; }
 }
 
+// ---------- fotka v hlavičce akce (v2_covers/{id}: { img: dataURL }) ----------
+// Uložená zvlášť, aby seznam akcí zůstal malý. Fotka se zmenší v telefonu.
+const coverCache = new Map();
+export const cachedCover = (id) => coverCache.get(id);
+export async function loadCover(id) {
+  if (coverCache.has(id)) return coverCache.get(id);
+  try {
+    const s = await getDoc(doc(db, 'v2_covers', id));
+    const img = s.exists() ? (s.data().img || '') : '';
+    coverCache.set(id, img);
+    return img;
+  } catch (e) { return ''; }
+}
+export async function setCover(id, img) {
+  await setDoc(doc(db, 'v2_covers', id), { img, by: myName(), at: serverTimestamp() });
+  coverCache.set(id, img);
+}
+export async function removeCover(id) {
+  await deleteDoc(doc(db, 'v2_covers', id));
+  coverCache.set(id, '');
+}
+// Zmenší fotku na max. 1280 px a uloží jako JPEG (pod ~800 kB kvůli limitu Firestore).
+export function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let max = 1280, q = 0.8, out = '';
+      for (let i = 0; i < 6; i++) {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL('image/jpeg', q);
+        if (out.length < 800000) return resolve(out);
+        max = Math.round(max * 0.8); q = Math.max(0.55, q - 0.08);
+      }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Fotku se nepodařilo načíst')); };
+    img.src = url;
+  });
+}
+
 // Předběžné načtení všeho k akci (pro sousední akce, ať je swipe hned kompletní).
 const prefetched = new Map();
 export function prefetchEvent(ev) {
@@ -209,6 +254,7 @@ export function prefetchEvent(ev) {
   if (!commentCache.has(ev.id)) getDocs(collection(db, ...p.comments)).then((s) => commentCache.set(ev.id, mapComments(s))).catch(() => {});
   if (!itemCache.has(ev.id)) getDocs(collection(db, ...p.items)).then((s) => itemCache.set(ev.id, mapItems(s))).catch(() => {});
   loadAlbum(ev).catch(() => {});
+  loadCover(ev.id).then((img) => { if (img) { const i = new Image(); i.src = img; } }).catch(() => {});
 }
 // Sousední akce (±n) podle pořadí v seznamu.
 export function neighboursOf(ev, n = 2) {

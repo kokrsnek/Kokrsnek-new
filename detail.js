@@ -1,15 +1,17 @@
 // Detail akce: informace, docházka, co přinést, album, soubory, komentáře.
 import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
-import { avatar, toast, confirmDanger, spinner } from './ui.js';
+import { avatar, toast, confirmDanger, spinner, choose } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
   deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum,
-  cachedAttendance, cachedComments, cachedItems
+  cachedAttendance, cachedComments, cachedItems,
+  cachedCover, loadCover, setCover, removeCover, shrinkPhoto
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
 import { showMap, prefetchMap } from './map.js';
+import { coverArt } from './coverart.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
@@ -58,7 +60,11 @@ function mountDetail(host, ev, live) {
           <button class="ibtn" data-share aria-label="Sdílet">${icon('share')}</button>
           ${mine ? `<a class="ibtn" href="#/upravit/${encodeURIComponent(ev.id)}" aria-label="Upravit">${icon('edit')}</a>` : ''}
         </div>
+        ${coverArt(ev)}
+        <img class="coverimg" data-coverimg alt="" hidden>
         <span data-covertext>${icon('calendar', 44, 1.5)}</span>
+        ${live ? `<button class="ibtn coverbtn" data-coverbtn aria-label="Fotka v hlavičce">${icon('photo', 20)}</button><input type="file" accept="image/*" data-coverfile hidden>` : ''}
+        <img class="coverlogo" src="logo-badge.png" alt="">
       </div>
       <div class="scroll" style="padding-top:18px">
         <div class="eyebrow ${past ? '' : 'live'}" style="color:${past ? 'var(--muted)' : ''}">${past ? 'Proběhlo · ' + esc(relDays(ev.start)) : esc(relDays(ev.start))}${ev.isTest ? ' · testovací akce' : ''}</div>
@@ -94,6 +100,9 @@ function mountDetail(host, ev, live) {
 
     const ca = cachedAlbum(ev);
     if (ca !== undefined) { album = ca; drawAlbum(); }
+    const cc = cachedCover(ev.id);
+    if (cc) drawCover(cc);
+    if (live) loadCover(ev.id).then((img) => drawCover(img));
     // Mapa: když se ukáže, název místa je přímo v ní — řádek s místem se schová.
     if (ev.place) showMap(host.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
       const pr = host.querySelector('[data-placerow]');
@@ -107,6 +116,37 @@ function mountDetail(host, ev, live) {
       const it = cachedItems(ev.id); if (it) { items = it; drawItems(); }
       return;
     }
+
+    // Fotka v hlavičce: vybrat / změnit / odebrat.
+    const cbtn = host.querySelector('[data-coverbtn]');
+    const cfile = host.querySelector('[data-coverfile]');
+    cfile.onchange = async () => {
+      const f = cfile.files && cfile.files[0];
+      cfile.value = '';
+      if (!f) return;
+      try {
+        toast('Nahrávám fotku…');
+        const img = await shrinkPhoto(f);
+        drawCover(img);
+        await setCover(ev.id, img);
+        toast('Fotka uložena');
+      } catch (x) {
+        console.error(x);
+        drawCover(cachedCover(ev.id) || '');
+        toast('Fotku se nepodařilo uložit.');
+      }
+    };
+    cbtn.onclick = async () => {
+      if (!cachedCover(ev.id)) { cfile.click(); return; }
+      const v = await choose({ title: 'Fotka v hlavičce', buttons: [
+        { label: 'Vybrat jinou fotku', value: 'new', kind: 'primary' },
+        { label: 'Odebrat fotku', value: 'del', kind: 'no' },
+        { label: 'Zrušit', value: null, kind: 'dashed' }] });
+      if (v === 'new') cfile.click();
+      if (v === 'del') {
+        try { await removeCover(ev.id); drawCover(''); toast('Fotka odebrána'); } catch (x) { toast('Nepovedlo se.'); }
+      }
+    };
 
     const icsBtn = host.querySelector('[data-ics]');
     if (icsBtn) icsBtn.onclick = () => {
@@ -143,6 +183,14 @@ function mountDetail(host, ev, live) {
     return fmtWhen(e);
   }
 
+  function drawCover(img) {
+    const el = host.querySelector('[data-coverimg]');
+    const cov = host.querySelector('[data-cover]');
+    if (!el || !cov) return;
+    cov.classList.toggle('hasphoto', !!img);
+    if (img) { el.src = img; el.hidden = false; } else { el.hidden = true; el.removeAttribute('src'); }
+  }
+
   function drawAlbum() {
     const row = host.querySelector('[data-albumrow]');
     if (!row) return;
@@ -156,7 +204,7 @@ function mountDetail(host, ev, live) {
     // Album se otevírá klepnutím na obrázek nahoře (celá plocha), řádek v seznamu není potřeba.
     row.style.display = 'none';
     const ct = host.querySelector('[data-covertext]');
-    if (ct) ct.innerHTML = `<a class="coverlink" href="${esc(album)}" target="_blank" rel="noopener">${icon('photo', 40, 1.5)}<span>Otevřít album</span></a>`;
+    if (ct) ct.innerHTML = `<a class="coverlink" href="${esc(album)}" target="_blank" rel="noopener"><span class="coveric">${icon('photo', 40, 1.5)}</span><span class="coverlbl">Otevřít album</span></a>`;
   }
 
   function drawAtt() {
