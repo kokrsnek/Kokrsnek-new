@@ -104,10 +104,16 @@ function mountDetail(host, ev, live) {
     if (cc) drawCover(cc);
     if (live) loadCover(ev.id).then((img) => drawCover(img));
     // Mapa: když se ukáže, název místa je přímo v ní — řádek s místem se schová.
-    if (ev.place) showMap(host.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
+    const mapDone = ev.place ? showMap(host.querySelector('[data-mapbox]'), ev.place, mapUrl(ev.place)).then((ok) => {
       const pr = host.querySelector('[data-placerow]');
       if (ok && pr) pr.remove();
-    });
+    }) : Promise.resolve();
+    // Skutečná stránka dá vědět, až je hotová (mapa, logo, fotka) — do té doby
+    // nad ní leží náhled, který přijel swipem, aby nic neproblikávalo.
+    if (live) {
+      const imgs = [...host.querySelectorAll('.coverlogo, [data-coverimg]:not([hidden])')].map((i) => i.decode ? i.decode().catch(() => {}) : null);
+      Promise.all([mapDone, ...imgs]).then(() => requestAnimationFrame(() => requestAnimationFrame(() => window.dispatchEvent(new Event('detail-ready')))));
+    }
 
     // Náhled (při swipu): jen vykreslit z předem načtených dat, bez sledování a tlačítek.
     if (!live) {
@@ -331,7 +337,16 @@ function mountDetail(host, ev, live) {
         ghost.style.transition = 'transform 230ms ease-out';
         ghost.style.transform = arcD(0);
         // Nová stránka se vykreslí přesně tam, kde stojí náhled.
-        setTimeout(() => location.replace('#/akce/' + encodeURIComponent(target.id)), 240);
+        setTimeout(() => {
+          // Náhled přesunout mimo stránku (přežije překreslení) a schovat, až bude nová stránka hotová.
+          const g = ghost;
+          document.body.appendChild(g);
+          let gone = false;
+          const drop = () => { if (gone) return; gone = true; window.removeEventListener('detail-ready', drop); g.remove(); };
+          window.addEventListener('detail-ready', drop);
+          setTimeout(drop, 2500);
+          location.replace('#/akce/' + encodeURIComponent(target.id));
+        }, 240);
         return;
       }
       if (Math.abs(dx) > 80 && !target) toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.');

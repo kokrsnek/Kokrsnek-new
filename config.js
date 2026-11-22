@@ -39,4 +39,4 @@ export const APP_URL = 'https://kokrsnek-new.vercel.app';
 
 // API klíč Mapy.com pro podklad mapy v detailu akce (developer.mapy.com → Můj účet
 // → projekt → API klíč). Prázdný = použije se OpenStreetMap.
-export const MAPY_API_KEY = '';
+export const MAPY_API_KEY = 'nY-91216wSSQ5waRO4ABMmtDldTuDGTPzp8kd8WcsQM';

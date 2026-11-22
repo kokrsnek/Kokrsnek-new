@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.16',
+    date: '22. 11. 2026',
+    items: [
+      'Mapa v detailu akce je z Mapy.com (turistická mapa) s jejich logem.',
+      'Swipe v otevřené akci: po zastavení karty už neproblikne mapa ani logo — přijetá stránka zůstane navrchu, dokud není nová úplně hotová.'
+    ]
+  },
+  {
     version: '1.15',
     date: '22. 11. 2026',
     items: [
