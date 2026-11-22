@@ -5,7 +5,7 @@ import { placeCoords, esc, icon } from './util.js';
 import { MAPY_API_KEY } from './config.js';
 
 let leaflet = null;
-function loadLeaflet() {
+export function loadLeaflet() {
   if (leaflet) return leaflet;
   leaflet = new Promise((resolve, reject) => {
     const css = document.createElement('link');

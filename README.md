@@ -18,7 +18,7 @@ Nová aplikace party bez závislosti na Google Kalendáři. Běží vedle staré
   - import akcí z Google Kalendáře
   - změna jména, odhlášení
 - **Vzhled** (Parta → Vzhled): čtyři styly — Původní, Chata, Festival, Hlídka. Volba se pamatuje v daném zařízení.
-- **Kde jsi?** a **Chat** mají zatím jen zástupnou obrazovku (fáze 3 a 4).
+- **Kde jsi?** a **Chat**: čtou skutečná data party; ve zkušebním provozu se píše jen do testovacích kolekcí `v2_checkins` a `v2_chats/test`.
 
 U akcí převzatých z kalendáře jsou tlačítka Jdu / Nejdu i komentáře zamčené. Docházka se dál mění ve staré aplikaci, takže nic nechodí dvakrát a neposílají se notifikace.
 
@@ -78,7 +78,7 @@ Cloud Functions na cesty `v2_…` nereagují. Testování proto nepošle nikomu 
 
 ## Verze
 
-Aktuální verze je 1.16. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
+Aktuální verze je 1.17. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
 
 
 Všechny soubory leží v jedné složce, aby šly nahrát na GitHub i z iPhonu.

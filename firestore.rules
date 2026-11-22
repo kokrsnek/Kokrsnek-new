@@ -70,6 +70,17 @@ service cloud.firestore {
       allow delete: if isV2Admin() || (request.auth != null && request.auth.uid == uid);
     }
 
+    // Testovací chat a check-iny nové aplikace (zkušební provoz — parta je nevidí).
+    match /v2_chats/{thread}/messages/{msg} {
+      allow read, write: if isV2Approved();
+    }
+    match /v2_checkins/{id} {
+      allow read, write: if isV2Approved();
+      match /comments/{c} {
+        allow read, write: if isV2Approved();
+      }
+    }
+
     // Fotky v hlavičce akcí (zmenšené JPEG jako dataURL, do ~1 MB).
     match /v2_covers/{id} {
       allow read: if isV2Approved();

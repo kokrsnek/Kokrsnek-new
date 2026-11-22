@@ -8,7 +8,8 @@ import * as kalendar from './kalendar.js';
 import * as detail from './detail.js';
 import * as editor from './editor.js';
 import * as parta from './parta.js';
-import * as brzy from './brzy.js';
+import * as chat from './chat.js';
+import * as kde from './kde.js';
 import { installPlus } from './plus.js';
 
 const root = document.getElementById('app');
@@ -23,8 +24,11 @@ const ROUTES = [
   [/^\/nova$/, () => editor.render(root, { id: null })],
   [/^\/upravit\/([^/]+)$/, (m) => editor.render(root, { id: decodeURIComponent(m[1]) })],
   [/^\/parta$/, () => parta.render(root, {})],
-  [/^\/kde$/, () => brzy.render(root, { tab: 'kde' })],
-  [/^\/chat$/, () => brzy.render(root, { tab: 'chat' })]
+  [/^\/kde$/, () => kde.render(root, { tab: 'feed' })],
+  [/^\/kde\/mapa$/, () => kde.render(root, { tab: 'mapa' })],
+  [/^\/kde\/novy$/, () => kde.render(root, { tab: 'feed', openNew: true })],
+  [/^\/chat$/, () => chat.renderList(root)],
+  [/^\/chat\/([^/]+)$/, (m) => chat.renderThread(root, { id: decodeURIComponent(m[1]) })]
 ];
 
 function mount(key, fn) {

@@ -3,6 +3,7 @@ import { esc, icon, fmtWhen, looseName } from './util.js';
 import { toast } from './ui.js';
 import { events, isPast, setAlbum } from './store.js';
 import { isAdmin, myName } from './auth.js';
+import { newCheckin } from './kde.js';
 
 let open = false;
 
@@ -24,12 +25,14 @@ function openMenu() {
   m.setAttribute('role', 'menu');
   m.innerHTML = `
     <button role="menuitem" data-a="akce"><span class="ic" style="background:#2F7A56">${icon('calendar', 24)}</span><span><b>Přidat akci</b><span class="s">nová akce pro partu</span></span></button>
+    <button role="menuitem" data-a="checkin"><span class="ic" style="background:#E2664F">${icon('pin', 24)}</span><span><b>Check-in</b><span class="s">dej partě vědět, kde jsi</span></span></button>
     <button role="menuitem" data-a="album"><span class="ic" style="background:#5B6CB8">${icon('photo', 24)}</span><span><b>Přidat fotoalbum</b><span class="s">odkaz na fotky k proběhlé akci</span></span></button>`;
   m.onclick = (e) => {
     const b = e.target.closest('[data-a]');
     if (!b) return;
     closeMenu();
     if (b.dataset.a === 'akce') location.hash = '#/nova';
+    else if (b.dataset.a === 'checkin') { if (location.hash.startsWith('#/kde')) newCheckin(); else location.hash = '#/kde/novy'; }
     else albumFlow();
   };
   document.body.append(bd, m);

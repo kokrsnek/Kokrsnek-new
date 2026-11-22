@@ -1,0 +1,284 @@
+// Kde jsi?: check-iny party (Feed a Mapa) a nový check-in.
+// Skutečné check-iny (placeCheckins) se čtou. Ve zkušebním provozu se nové
+// check-iny, reakce a komentáře zapisují jen do v2_checkins (test).
+import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL, KNOWN_PLACES } from './util.js';
+import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
+import { myName } from './auth.js';
+import { TEST_MODE, MAPY_API_KEY } from './config.js';
+import { db, collection, doc, query, orderBy, limit, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs, writeBatch } from './firebase.js';
+import { shrinkPhoto } from './store.js';
+import { loadLeaflet } from './map.js';
+
+const EMOJIS = ['👍', '🍺', '❤️', '😂', '🔥'];
+const isTestDoc = (c) => c._col === 'v2_checkins';
+const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE;
+const colOf = (c) => c._col;
+
+function when(at) {
+  const d = toDate(at);
+  if (!d) return '';
+  const dd = dayDiff(d, new Date());
+  if (dd === 0) return `dnes ${fmtTime(d)}`;
+  if (dd === 1) return `včera ${fmtTime(d)}`;
+  if (dd < 7) return `${DAYS_FULL[d.getDay()]} ${fmtTime(d)}`;
+  return `${d.getDate()}. ${d.getMonth() + 1}.${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}`;
+}
+const isToday = (c) => { const d = toDate(c.at); return d && sameDay(d, new Date()); };
+const gmaps = (c) => c.lat != null ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.place || '')}`;
+
+export function render(root, { tab = 'feed', openNew = false }) {
+  const me = myName();
+  let real = [], test = [], comments = {}, open = new Set(), map = null, markers = null, alive = true;
+  const unsubs = [];
+
+  root.innerHTML = `<div class="screen">
+    <div class="top"><div><div class="h1">Kde jsi?</div><div class="sub">check-iny party</div></div>
+      <button class="ibtn on" data-new aria-label="Nový check-in">${icon('pin')}</button></div>
+    <div class="seg" role="tablist">
+      <button role="tab" class="${tab === 'feed' ? 'on' : ''}" data-tab="#/kde">Feed</button>
+      <button role="tab" class="${tab === 'mapa' ? 'on' : ''}" data-tab="#/kde/mapa">Mapa</button>
+    </div>
+    <div class="scroll" data-body>${spinner()}</div>
+    ${tabbar('kde')}
+  </div>`;
+  const body = root.querySelector('[data-body]');
+  root.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => location.replace(b.dataset.tab); });
+  root.querySelector('[data-new]').onclick = () => newCheckin();
+
+  const all = () => [...real, ...test].sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
+
+  // ---------- Feed ----------
+  function card(c) {
+    const mine = c.user === me;
+    const w = canWriteCi(c);
+    const today = isToday(c);
+    const em = Object.entries(c.emojis || {});
+    const emCount = {};
+    em.forEach(([, e]) => { emCount[e] = (emCount[e] || 0) + 1; });
+    const cs = comments[c.id];
+    return `<div class="ci" data-ci="${esc(c.id)}">
+      <div class="cihead">${avatar(c.user || '?', 36)}
+        <div style="min-width:0;flex:1"><div class="t">${esc(c.user || '?')}${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}</div><div class="s">${esc(when(c.at))}</div></div>
+        <a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Navigovat">${icon('pin', 18)}</a>
+      </div>
+      <div class="ciplace">${esc(c.place || '')}</div>
+      ${c.note ? `<div class="cinote">${esc(c.note)}</div>` : ''}
+      ${c.photo ? `<img class="ciphoto" src="${esc(c.photo)}" alt="" loading="lazy">` : ''}
+      ${(c.coming || []).length || (c.near || []).length ? `<div class="cippl">
+        ${(c.coming || []).length ? `<span>🚶 Přijde: ${esc(c.coming.join(', '))}</span>` : ''}
+        ${(c.near || []).length ? `<span>📍 Poblíž: ${esc(c.near.join(', '))}</span>` : ''}</div>` : ''}
+      <div class="ciact">
+        ${!mine && today ? `<button class="pill ${(c.coming || []).includes(me) ? 'go' : ''}" data-act="coming" ${w ? '' : 'disabled'}>Přijdu taky</button>
+          <button class="pill ${(c.near || []).includes(me) ? 'go' : ''}" data-act="near" ${w ? '' : 'disabled'}>Jsem poblíž</button>` : ''}
+        <span class="ciem">${Object.entries(emCount).map(([e, n]) => `<span>${e}${n > 1 ? n : ''}</span>`).join('')}</span>
+        ${w ? `<button class="pill" data-act="emoji" aria-label="Reakce">🙂</button>` : ''}
+        <button class="pill" data-act="com">${icon('chat', 14)} ${c.commentCount || (cs ? cs.length : 0) || ''}</button>
+        ${mine && w ? `<button class="pill" data-act="del" aria-label="Smazat">${icon('trash', 14)}</button>` : ''}
+      </div>
+      ${open.has(c.id) ? `<div class="cicoms">${cs ? (cs.length ? cs.map((m) => `<div class="com">${avatar(m.user || '?', 26)}<div class="bub"><b style="font-size:12px">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub">Zatím bez komentářů.</div>') : spinner()}
+        ${w ? `<form class="inrow" data-cform style="margin-top:8px"><input class="input" name="t" placeholder="Komentář" maxlength="300" autocomplete="off"><button class="ibtn" aria-label="Odeslat">${icon('next', 20, 2.4)}</button></form>` : ''}</div>` : ''}
+    </div>`;
+  }
+
+  function drawFeed() {
+    const list = all();
+    if (!list.length) { body.innerHTML = '<div class="empty">Zatím žádné check-iny.</div>'; return; }
+    let html = '', lastDay = null;
+    for (const c of list) {
+      const d = toDate(c.at) || new Date(0);
+      if (!lastDay || !sameDay(d, lastDay)) {
+        const dd = dayDiff(d, new Date());
+        html += `<div class="section-h">${dd === 0 ? 'Dnes' : dd === 1 ? 'Včera' : `${DAYS_FULL[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.`}</div>`;
+        lastDay = d;
+      }
+      html += card(c);
+    }
+    body.innerHTML = html;
+  }
+
+  body.addEventListener('click', async (e) => {
+    const el = e.target.closest('[data-ci]');
+    if (!el) return;
+    const c = all().find((x) => x.id === el.dataset.ci);
+    if (!c) return;
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'com') {
+      open.has(c.id) ? open.delete(c.id) : open.add(c.id);
+      if (open.has(c.id) && !comments[c.id]) {
+        unsubs.push(onSnapshot(query(collection(db, colOf(c), c.id, 'comments'), orderBy('at', 'asc')), (s) => {
+          comments[c.id] = s.docs.map((d) => ({ id: d.id, ...d.data() })); if (alive) drawFeed();
+        }, () => { comments[c.id] = []; drawFeed(); }));
+      }
+      drawFeed();
+      return;
+    }
+    if (!act || !canWriteCi(c)) return;
+    const ref = doc(db, colOf(c), c.id);
+    try {
+      if (act === 'coming' || act === 'near') {
+        const arr = new Set(c[act] || []);
+        arr.has(me) ? arr.delete(me) : arr.add(me);
+        await updateDoc(ref, { [act]: [...arr] });
+      } else if (act === 'emoji') {
+        emojiPick(async (em) => {
+          const e2 = { ...(c.emojis || {}) };
+          if (e2[me] === em) delete e2[me]; else e2[me] = em;
+          await updateDoc(ref, { emojis: e2 });
+        });
+      } else if (act === 'del') {
+        if (await confirmDanger('Smazat check-in?', c.place || '')) await deleteDoc(ref);
+      }
+    } catch (x) { console.error(x); toast('Nepovedlo se.'); }
+  });
+  body.addEventListener('submit', async (e) => {
+    const f = e.target.closest('[data-cform]');
+    if (!f) return;
+    e.preventDefault();
+    const c = all().find((x) => x.id === f.closest('[data-ci]').dataset.ci);
+    const text = f.t.value.trim();
+    if (!c || !text) return;
+    f.t.value = '';
+    try {
+      const b = writeBatch(db);
+      b.set(doc(collection(db, colOf(c), c.id, 'comments')), { user: me, text, at: new Date().toISOString() });
+      b.update(doc(db, colOf(c), c.id), { commentCount: (c.commentCount || 0) + 1 });
+      await b.commit();
+    } catch (x) { f.t.value = text; toast('Komentář se nepodařilo odeslat.'); }
+  });
+
+  function emojiPick(cb) {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    bd.innerHTML = `<div class="sheet"><div class="grab"></div><div class="emojirow">${EMOJIS.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div></div>`;
+    bd.addEventListener('click', (e) => {
+      if (e.target === bd) return bd.remove();
+      const b = e.target.closest('[data-e]');
+      if (b) { bd.remove(); cb(b.dataset.e).catch(() => toast('Nepovedlo se.')); }
+    });
+    document.body.appendChild(bd);
+  }
+
+  // ---------- Mapa ----------
+  async function drawMap() {
+    if (!body.querySelector('.cimap')) {
+      body.innerHTML = '<div class="cimap"></div><div class="note" style="margin-top:8px">Posledních 60 check-inů se souřadnicemi</div>';
+      try {
+        const L = await loadLeaflet();
+        if (!alive) return;
+        map = L.map(body.querySelector('.cimap'), { zoomControl: false, attributionControl: false }).setView([49.43, 16.62], 11);
+        const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
+        L.tileLayer(MAPY_API_KEY ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}` : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, tileSize: 256 }).addTo(map);
+        markers = L.layerGroup().addTo(map);
+        body.querySelector('.cimap').insertAdjacentHTML('beforeend', MAPY_API_KEY
+          ? '<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a><a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>'
+          : '<span class="mapcopy">© OpenStreetMap</span>');
+      } catch (x) { body.innerHTML = '<div class="empty">Mapu se nepodařilo načíst.</div>'; return; }
+    }
+    if (!map || !window.L) return;
+    const L = window.L;
+    markers.clearLayers();
+    const pts = all().filter((c) => c.lat != null && c.lng != null).slice(0, 60);
+    const seen = new Set();
+    pts.forEach((c) => {
+      const key = c.user + '|' + c.lat.toFixed(4) + '|' + c.lng.toFixed(4);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: 'cipin', html: `${avatar(c.user || '?', 30)}`, iconSize: [30, 30], iconAnchor: [15, 15] }) });
+      m.bindPopup(`<b>${esc(c.user)}</b><br>${esc(c.place || '')}<br><small>${esc(when(c.at))}</small>`);
+      m.addTo(markers);
+    });
+    if (pts.length && !map._fitted) { map.fitBounds(pts.map((c) => [c.lat, c.lng]), { padding: [30, 30], maxZoom: 14 }); map._fitted = true; }
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+
+  const draw = () => { if (!alive) return; tab === 'mapa' ? drawMap() : drawFeed(); };
+
+  unsubs.push(onSnapshot(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(60)), (s) => {
+    real = s.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() })); draw();
+  }, (err) => { console.error('Check-iny:', err); real = []; draw(); }));
+  unsubs.push(onSnapshot(query(collection(db, 'v2_checkins'), orderBy('at', 'desc'), limit(30)), (s) => {
+    test = s.docs.map((d) => ({ id: d.id, _col: 'v2_checkins', ...d.data() })); draw();
+  }, () => {}));
+
+  if (openNew) setTimeout(newCheckin, 50);
+  return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); };
+}
+
+// ---------- nový check-in ----------
+function distM(a, b) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+async function suggestions(c) {
+  const out = [];
+  for (const [k, v] of Object.entries(KNOWN_PLACES)) {
+    const [lat, lng] = v.split(',').map(Number);
+    if (distM(c, { lat, lng }) < 400) out.push(k.charAt(0).toUpperCase() + k.slice(1));
+  }
+  if (MAPY_API_KEY) {
+    try {
+      const r = await fetch(`https://api.mapy.com/v1/rgeocode?lon=${c.lng}&lat=${c.lat}&lang=cs&apikey=${encodeURIComponent(MAPY_API_KEY)}`);
+      const j = await r.json();
+      (j.items || []).slice(0, 3).forEach((it) => { if (it.name && !out.includes(it.name)) out.push(it.name); });
+    } catch (e) { /* bez návrhů */ }
+  }
+  return out;
+}
+
+export function newCheckin() {
+  const me = myName();
+  let coords = null, photo = '';
+  const bd = document.createElement('div');
+  bd.className = 'backdrop';
+  bd.innerHTML = `<div class="sheet" role="dialog" aria-label="Nový check-in"><div class="grab"></div>
+    <h3>Kde jsi?</h3>
+    <p data-gps>${icon('pin', 14)} Zjišťuju polohu…</p>
+    <div class="chips" data-sug style="margin-bottom:10px"></div>
+    <input class="input" data-place placeholder="Název místa" maxlength="80" aria-label="Místo">
+    <textarea class="input" data-note rows="2" placeholder="Poznámka (nepovinné)" maxlength="300" style="margin-top:8px;min-height:60px"></textarea>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+      <button class="btn" data-ph>${icon('photo', 18)} Fotka</button><input type="file" accept="image/*" data-file hidden>
+      <img data-prev alt="" style="height:48px;border-radius:8px;display:none">
+    </div>
+    ${TEST_MODE ? '<div class="note" style="margin-top:8px">Ve zkušebním provozu se check-in uloží jako testovací — parta ho neuvidí.</div>' : ''}
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <button class="btn primary big block" data-go>Odeslat check-in</button>
+      <button class="btn block" data-x>Zrušit</button>
+    </div></div>`;
+  bd.addEventListener('click', (e) => { if (e.target === bd) bd.remove(); });
+  document.body.appendChild(bd);
+  const $ = (s) => bd.querySelector(s);
+  $('[data-x]').onclick = () => bd.remove();
+  $('[data-ph]').onclick = () => $('[data-file]').click();
+  $('[data-file]').onchange = async () => {
+    const f = $('[data-file]').files[0];
+    if (!f) return;
+    try { photo = await shrinkPhoto(f); $('[data-prev]').src = photo; $('[data-prev]').style.display = 'block'; } catch (x) { toast('Fotku se nepodařilo načíst.'); }
+  };
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      coords = { lat: p.coords.latitude, lng: p.coords.longitude };
+      $('[data-gps]').innerHTML = `${icon('pin', 14)} Poloha zjištěna (±${Math.round(p.coords.accuracy)} m)`;
+      const s = await suggestions(coords);
+      $('[data-sug]').innerHTML = s.map((n) => `<button class="chip" data-s="${esc(n)}">${esc(n)}</button>`).join('');
+      if (s[0] && !$('[data-place]').value) $('[data-place]').value = s[0];
+    }, () => { $('[data-gps]').textContent = 'Polohu se nepodařilo zjistit — check-in odejde bez mapy.'; }, { enableHighAccuracy: true, timeout: 12000 });
+  } else $('[data-gps]').textContent = 'Telefon nepodporuje zjištění polohy.';
+  $('[data-sug]').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) $('[data-place]').value = b.dataset.s; };
+  $('[data-go]').onclick = async (e) => {
+    const place = $('[data-place]').value.trim();
+    if (!place) { $('[data-place]').focus(); return; }
+    e.target.disabled = true;
+    const data = { user: me, place, note: $('[data-note]').value.trim(), lat: coords ? coords.lat : null, lng: coords ? coords.lng : null,
+      at: new Date().toISOString(), photo, coming: [], near: [], emojis: {}, commentCount: 0, via: 'v2' };
+    try {
+      await addDoc(collection(db, TEST_MODE ? 'v2_checkins' : 'placeCheckins'), data);
+      bd.remove();
+      toast('Check-in odeslán 📍');
+      if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
+    } catch (x) { console.error(x); e.target.disabled = false; toast('Check-in se nepodařilo uložit.'); }
+  };
+}

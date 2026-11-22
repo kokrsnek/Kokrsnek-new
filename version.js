@@ -3,6 +3,16 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.17',
+    date: '22. 11. 2026',
+    items: [
+      'Chat: seznam vláken (Celá parta, soukromé zprávy, testovací vlákno) s poslední zprávou, a konverzace — fotky, hlasovky, odpovědi a reakce ze staré aplikace jsou vidět.',
+      'V chatu jde psát, posílat fotky, odpovídat a reagovat dlouhým podržením zprávy. Ve zkušebním provozu jen v testovacím vláknu, skutečná vlákna party se jen čtou.',
+      'Kde jsi?: Feed check-inů party (podle dnů, s fotkami, poznámkou, Přijde/Poblíž, reakcemi a komentáři) a Mapa s posledními check-iny.',
+      'Nový check-in (tlačítko nahoře nebo + → Check-in): zjistí polohu, nabídne název místa (známá místa party a Mapy.com), poznámka a fotka. Ve zkušebním provozu se ukládá jako testovací — parta ho neuvidí ani nedostane notifikaci.'
+    ]
+  },
+  {
     version: '1.16',
     date: '22. 11. 2026',
     items: [
