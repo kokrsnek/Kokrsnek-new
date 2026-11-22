@@ -4,6 +4,7 @@ import { stopEvents } from './store.js';
 import { spinner, installSheetGestures } from './ui.js';
 import * as login from './login.js';
 let avatarsOn = false;
+import { showIntro } from './intro.js';
 import * as akce from './akce.js';
 import * as kalendar from './kalendar.js';
 import * as detail from './detail.js';
@@ -70,6 +71,7 @@ window.addEventListener('hashchange', () => route(true));
 onSession(() => route(false));
 installPlus();
 installSheetGestures();
+showIntro();
 initAuth();
 route(true);
 

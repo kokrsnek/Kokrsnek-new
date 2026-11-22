@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.31',
+    date: '22. 11. 2026',
+    items: [
+      'Úvodní animace (4 s) při prvním spuštění: šnek s batohem jde při západu slunce po stezce k chatě, oheň vzplane a šnek v klobouku hraje na kytaru. Klepnutím jde přeskočit.',
+      'Animaci jde kdykoli přehrát znovu v Partě (tlačítko pod Odhlásit se).'
+    ]
+  },
+  {
     version: '1.30',
     date: '22. 11. 2026',
     items: [

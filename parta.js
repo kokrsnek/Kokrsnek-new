@@ -5,6 +5,7 @@ import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeM
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE } from './config.js';
 import { CHANGELOG, VERSION } from './version.js';
+import { showIntro } from './intro.js';
 import { THEMES, currentTheme, applyTheme, preloadAllFonts } from './theme.js';
 
 export function render(root) {
@@ -39,6 +40,7 @@ export function render(root) {
 
       <div class="section-h">Účet</div>
       <button class="btn block" data-out>${icon('logout', 18)}Odhlásit se</button>
+      <button class="btn block" data-intro style="margin-top:10px">🐌 Přehrát úvodní animaci</button>
 
       <div class="card changelog" style="margin-top:22px">
         <div class="cl-h">KoKrŠNeK · verze ${esc(VERSION)}</div>
@@ -102,6 +104,8 @@ export function render(root) {
       toast('Profilová fotka uložena');
     } catch (x) { console.error(x); toast('Fotku se nepodařilo uložit.'); }
   };
+
+  root.querySelector('[data-intro]').onclick = () => showIntro(true);
 
   root.querySelector('[data-rename]').onclick = async () => {
     const n = prompt('Jméno v partě (podle něj se páruje docházka a komentáře):', me.name);
