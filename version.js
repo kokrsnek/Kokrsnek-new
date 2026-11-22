@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.28',
+    date: '22. 11. 2026',
+    items: [
+      'Menu „+“: nová položka „Zpráva v chatu“ — vybereš celou partu nebo jednoho člověka a rovnou se otevře konverzace.',
+      '„Přidat akci“ a „Přidat fotoalbum“ se v menu „+“ ukazují jen správci.'
+    ]
+  },
+  {
     version: '1.27',
     date: '22. 11. 2026',
     items: [

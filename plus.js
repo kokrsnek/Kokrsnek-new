@@ -1,6 +1,8 @@
-// Tlačítko + ve spodní liště: Přidat akci, Přidat fotoalbum.
+// Tlačítko + ve spodní liště: Zpráva v chatu, Check-in; správce navíc Přidat akci a Přidat fotoalbum.
 import { esc, icon, fmtWhen, looseName } from './util.js';
-import { toast } from './ui.js';
+import { toast, avatar } from './ui.js';
+import { PARTY_NAMES } from './config.js';
+import { dmThreadId, PARTY_THREAD } from './chat.js';
 import { events, isPast, setAlbum } from './store.js';
 import { isAdmin, myName } from './auth.js';
 import { newCheckin } from './kde.js';
@@ -23,19 +25,39 @@ function openMenu() {
   const m = document.createElement('div');
   m.className = 'plusmenu';
   m.setAttribute('role', 'menu');
+  const adm = isAdmin(); // akce a fotky přidává jen správce
   m.innerHTML = `
-    <button role="menuitem" data-a="akce"><span class="ic" style="background:#2F7A56">${icon('calendar', 24)}</span><span><b>Přidat akci</b><span class="s">nová akce pro partu</span></span></button>
+    ${adm ? `<button role="menuitem" data-a="akce"><span class="ic" style="background:#2F7A56">${icon('calendar', 24)}</span><span><b>Přidat akci</b><span class="s">nová akce pro partu</span></span></button>` : ''}
+    <button role="menuitem" data-a="zprava"><span class="ic" style="background:#C08A2E">${icon('chat', 24)}</span><span><b>Zpráva v chatu</b><span class="s">napiš partě nebo jen někomu</span></span></button>
     <button role="menuitem" data-a="checkin"><span class="ic" style="background:#E2664F">${icon('pin', 24)}</span><span><b>Check-in</b><span class="s">dej partě vědět, kde jsi</span></span></button>
-    <button role="menuitem" data-a="album"><span class="ic" style="background:#5B6CB8">${icon('photo', 24)}</span><span><b>Přidat fotoalbum</b><span class="s">odkaz na fotky k proběhlé akci</span></span></button>`;
+    ${adm ? `<button role="menuitem" data-a="album"><span class="ic" style="background:#5B6CB8">${icon('photo', 24)}</span><span><b>Přidat fotoalbum</b><span class="s">odkaz na fotky k proběhlé akci</span></span></button>` : ''}`;
   m.onclick = (e) => {
     const b = e.target.closest('[data-a]');
     if (!b) return;
     closeMenu();
     if (b.dataset.a === 'akce') location.hash = '#/nova';
+    else if (b.dataset.a === 'zprava') chatFlow();
     else if (b.dataset.a === 'checkin') { if (location.hash.startsWith('#/kde')) newCheckin(); else location.hash = '#/kde/novy'; }
     else albumFlow();
   };
   document.body.append(bd, m);
+}
+
+// Zpráva v chatu: komu (celá parta nebo jeden člověk) → otevře se konverzace.
+function chatFlow() {
+  const me = myName();
+  const others = PARTY_NAMES.filter((n) => n.normalize('NFC').trim() !== (me || '').normalize('NFC').trim());
+  const bd = sheet(`<h3>Komu napíšeš?</h3>
+    <div class="pickev" style="margin-bottom:10px"><button data-t="${esc(PARTY_THREAD)}"><span class="ic" style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">${icon('people', 18)}</span><b style="flex:1">Celá parta</b></button></div>
+    <div class="chips" style="margin-bottom:12px">${others.map((n) => `<button class="chip" data-t="${esc(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</button>`).join('')}</div>
+    <button class="btn block" data-close>Zrušit</button>`);
+  bd.querySelector('[data-close]').onclick = () => bd.remove();
+  bd.querySelector('.sheet').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-t]');
+    if (!b) return;
+    bd.remove();
+    location.hash = '#/chat/' + encodeURIComponent(b.dataset.t);
+  });
 }
 
 // Kdo smí k akci přidat album: správce, u testovací akce i její autor.
