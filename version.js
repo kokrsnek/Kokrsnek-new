@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.26',
+    date: '22. 11. 2026',
+    items: [
+      'Dlouhý dotyk už nikde neoznačuje text a neotevírá systémovou nabídku „Zkopírovat / Vyhledat“ — jen nabídku aplikace (reakce, odpovědět, kopírovat, smazat).',
+      'V polích pro psaní jde text označovat a vkládat jako dřív.'
+    ]
+  },
+  {
     version: '1.25',
     date: '22. 11. 2026',
     items: [

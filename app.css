@@ -399,3 +399,10 @@ body{overflow-x:hidden}
 :root.tall-fix{height:var(--app-h);overflow:hidden}
 :root.tall-fix body{height:calc(var(--app-h) - env(safe-area-inset-top,0px));overflow:hidden}
 :root.tall-fix .chatscreen:not(.kb){bottom:auto;height:var(--app-h)}
+
+/* Bez systémového výběru textu a nabídky „Zkopírovat / Vyhledat“ při dlouhém
+   dotyku (dlouhý dotyk má v aplikaci vlastní nabídku). Psát a označovat jde
+   dál v polích pro text; zprávu jde zkopírovat přes „Kopírovat text“. */
+html,body,body *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+img,a{-webkit-user-drag:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
