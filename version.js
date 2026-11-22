@@ -3,6 +3,17 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.32',
+    date: '22. 11. 2026',
+    items: [
+      'Čtyři nové vzhledy (Parta → Vzhled):',
+      'Táborák — žhavé uhlíky, nejbližší akce jako oranžový plakát s obřím datem, seznam jako časová osa, plovoucí lišta s „+“ jako uhlík.',
+      'Zápisník — linkovaný papír, akce na lepicím papírku, ručně psané nadpisy, záložky diáře na pravém okraji a „+“ jako razítko.',
+      'Značení — turistické značky, akce jako žlutá směrovka, barevné pásové značky v seznamu, tmavá hranatá lišta.',
+      'Neon — noc se skleněnými kartami a září, přepínač záložek nahoře a plovoucí „+“ vpravo dole.'
+    ]
+  },
+  {
     version: '1.31',
     date: '22. 11. 2026',
     items: [

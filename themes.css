@@ -118,3 +118,203 @@
 .theme-opt .sw{height:64px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;padding:8px;font-size:15px;overflow:hidden}
 .theme-opt .sw i{display:block;height:8px;border-radius:100px}
 .theme-opt small{font-weight:500;color:var(--muted);font-size:12px}
+
+
+/* =====================================================================
+   1.32 — čtyři nové vzhledy: Táborák, Zápisník, Značení, Neon
+   ===================================================================== */
+
+/* ---------- Táborák: žhavé uhlíky, plakát s obřím datem, plovoucí lišta ---------- */
+:root[data-theme="taborak"]{
+  --bg:#140E0A; --card:#241811; --surface:#2E2017; --bar:#2A1C13; --line:#3D2A1C; --line2:#55402E;
+  --ink:#F3E6D6; --ink2:#DCC8B4; --muted:#B49A84;
+  --accent:#E0521F; --accent-hi:#FF8A3D; --accent-text:#FFB27A; --accent-soft:rgba(255,138,61,.16);
+  --coral:#FF8A3D; --coral-text:#FFB27A; --danger:#FF7A5C; --no-soft:rgba(255,122,92,.14);
+  --on-accent:#fff; --shadow:rgba(0,0,0,.6); --scrim:rgba(10,6,4,.7);
+  --cover:#3A1C10; --cover-ink:#FFB27A; --cover-btn:rgba(20,14,10,.8);
+  --warn-bg:rgba(255,178,122,.1); --warn-line:#8A5A30; --warn-ink:#FFCF9E;
+  --day-out:#5E4A3C; --check:#FF8A3D; --toast-bg:#FFB27A; --toast-ink:#140E0A;
+  --gbtn-bg:#F3E6D6; --gbtn-ink:#140E0A; --gbtn-line:transparent; --statusbar:transparent;
+  --r:14px; --r-lg:18px; --r-xl:26px; --btn-r:100px; --ibtn-r:14px;
+  --font:'Source Sans 3',system-ui,sans-serif; --display:'Bitter',Georgia,serif;
+}
+html[data-theme="taborak"],[data-theme="taborak"] body{background:#140E0A radial-gradient(120% 55% at 50% 108%,#5A2410 0%,#2A140B 45%,#140E0A 75%) fixed}
+[data-theme="taborak"] .screen{background:transparent}
+[data-theme="taborak"] .hero{
+  --card:transparent; --ink:#fff; --ink2:#FFE9DA; --muted:#FFE0CC; --line:rgba(255,255,255,.28); --surface:rgba(255,255,255,.16);
+  --coral-text:#fff; --accent-text:#fff; --accent-hi:#fff; --accent-soft:rgba(255,255,255,.22);
+  background:linear-gradient(160deg,#FF8A3D,#C2361B 72%); border:none; color:#fff; box-shadow:0 18px 40px rgba(255,106,42,.25); position:relative; overflow:hidden;
+}
+[data-theme="taborak"] .hero::before{content:'';position:absolute;right:-40px;top:-40px;width:190px;height:190px;border-radius:50%;background:radial-gradient(#FFD27A,rgba(255,210,122,0) 70%);opacity:.5;pointer-events:none}
+[data-theme="taborak"] .hero .datetile{background:transparent;border:none;width:auto;height:auto;align-items:flex-end}
+[data-theme="taborak"] .hero .datetile .d{font-family:'Anton',sans-serif;font-weight:400;font-size:64px;line-height:.85}
+[data-theme="taborak"] .hero .datetile .m{font-family:'Anton',sans-serif;font-weight:400;font-size:16px;letter-spacing:.12em;color:#FFE0CC}
+[data-theme="taborak"] .hero .progress .bar{background:rgba(255,255,255,.25)}
+[data-theme="taborak"] .hero .progress .bar i{background:#FFE29A}
+[data-theme="taborak"] .hero .face{border-color:#E04A23}
+[data-theme="taborak"] .hero .btn.yes{background:#fff;color:#C2361B;border-color:#fff}
+[data-theme="taborak"] .hero .wxchip,[data-theme="taborak"] .hero .likebtn{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff}
+[data-theme="taborak"] .section-h{font-family:var(--display);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#C9A27F}
+/* seznam jako časová osa s žhavými tečkami */
+[data-theme="taborak"] .rows{position:relative;padding-left:24px}
+[data-theme="taborak"] .rows::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:linear-gradient(#FF8A3D,#3D2A1C)}
+[data-theme="taborak"] .rows .row{background:transparent;border:none;padding:6px 0;margin-bottom:12px;position:relative}
+[data-theme="taborak"] .rows .row::before{content:'';position:absolute;left:-23px;top:12px;width:12px;height:12px;border-radius:50%;background:#FF8A3D;box-shadow:0 0 12px #FF8A3D}
+[data-theme="taborak"] .rows .row.past::before{background:#6E5442;box-shadow:none}
+[data-theme="taborak"] .rows .row .datetile.sm{display:none}
+[data-theme="taborak"] .rows .row .t{font-family:var(--display);font-size:17px}
+[data-theme="taborak"] .rows .row .r{color:#FFB27A;font-weight:700}
+/* plovoucí zaoblená lišta, + jako žhnoucí uhlík */
+[data-theme="taborak"] .tabbar{left:14px;right:14px;bottom:calc(10px + max(0px, var(--safe-bottom) - 14px));border-radius:34px;border:1px solid #4A3322;background:rgba(42,28,19,.94);box-shadow:0 10px 30px rgba(0,0,0,.55);padding:4px 6px}
+[data-theme="taborak"] .tabbar a.on{color:#FFB27A}
+[data-theme="taborak"] .tabbar .plus{width:58px;height:58px;margin-top:-24px;background:radial-gradient(circle at 50% 70%,#FFD27A,#FF7A2F 45%,#C2361B);box-shadow:0 0 0 6px #140E0A,0 0 26px #FF7A2F}
+[data-theme="taborak"] .plusmenu{bottom:calc(98px + max(0px, var(--safe-bottom) - 14px))}
+
+/* ---------- Zápisník: linkovaný papír, lepicí papírek, záložky na okraji ---------- */
+:root[data-theme="zapisnik"]{
+  --bg:#FBF5E6; --card:#FFFDF6; --surface:#F1EAD6; --bar:#FBF5E6; --line:#DCD3BC; --line2:#C9BFA4;
+  --ink:#2B2A33; --ink2:#4A4855; --muted:#6B6878;
+  --accent:#2E4A8C; --accent-hi:#2E4A8C; --accent-text:#2E4A8C; --accent-soft:#E2E8F4;
+  --coral:#B5562E; --coral-text:#B5562E; --danger:#B5562E; --no-soft:#F6E1D6;
+  --on-accent:#fff; --shadow:rgba(43,42,51,.2); --scrim:rgba(43,42,51,.45);
+  --cover:#2E4A8C; --cover-ink:#E2E8F4; --cover-btn:rgba(251,245,230,.92);
+  --warn-bg:#FFF6C8; --warn-line:#C9A227; --warn-ink:#6B5300;
+  --day-out:#BDB5A0; --check:#2E4A8C; --toast-bg:#2B2A33; --toast-ink:#FBF5E6;
+  --gbtn-bg:#FFFDF6; --gbtn-ink:#2B2A33; --gbtn-line:#2B2A33; --statusbar:#FBF5E6;
+  --r:8px; --r-lg:10px; --r-xl:4px; --btn-r:8px; --ibtn-r:50%;
+  --font:'Lora',Georgia,serif; --display:'Comic Relief','Comic Sans MS',cursive;
+}
+html[data-theme="zapisnik"],[data-theme="zapisnik"] body{background-color:#FBF5E6;background-image:linear-gradient(90deg,transparent 30px,#F2A0A0 30px,#F2A0A0 32px,transparent 32px),repeating-linear-gradient(#FBF5E6 0 31px,#D8E3F0 31px 32px);background-attachment:fixed}
+[data-theme="zapisnik"] .screen{background:transparent}
+[data-theme="zapisnik"] .screen:has(.tabbar) .scroll,[data-theme="zapisnik"] .screen:has(.tabbar) .top{padding-left:42px;padding-right:56px}
+[data-theme="zapisnik"] .brand,[data-theme="zapisnik"] .h1{color:#2E4A8C;font-size:32px;transform:rotate(-2deg);transform-origin:left;display:inline-block}
+[data-theme="zapisnik"] .sub{font-style:italic}
+[data-theme="zapisnik"] .ibtn{background:transparent;border:1.5px solid var(--ink)}
+[data-theme="zapisnik"] .cover .ibtn{background:var(--cover-btn);border:none}
+[data-theme="zapisnik"] .ibtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme="zapisnik"] .btn{font-family:var(--display);font-weight:700;border:2px solid var(--ink);background:#FFF8D0}
+[data-theme="zapisnik"] .btn.yes{background:#2E4A8C;color:#fff;border-color:#2E4A8C}
+[data-theme="zapisnik"] .btn.primary{background:#2E4A8C;color:#fff;border-color:#2E4A8C}
+[data-theme="zapisnik"] .card{box-shadow:0 4px 10px rgba(0,0,0,.08)}
+[data-theme="zapisnik"] .hero{--card:#FFE98A; --line:rgba(43,42,51,.2); --surface:rgba(43,42,51,.08);
+  border:none;border-radius:2px;transform:rotate(-1.4deg);box-shadow:0 12px 20px rgba(0,0,0,.14),0 1px 0 rgba(0,0,0,.05);position:relative;overflow:visible}
+[data-theme="zapisnik"] .hero::before{content:'';position:absolute;top:-12px;left:50%;width:96px;height:24px;margin-left:-48px;background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.06);transform:rotate(3deg)}
+[data-theme="zapisnik"] .hero .datetile{background:transparent;border:2px solid #B5562E;transform:rotate(4deg);border-radius:6px}
+[data-theme="zapisnik"] .hero .datetile .d{color:#B5562E}
+[data-theme="zapisnik"] .hero .face{border-color:#FFE98A}
+[data-theme="zapisnik"] .hero .progress .bar i{background:#2E4A8C}
+[data-theme="zapisnik"] .title,[data-theme="zapisnik"] .eyebrow{font-family:var(--display)}
+[data-theme="zapisnik"] .eyebrow{text-transform:none;letter-spacing:0;font-size:15px}
+[data-theme="zapisnik"] .section-h{font-family:var(--display);font-size:20px;color:#2E4A8C;text-decoration:underline wavy #F2A0A0 2px;text-underline-offset:6px}
+[data-theme="zapisnik"] .rows .row{background:transparent;border:none;border-radius:0;border-bottom:1.5px dashed #C9BFA4;margin:0;padding:10px 0}
+[data-theme="zapisnik"] .rows .row .datetile.sm{background:transparent!important;width:auto;min-width:34px}
+[data-theme="zapisnik"] .rows .row .datetile .m{display:none}
+[data-theme="zapisnik"] .rows .row .datetile .d{font-family:var(--display);color:#B5562E;font-size:22px}
+[data-theme="zapisnik"] .rows .row .t{font-family:var(--display);font-size:16px}
+[data-theme="zapisnik"] .rows .row .r{font-family:var(--display);color:#2E4A8C;border:1.5px solid #2E4A8C;border-radius:12px;padding:1px 8px;transform:rotate(-4deg)}
+[data-theme="zapisnik"] .rows .row .r:has(.pill){border:none;padding:0;transform:none}
+/* záložky diáře na pravém okraji */
+[data-theme="zapisnik"] .tabbar{left:auto;right:0;bottom:auto;top:calc(var(--safe-top) + 150px);width:46px;background:none;border:none;padding:0;display:block}
+[data-theme="zapisnik"] .tabbar nav{display:flex;flex-direction:column;gap:6px;width:46px}
+[data-theme="zapisnik"] .tabbar a{writing-mode:vertical-rl;transform:rotate(180deg);height:78px;width:42px;margin-left:4px;border-radius:0 12px 12px 0;padding:0;justify-content:center;color:#fff;font-family:var(--display);font-size:13px;font-weight:700;box-shadow:2px -2px 6px rgba(0,0,0,.15);transition:width .15s,margin .15s}
+[data-theme="zapisnik"] .tabbar a svg{display:none}
+[data-theme="zapisnik"] .tabbar a.on{width:46px;margin-left:0;color:#fff}
+[data-theme="zapisnik"] .tabbar nav > :nth-child(1){background:#2E4A8C}
+[data-theme="zapisnik"] .tabbar nav > :nth-child(2){background:#4E8A4C}
+[data-theme="zapisnik"] .tabbar nav > :nth-child(4){background:#C9A227}
+[data-theme="zapisnik"] .tabbar nav > :nth-child(5){background:#B5562E}
+[data-theme="zapisnik"] .tabbar a:not(.on){opacity:.85}
+[data-theme="zapisnik"] .tabbar .plus{position:fixed;right:18px;bottom:calc(20px + var(--safe-bottom));width:64px;height:64px;background:#FBF5E6;color:#B5562E;border:3px dashed #B5562E;box-shadow:none;transform:rotate(-8deg)}
+[data-theme="zapisnik"] .tabbar .plus.open{transform:rotate(37deg)}
+[data-theme="zapisnik"] .plusmenu{bottom:calc(96px + var(--safe-bottom))}
+
+/* ---------- Značení: turistické směrovky, pásové značky, úzké velké písmo ---------- */
+:root[data-theme="znaceni"]{
+  --bg:#ECEDE8; --card:#FFFFFF; --surface:#E2E4DE; --bar:#1E2422; --line:#D5D8D1; --line2:#BFC4BC;
+  --ink:#1E2422; --ink2:#3C4440; --muted:#5E6662;
+  --accent:#1E2422; --accent-hi:#1E2422; --accent-text:#C8322B; --accent-soft:#E2E4DE;
+  --coral:#C8322B; --coral-text:#C8322B; --danger:#C8322B; --no-soft:#F6DEDC;
+  --on-accent:#fff; --shadow:rgba(30,36,34,.25); --scrim:rgba(30,36,34,.55);
+  --cover:#2E5FB8; --cover-ink:#FFD43B; --cover-btn:rgba(255,255,255,.9);
+  --warn-bg:#FFF3C4; --warn-line:#E0B000; --warn-ink:#6B5300;
+  --day-out:#A9AEA7; --check:#2F8A4C; --toast-bg:#1E2422; --toast-ink:#fff;
+  --gbtn-bg:#fff; --gbtn-ink:#1E2422; --gbtn-line:#1E2422; --statusbar:#ECEDE8;
+  --r:4px; --r-lg:4px; --r-xl:6px; --btn-r:4px; --ibtn-r:4px;
+  --display-tt:uppercase; --display-w:400;
+  --font:'Fira Sans',system-ui,sans-serif; --display:'Anton','Fira Sans',sans-serif;
+}
+[data-theme="znaceni"] .brand,[data-theme="znaceni"] .h1{letter-spacing:.02em;font-size:30px}
+[data-theme="znaceni"] .brand::before{content:'';display:inline-block;width:22px;height:22px;margin-right:8px;vertical-align:-2px;background:linear-gradient(#fff 0 33%,#C8322B 33% 67%,#fff 67%);box-shadow:0 0 0 1px rgba(0,0,0,.25);border-radius:2px}
+[data-theme="znaceni"] .sub{text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+[data-theme="znaceni"] .ibtn{background:#fff;border:2px solid #1E2422}
+[data-theme="znaceni"] .btn{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:17px;border:2px solid #1E2422;background:#fff}
+[data-theme="znaceni"] .btn.yes{background:#1E2422;color:#fff}
+[data-theme="znaceni"] .btn.primary{background:#C8322B;border-color:#C8322B;color:#fff}
+[data-theme="znaceni"] .eyebrow{color:#1E2422;letter-spacing:.12em}
+/* hlavní karta jako žlutá směrovka se šipkou */
+[data-theme="znaceni"] .hero{--card:#FFD43B; --ink:#1E2422; --muted:#3C4440; --line:rgba(30,36,34,.25); --surface:rgba(30,36,34,.1);
+  border:none;border-radius:6px 0 0 6px;clip-path:polygon(0 0,calc(100% - 34px) 0,100% 50%,calc(100% - 34px) 100%,0 100%);padding-right:48px;box-shadow:none}
+[data-theme="znaceni"] .hero-wrap{filter:drop-shadow(0 6px 0 #C9A20A)}
+[data-theme="znaceni"] .hero .datetile{background:transparent;border:none;width:auto}
+[data-theme="znaceni"] .hero .datetile .d{font-size:44px;font-weight:400}
+[data-theme="znaceni"] .hero .datetile .m{color:#1E2422}
+[data-theme="znaceni"] .hero .progress .bar{background:rgba(30,36,34,.18)}
+[data-theme="znaceni"] .hero .progress .bar i{background:#C8322B}
+[data-theme="znaceni"] .hero .face{border-color:#FFD43B}
+[data-theme="znaceni"] .hero .btn{background:rgba(255,255,255,.6)}
+[data-theme="znaceni"] .hero .btn.yes{background:#1E2422;color:#fff}
+[data-theme="znaceni"] .section-h{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:18px;font-weight:400;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+[data-theme="znaceni"] .section-h::after{content:'';flex:1;height:3px;background:repeating-linear-gradient(90deg,#C8322B 0 18px,transparent 18px 26px)}
+[data-theme="znaceni"] .rows .row{border:none;border-left:6px solid #2E5FB8;margin-bottom:8px}
+[data-theme="znaceni"] .rows .row:nth-child(3n+2){border-left-color:#2F8A4C}
+[data-theme="znaceni"] .rows .row:nth-child(3n+3){border-left-color:#E0B000}
+[data-theme="znaceni"] .rows .row:nth-child(4n+4){border-left-color:#C8322B}
+[data-theme="znaceni"] .rows .row .datetile.sm{background:transparent!important}
+[data-theme="znaceni"] .rows .row .datetile .d{font-family:var(--display);font-weight:400;font-size:24px}
+[data-theme="znaceni"] .rows .row .r{font-family:var(--display);font-size:15px;color:var(--ink);text-transform:uppercase}
+[data-theme="znaceni"] .tabbar{background:#1E2422;border-top:none}
+[data-theme="znaceni"] .tabbar a{color:#9AA39F;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+[data-theme="znaceni"] .tabbar a.on{color:#fff;box-shadow:inset 0 -4px 0 #C8322B}
+[data-theme="znaceni"] .tabbar .plus{border-radius:4px;width:58px;height:50px;background:#C8322B;color:#fff;box-shadow:none}
+
+/* ---------- Neon: noc, sklo, záře, lišta nahoře a plovoucí + ---------- */
+:root[data-theme="neon"]{
+  --bg:#070B18; --card:rgba(255,255,255,.07); --surface:rgba(255,255,255,.09); --bar:rgba(20,26,50,.75); --line:rgba(255,255,255,.14); --line2:rgba(255,255,255,.24);
+  --ink:#EAF0FF; --ink2:#C3CCE6; --muted:#93A0C2;
+  --accent:#7C5CFF; --accent-hi:#22D3EE; --accent-text:#22D3EE; --accent-soft:rgba(34,211,238,.14);
+  --coral:#FF5CA8; --coral-text:#FF8AC4; --danger:#FF7A9C; --no-soft:rgba(255,92,168,.14);
+  --on-accent:#fff; --shadow:rgba(0,0,0,.6); --scrim:rgba(3,5,12,.7);
+  --cover:#1B1650; --cover-ink:#22D3EE; --cover-btn:rgba(7,11,24,.7);
+  --warn-bg:rgba(34,211,238,.08); --warn-line:#22D3EE; --warn-ink:#A5F0FC;
+  --day-out:#3B4466; --check:#22D3EE; --toast-bg:#22D3EE; --toast-ink:#06202A;
+  --gbtn-bg:#fff; --gbtn-ink:#0A0F1F; --gbtn-line:transparent; --statusbar:transparent;
+  --r:16px; --r-lg:20px; --r-xl:28px; --btn-r:14px; --ibtn-r:14px;
+  --display-w:800;
+  --font:'Poppins',system-ui,sans-serif; --display:'Montserrat','Poppins',sans-serif;
+}
+html[data-theme="neon"],[data-theme="neon"] body{background:#070B18 radial-gradient(60% 35% at 0% 22%,rgba(124,92,255,.35),transparent 70%) fixed,#070B18 radial-gradient(55% 30% at 100% 60%,rgba(34,211,238,.22),transparent 70%) fixed;background-color:#070B18}
+[data-theme="neon"] .screen{background:transparent}
+[data-theme="neon"] .card,[data-theme="neon"] .row,[data-theme="neon"] .ci,[data-theme="neon"] .sheet{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+[data-theme="neon"] .sheet,[data-theme="neon"] .plusmenu{background:#141A33}
+[data-theme="neon"] .brand,[data-theme="neon"] .h1{letter-spacing:-.03em;background:linear-gradient(90deg,#fff,#A8B4FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-theme="neon"] .hero{--card:transparent; --line:rgba(255,255,255,.22); --surface:rgba(255,255,255,.16); --muted:#D3CCFF; --ink2:#E6E1FF;
+  background:linear-gradient(160deg,#7C5CFF,#3B2BB5 60%,#0E1240);border:1px solid rgba(255,255,255,.2);box-shadow:0 20px 50px rgba(124,92,255,.35)}
+[data-theme="neon"] .hero .datetile{background:rgba(255,255,255,.14);border:none}
+[data-theme="neon"] .hero .datetile .m{color:#A5F0FC}
+[data-theme="neon"] .hero .face{border-color:#5A43E0}
+[data-theme="neon"] .hero .progress .bar i{background:linear-gradient(90deg,#22D3EE,#FF5CA8)}
+[data-theme="neon"] .btn.yes,[data-theme="neon"] .btn.primary{background:#22D3EE;border-color:#22D3EE;color:#06202A}
+[data-theme="neon"] .seg button.on,[data-theme="neon"] .ibtn.on{background:linear-gradient(135deg,#7C5CFF,#22D3EE);border:none;color:#fff}
+[data-theme="neon"] .datetile.sm{background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(124,92,255,.25))!important}
+[data-theme="neon"] .eyebrow{color:#22D3EE}
+/* lišta jako přepínač nahoře, + plovoucí vpravo dole */
+[data-theme="neon"] .screen:has(.tabbar){padding-top:calc(var(--safe-top) + 62px)}
+[data-theme="neon"] .tabbar{top:calc(var(--safe-top) + 8px);bottom:auto;left:14px;right:14px;max-width:532px;margin:0 auto;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(18,24,48,.94);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:4px}
+/* pozor: backdrop-filter na liště by „+“ (position:fixed) uvěznil uvnitř lišty */
+[data-theme="neon"] .tabbar nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
+[data-theme="neon"] .tabbar a{flex-direction:row;justify-content:center;font-size:13px;padding:9px 0;border-radius:14px;color:#93A0C2}
+[data-theme="neon"] .tabbar a svg{display:none}
+[data-theme="neon"] .tabbar a.on{background:linear-gradient(135deg,#7C5CFF,#22D3EE);color:#fff;box-shadow:0 4px 16px rgba(124,92,255,.5)}
+[data-theme="neon"] .tabbar .plus{position:fixed;right:20px;bottom:calc(22px + var(--safe-bottom));width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,#22D3EE,#7C5CFF);box-shadow:0 10px 30px rgba(124,92,255,.6)}
+[data-theme="neon"] .plusmenu{bottom:calc(96px + var(--safe-bottom))}
+[data-theme="neon"] .scroll{padding-bottom:100px}

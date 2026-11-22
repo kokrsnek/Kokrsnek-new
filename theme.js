@@ -7,7 +7,15 @@ export const THEMES = [
   { id: 'festival', name: 'Festival', note: 'černá, žlutá', bg: '#0D0D10', card: '#1E1E24', ink: '#F7F5EE', a: '#F5D90A', b: '#FF5C8A', status: '#0D0D10',
     font: 'Bricolage Grotesque', fonts: 'family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700' },
   { id: 'hlidka', name: 'Hlídka', note: 'světlá, modrá', bg: '#EEF1F5', card: '#FFFFFF', ink: '#14213D', a: '#1D2B4F', b: '#C84E0F', status: '#1D2B4F',
-    font: 'Barlow Condensed', fonts: 'family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700' }
+    font: 'Barlow Condensed', fonts: 'family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700' },
+  { id: 'taborak', name: 'Táborák', note: 'žhavé uhlíky', bg: '#140E0A', card: '#241811', ink: '#F3E6D6', a: '#FF8A3D', b: '#C2361B', status: '#140E0A',
+    font: 'Bitter', fonts: 'family=Bitter:wght@700;800&family=Source+Sans+3:wght@400;500;600;700&family=Anton' },
+  { id: 'zapisnik', name: 'Zápisník', note: 'papír, propiska', bg: '#FBF5E6', card: '#FFE98A', ink: '#2B2A33', a: '#2E4A8C', b: '#B5562E', status: '#FBF5E6',
+    font: 'Comic Relief', fonts: 'family=Comic+Relief:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400' },
+  { id: 'znaceni', name: 'Značení', note: 'turistické značky', bg: '#ECEDE8', card: '#FFD43B', ink: '#1E2422', a: '#C8322B', b: '#2E5FB8', status: '#1E2422',
+    font: 'Anton', fonts: 'family=Anton&family=Fira+Sans:wght@400;500;600;700' },
+  { id: 'neon', name: 'Neon', note: 'noc, sklo, záře', bg: '#070B18', card: '#5B3FE0', ink: '#EAF0FF', a: '#22D3EE', b: '#7C5CFF', status: '#070B18',
+    font: 'Montserrat', fonts: 'family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700' }
 ];
 const KEY = 'kokrsnek2Theme';
 
