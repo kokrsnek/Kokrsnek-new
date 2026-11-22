@@ -4,7 +4,7 @@ import { tabbar, faces, toast, spinner } from './ui.js';
 import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
 import { prefetchEvent, neighboursOf, cachedLikes, loadLikes, watchLikes, toggleLike } from './store.js';
-import { eventWeather, cachedWeather } from './weather.js';
+import { eventWeather, cachedWeather, tempRange } from './weather.js';
 import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAttendance, cachedAttendance } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 
@@ -77,7 +77,7 @@ export function render(root, { tab }) {
   function wxChips(ev) {
     const w = cachedWeather(ev);
     if (!w || w.past) return '';
-    return `<span class="wxchip">${w.icon} ${w.min === w.max ? w.min : w.min + '–' + w.max} °C</span>${w.prob != null && w.prob >= 10 ? `<span class="wxchip">💧 ${w.prob} %</span>` : ''}`;
+    return `<span class="wxchip">${w.icon} ${tempRange(w)}</span>${w.prob != null && w.prob >= 10 ? `<span class="wxchip">💧 ${w.prob} %</span>` : ''}`;
   }
   function likeBtn(ev) {
     const l = cachedLikes(ev.id) || [];

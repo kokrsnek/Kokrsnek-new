@@ -9,7 +9,7 @@ import {
   cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike, reactComment
 } from './store.js';
 import { emo, sortedReactions, emojiSheet, onLongPress } from './emoji.js';
-import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf } from './weather.js';
+import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf, tempRange } from './weather.js';
 import { plural } from './util.js';
 import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
@@ -252,7 +252,7 @@ function mountDetail(host, ev, live) {
     const box = host.querySelector('[data-wx]');
     if (!box || !w) return;
     host.querySelectorAll('[data-wxrow]').forEach((x) => x.remove());
-    const range = w.min === w.max ? `${w.min} °C` : `${w.min}–${w.max} °C`;
+    const range = tempRange(w);
     if (w.past) {
       box.innerHTML = '';
       host.querySelector('.info')?.insertAdjacentHTML('beforeend', `<div data-wxrow><span class="wxic">${w.icon}</span><div class="k"><b>Počasí bylo ${range}</b><span>${w.mm > 0 ? String(w.mm).replace('.', ',') + ' mm srážek' : 'bez srážek'} · ${esc(w.desc.toLowerCase())}</span></div></div>`);
@@ -261,8 +261,8 @@ function mountDetail(host, ev, live) {
     const parts = ev.place.split(',').map((x) => x.trim()).filter(Boolean);
     const where = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
     box.innerHTML = `<div class="wxcard">
-      <div class="hd"><div style="min-width:0"><div class="lbl">POČASÍ NA AKCI${where ? ' · ' + esc(where.toUpperCase()) : ''}</div><div class="desc">${esc(w.desc)}</div></div><div class="big">${w.startIcon} ${w.now}°</div></div>
-      <div class="wxhours" style="grid-template-columns:repeat(${hourColumns(w, 8).length},1fr)">${hourColumns(w, 8).map((h) => `<div><span>${h.h}</span><span class="e">${h.code != null ? wxIconOf(h.code) : ''}</span><b>${h.t}°</b><span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span></div>`).join('')}</div>
+      <div class="hd"><div style="min-width:0"><div class="lbl">POČASÍ NA AKCI${where ? ' · ' + esc(where.toUpperCase()) : ''}</div><div class="desc">${esc(w.desc)}</div></div><div class="big">${w.startIcon} ${w.now < 0 ? '−' + Math.abs(w.now) : w.now}°</div></div>
+      <div class="wxhours" style="grid-template-columns:repeat(${hourColumns(w, 8).length},1fr)">${hourColumns(w, 8).map((h) => `<div><span>${h.h}</span><span class="e">${h.code != null ? wxIconOf(h.code) : ''}</span><b>${h.t < 0 ? '−' + Math.abs(h.t) : h.t}°</b><span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span></div>`).join('')}</div>
     </div>`;
   }
 

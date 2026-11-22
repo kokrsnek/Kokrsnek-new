@@ -422,10 +422,10 @@ html[data-theme="vodaci"],[data-theme="vodaci"] body{background:linear-gradient(
 [data-theme="vodaci"] .rows .row .r{color:#1A8FB0;font-weight:700;background:#E3F4F8;border-radius:100px;padding:3px 9px}
 [data-theme="vodaci"] .rows .row .r:has(.pill){background:none;padding:0}
 [data-theme="vodaci"] .tabbar{border-top:none;background:#0B5C73;padding-top:10px}
-[data-theme="vodaci"] .tabbar::before{content:'';position:absolute;left:0;right:0;top:-18px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 20' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q12 0 24 10 T48 10 T72 10 T96 10 V20 H0Z' fill='%230B5C73'/%3E%3C/svg%3E") repeat-x;background-size:96px 20px}
-[data-theme="vodaci"] .tabbar a{color:#9FD3E0}
+[data-theme="vodaci"] .tabbar::before{content:'';position:absolute;z-index:0;pointer-events:none;left:0;right:0;top:-18px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 20' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q12 0 24 10 T48 10 T72 10 T96 10 V20 H0Z' fill='%230B5C73'/%3E%3C/svg%3E") repeat-x;background-size:96px 20px}
+[data-theme="vodaci"] .tabbar a{color:#9FD3E0;position:relative;z-index:1}
 [data-theme="vodaci"] .tabbar a.on{color:#FFD35A}
-[data-theme="vodaci"] .tabbar .plus{width:64px;height:64px;margin-top:-30px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.35);background:radial-gradient(circle,#0B5C73 0 15px,transparent 16px),conic-gradient(#E8322B 0 45deg,#fff 45deg 90deg,#E8322B 90deg 135deg,#fff 135deg 180deg,#E8322B 180deg 225deg,#fff 225deg 270deg,#E8322B 270deg 315deg,#fff 315deg)}
+[data-theme="vodaci"] .tabbar .plus{position:relative;z-index:3;width:62px;height:62px;margin-top:-22px;border:3px solid #0B5C73;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.35);background:radial-gradient(circle,#0B5C73 0 15px,transparent 16px),conic-gradient(#E8322B 0 45deg,#fff 45deg 90deg,#E8322B 90deg 135deg,#fff 135deg 180deg,#E8322B 180deg 225deg,#fff 225deg 270deg,#E8322B 270deg 315deg,#fff 315deg)}
 [data-theme="vodaci"] .tabbar .plus svg{width:20px;height:20px}
 
 /* ---------- Western: pergamen, plakát HLEDÁ SE, prkna, šerifská hvězda ---------- */

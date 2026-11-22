@@ -119,6 +119,13 @@ async function load(ev) {
   };
 }
 
+// Rozsah teplot pro zobrazení: „3–8 °C“, se zápornými „−2 až −1 °C“.
+export function tempRange(w) {
+  const f = (n) => (n < 0 ? '−' + Math.abs(n) : String(n));
+  if (w.min === w.max) return f(w.min) + ' °C';
+  return f(w.min) + (w.min < 0 || w.max < 0 ? ' až ' : '–') + f(w.max) + ' °C';
+}
+
 // Do sedmi sloupců pro kartu po hodinách.
 export function hourColumns(w, n = 7) {
   const step = Math.max(1, Math.ceil(w.hours.length / n));

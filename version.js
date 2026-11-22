@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.34',
+    date: '22. 11. 2026',
+    items: [
+      'Vodáci: tlačítka „Pádluju“ a „Gauč doma“.',
+      'Vodáci: záchranný kruh v liště se už neusekává o vlnu.',
+      'Počasí pod nulou se píše „−2 až −1 °C“ místo „-2--1 °C“.'
+    ]
+  },
+  {
     version: '1.33',
     date: '22. 11. 2026',
     items: [
