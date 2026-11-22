@@ -127,9 +127,12 @@ export function renderThread(root, { id }) {
   const fit = () => {
     const vv = window.visualViewport;
     const h = vv ? vv.height : window.innerHeight;
+    // Bez klávesnice sahá chat přes celý displej (top:0 + bottom:0 v CSS),
+    // výška z JS se použije jen při otevřené klávesnici.
+    const kb = !!vv && h < window.innerHeight - 120;
+    scr.classList.toggle('kb', kb);
     scr.style.setProperty('--chat-h', Math.round(h) + 'px');
-    scr.style.transform = vv && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
-    scr.classList.toggle('kb', h < window.innerHeight - 120);
+    scr.style.transform = kb && vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
     if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
   };
   fit();

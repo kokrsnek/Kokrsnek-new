@@ -309,7 +309,8 @@ body{overflow-x:hidden}
 .cover .coverlbl{background:rgba(20,20,24,.65);color:#fff;padding:7px 14px;border-radius:100px;font-weight:700;font-size:13px}
 
 /* ---------- Chat ---------- */
-.chatscreen{position:fixed;top:0;left:0;right:0;margin:0 auto;max-width:560px;height:var(--chat-h,100dvh);min-height:0;overflow:hidden;background:var(--bg);z-index:5}
+.chatscreen{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;max-width:560px;height:auto;min-height:0;overflow:hidden;background:var(--bg);z-index:5}
+.chatscreen.kb{bottom:auto;height:var(--chat-h)}
 .chattop{flex:0 0 auto;gap:12px;justify-content:flex-start;border-bottom:1px solid var(--line)}
 .msgs{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 14px 16px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
 .daysep{align-self:center;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 4px}

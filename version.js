@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.22',
+    date: '22. 11. 2026',
+    items: [
+      'Chat: pole pro psaní sedí úplně u dolní hrany displeje, pod ním už není tmavý pruh.'
+    ]
+  },
+  {
     version: '1.21',
     date: '22. 11. 2026',
     items: [
