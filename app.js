@@ -9,6 +9,7 @@ import * as detail from './detail.js';
 import * as editor from './editor.js';
 import * as parta from './parta.js';
 import * as brzy from './brzy.js';
+import { installPlus } from './plus.js';
 
 const root = document.getElementById('app');
 let cleanup = null;
@@ -55,6 +56,7 @@ function route(force = false) {
 
 window.addEventListener('hashchange', () => route(true));
 onSession(() => route(false));
+installPlus();
 initAuth();
 route(true);
 

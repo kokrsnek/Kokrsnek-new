@@ -27,7 +27,6 @@
 [data-theme="chata"] .datetile.sm .m{color:var(--muted)}
 [data-theme="chata"] .datetile.sm .d{color:var(--ink)}
 [data-theme="chata"] .card,[data-theme="chata"] .row{box-shadow:0 1px 0 var(--line)}
-[data-theme="chata"] .fab{border-radius:100px}
 [data-theme="chata"] .tabbar a.on{color:var(--coral)}
 
 /* ---------- Festival: černá, citronově žlutá, růžová, tučná velká písmena ---------- */
@@ -97,7 +96,7 @@
 /* Tmavě modrý pruh nahoře */
 [data-theme="hlidka"] .screen{padding-top:0}
 [data-theme="hlidka"] .top{
-  background:#1D2B4F; padding-top:calc(20px + var(--safe-top)); padding-bottom:16px; margin-bottom:12px;
+  background:#1D2B4F; padding-top:calc(6px + var(--safe-top)); padding-bottom:16px; margin-bottom:12px;
   --ink:#FFFFFF; --muted:#C9D2E6; --surface:rgba(255,255,255,.12); --line:transparent; color:#FFFFFF;
 }
 [data-theme="hlidka"] .top .ibtn.on{background:#FFFFFF;color:#1D2B4F}

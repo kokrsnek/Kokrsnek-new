@@ -3,6 +3,16 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.02',
+    date: '22. 11. 2026',
+    items: [
+      'Spodní lišta je níž u okraje displeje, pod ikonami už není prázdné místo.',
+      'Obsah obrazovek začíná výš, hned pod horním okrajem.',
+      'Místo plovoucího tlačítka „Nová akce“ je uprostřed spodní lišty tlačítko +. Otevře menu: Přidat akci a Přidat fotoalbum.',
+      'Přidat fotoalbum: vybereš proběhlou akci a vložíš odkaz na Google Fotky. Jde to i přímo v detailu akce, která album ještě nemá. Ve zkušebním provozu jen pro správce.'
+    ]
+  },
+  {
     version: '1.01',
     date: '22. 11. 2026',
     items: [

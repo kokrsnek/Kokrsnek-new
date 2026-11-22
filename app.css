@@ -26,10 +26,10 @@ input,textarea,select{font-size:16px}
 
 #app{min-height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;position:relative}
 .screen{flex:1;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;padding-top:var(--safe-top)}
-.scroll{flex:1;padding:0 20px 140px}
+.scroll{flex:1;padding:0 20px 110px}
 
 /* Hlavička */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 20px 10px}
 .brand{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:-.01em}
 .sub{font-size:13px;color:var(--muted);margin-top:2px}
 .h1{font-family:var(--display);font-weight:700;font-size:26px;margin:0}
@@ -89,11 +89,10 @@ input,textarea,select{font-size:16px}
 .pill.no{border:1px solid var(--coral);color:var(--coral-text)}
 
 /* Lišta dole */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;background:var(--bar);border-top:1px solid var(--line);padding:8px 8px calc(10px + var(--safe-bottom))}
-.tabbar nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;max-width:560px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;background:var(--bar);border-top:1px solid var(--line);padding:6px 8px max(6px, calc(var(--safe-bottom) - 18px))}
+.tabbar nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;width:100%;max-width:560px}
 .tabbar a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 0}
 .tabbar a.on{color:var(--accent-text);font-weight:700}
-.fab{position:fixed;z-index:21;right:max(20px,calc(50% - 260px));bottom:calc(84px + var(--safe-bottom));height:54px;padding:0 20px;border-radius:18px;background:var(--accent);color:#fff;border:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;box-shadow:0 10px 24px var(--shadow);text-decoration:none}
 
 /* Detail */
 .cover{height:190px;background:var(--cover);display:flex;align-items:center;justify-content:center;position:relative;color:var(--cover-ink);font-size:13px}
@@ -185,7 +184,7 @@ textarea.input{height:auto;padding:12px 14px;resize:vertical;min-height:90px}
 /* Nadpisy podle stylu */
 .brand,.h1,.title,.mhead .t,.sheethead .t,.sheet h3{text-transform:var(--display-tt);font-weight:var(--display-w)}
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--safe-top);background:var(--statusbar);z-index:40;pointer-events:none}
-.btn.primary.big,.fab{color:var(--on-accent)}
+.btn.primary.big{color:var(--on-accent)}
 
 /* Řádky akcí (ve stylu Festival se z nich stanou dlaždice) */
 .row .wd{display:none}
@@ -198,3 +197,17 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--safe-to
 .changelog .cl-more{background:none;border:none;padding:14px 0 4px;color:var(--accent-text);font-weight:700;font-size:15px}
 .changelog .cl-v{font-weight:700;margin:14px 0 6px}
 .changelog .cl-v span{font-weight:500;color:var(--muted);font-size:13px}
+
+/* Tlačítko + uprostřed spodní lišty a jeho menu */
+.tabbar .plus{justify-self:center;width:54px;height:54px;border-radius:50%;border:none;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px var(--shadow);transition:transform .15s}
+.tabbar .plus.open{transform:rotate(45deg)}
+.plusmenu-bd{position:fixed;inset:0;z-index:19;background:var(--scrim)}
+.plusmenu{position:fixed;z-index:22;left:16px;right:16px;bottom:calc(84px + max(6px, calc(var(--safe-bottom) - 18px)));max-width:528px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:10px;box-shadow:0 16px 40px var(--shadow)}
+.plusmenu button{width:100%;display:flex;align-items:center;gap:14px;background:none;border:none;padding:10px;border-radius:16px;text-align:left;color:var(--ink)}
+.plusmenu button:active{background:var(--surface)}
+.plusmenu .ic{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.plusmenu b{display:block;font-size:17px}
+.plusmenu span.s{font-size:13px;color:var(--muted)}
+.pickev{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto;margin:10px 0}
+.pickev button{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;color:var(--ink)}
+.pickev button .s{font-size:12px;color:var(--muted)}

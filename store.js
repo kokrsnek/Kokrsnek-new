@@ -28,7 +28,7 @@ function fromDoc(d) {
   if (end < start) end = start;
   return {
     id: d.id, title: x.title || '(bez názvu)', place: x.place || '', description: x.description || '',
-    start, end, allDay: !!x.allDay, photoAlbum: x.photoAlbum || '', driveFiles: x.driveFiles || [],
+    start, end, allDay: !!x.allDay, photoAlbum: x.photoAlbumApp || x.photoAlbum || '', driveFiles: x.driveFiles || [],
     isTest: !!x.isTest, source: x.source || 'app', createdBy: x.createdBy || ''
   };
 }
@@ -161,6 +161,12 @@ export async function toggleItem(ev, item) {
   const me = myName();
   if (item.takenBy && item.takenBy !== me) return;
   await updateDoc(doc(db, ...paths(ev).items, item.id), { takenBy: item.takenBy ? null : me });
+}
+
+// Album přidané v aplikaci (Přidat fotoalbum). Ukládá se do zvláštního pole,
+// aby ho opakovaný import z kalendáře nepřepsal.
+export async function setAlbum(ev, url) {
+  await updateDoc(doc(db, 'v2_akce', ev.id), { photoAlbumApp: url.trim(), albumBy: myName(), albumAt: serverTimestamp() });
 }
 
 // Album: přednost má odkaz u akce, pak záznam ve staré kolekci photoAlbums.

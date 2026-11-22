@@ -72,12 +72,14 @@ export function faces(names, max = 5) {
 const TABS = [
   { id: 'akce', label: 'Akce', icon: 'calendar', href: '#/akce' },
   { id: 'kde', label: 'Kde jsi?', icon: 'pin', href: '#/kde' },
+  null, // místo pro tlačítko +
   { id: 'chat', label: 'Chat', icon: 'chat', href: '#/chat' },
   { id: 'parta', label: 'Parta', icon: 'people', href: '#/parta' }
 ];
 export function tabbar(active) {
-  return `<div class="tabbar"><nav aria-label="Hlavní menu">${TABS.map((t) =>
-    `<a href="${t.href}" class="${t.id === active ? 'on' : ''}" ${t.id === active ? 'aria-current="page"' : ''}>${icon(t.icon, 24, 2)}<span>${t.label}</span></a>`
+  return `<div class="tabbar"><nav aria-label="Hlavní menu">${TABS.map((t) => t
+    ? `<a href="${t.href}" class="${t.id === active ? 'on' : ''}" ${t.id === active ? 'aria-current="page"' : ''}>${icon(t.icon, 24, 2)}<span>${t.label}</span></a>`
+    : `<button class="plus" data-plus aria-label="Přidat" aria-expanded="false">${icon('plus', 28, 2.4)}</button>`
   ).join('')}</nav></div>`;
 }
 

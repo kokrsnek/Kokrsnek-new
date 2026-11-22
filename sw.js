@@ -1,11 +1,11 @@
 // Service worker nové aplikace: soubory aplikace se berou ze sítě a při
 // výpadku z mezipaměti, takže se aplikace otevře i offline. Data řeší
 // Firestore sám (offline mezipaměť v prohlížeči).
-const CACHE = 'kokrsnek-1.01';
+const CACHE = 'kokrsnek-1.02';
 const SHELL = [
   './', 'index.html', 'manifest.json', 'app.css', 'themes.css',
   'app.js', 'config.js', 'firebase.js', 'util.js', 'ui.js', 'namedays.js',
-  'auth.js', 'store.js', 'attend.js', 'theme.js', 'version.js',
+  'auth.js', 'store.js', 'attend.js', 'theme.js', 'version.js', 'plus.js',
   'login.js', 'akce.js', 'kalendar.js', 'detail.js',
   'editor.js', 'parta.js', 'brzy.js',
   'icon-192.png', 'icon-512.png'

@@ -7,6 +7,7 @@ import {
   deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor
 } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
+import { albumFlow, canAddAlbum } from './plus.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
@@ -95,7 +96,14 @@ export function render(root, { id }) {
 
   function drawAlbum() {
     const row = root.querySelector('[data-albumrow]');
-    if (!row || !album) return;
+    if (!row) return;
+    if (!album) {
+      if (!canAddAlbum(ev) || ev.start > new Date()) return;
+      row.style.display = '';
+      row.innerHTML = `${icon('photo')}<div class="k"><b>Album fotek</b><span>zatím není</span></div><button class="link" data-addalbum>Přidat album</button>`;
+      row.querySelector('[data-addalbum]').onclick = () => albumFlow(ev);
+      return;
+    }
     row.style.display = '';
     row.innerHTML = `${icon('photo')}<div class="k"><b>Album fotek</b><span>Google Fotky</span></div><a href="${esc(album)}" target="_blank" rel="noopener">Otevřít</a>`;
     const ct = root.querySelector('[data-covertext]');
@@ -161,8 +169,10 @@ export function render(root, { id }) {
       started = false;
       return;
     }
+    const albumChanged = started && found.photoAlbum && found.photoAlbum !== album;
     ev = found;
     if (!started) { started = true; shell(); }
+    else if (albumChanged) { album = found.photoAlbum; drawAlbum(); }
   });
 
   return () => { unsubEv(); unsubs.forEach((u) => u()); };

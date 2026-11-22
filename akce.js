@@ -30,7 +30,6 @@ export function render(root, { tab }) {
       <button role="tab" class="${tab === 'probehle' ? 'on' : ''}" data-tab="#/akce/probehle">Proběhlé</button>
     </div>
     <div class="scroll" data-body>${spinner()}</div>
-    <a class="fab" href="#/nova">${icon('plus', 20, 2.4)}Nová akce</a>
     ${tabbar('akce')}
   </div>`;
   const body = root.querySelector('[data-body]');
