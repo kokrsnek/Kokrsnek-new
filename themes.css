@@ -318,3 +318,165 @@ html[data-theme="neon"],[data-theme="neon"] body{background:#070B18 radial-gradi
 [data-theme="neon"] .tabbar .plus{position:fixed;right:20px;bottom:calc(22px + var(--safe-bottom));width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,#22D3EE,#7C5CFF);box-shadow:0 10px 30px rgba(124,92,255,.6)}
 [data-theme="neon"] .plusmenu{bottom:calc(96px + var(--safe-bottom))}
 [data-theme="neon"] .scroll{padding-bottom:100px}
+
+
+/* =====================================================================
+   1.33 — Komiks, Vodáci, Western
+   ===================================================================== */
+
+/* ---------- Komiks: rastrové tečky, černé obrysy, výbuchy ---------- */
+:root[data-theme="komiks"]{
+  --bg:#FFF6D9; --card:#FFFFFF; --surface:#FFF1B8; --bar:#FFFFFF; --line:#111; --line2:#111;
+  --ink:#111; --ink2:#2A2A2A; --muted:#4A4A4A;
+  --accent:#111; --accent-hi:#111; --accent-text:#E8322B; --accent-soft:#3DDC84;
+  --coral:#E8322B; --coral-text:#E8322B; --danger:#E8322B; --no-soft:#FFE6EC;
+  --on-accent:#FFD400; --shadow:rgba(0,0,0,.35); --scrim:rgba(17,17,17,.5);
+  --cover:#E8322B; --cover-ink:#FFD400; --cover-btn:#FFFFFF;
+  --warn-bg:#FFF1B8; --warn-line:#111; --warn-ink:#111;
+  --day-out:#B9B09A; --check:#111; --toast-bg:#111; --toast-ink:#FFD400;
+  --gbtn-bg:#fff; --gbtn-ink:#111; --gbtn-line:#111; --statusbar:#FFF6D9;
+  --r:6px; --r-lg:6px; --r-xl:4px; --btn-r:4px; --ibtn-r:50%;
+  --display-tt:uppercase; --display-w:400;
+  --font:'Comic Neue','Comic Relief','Comic Sans MS',cursive; --display:'Bangers','Anton',Impact,sans-serif;
+}
+html[data-theme="komiks"],[data-theme="komiks"] body{background-color:#FFF6D9;background-image:radial-gradient(rgba(244,180,0,.45) 1.3px,transparent 1.6px);background-size:12px 12px;background-attachment:fixed}
+[data-theme="komiks"] .screen{background:transparent}
+[data-theme="komiks"] body{font-weight:700}
+[data-theme="komiks"] .brand,[data-theme="komiks"] .h1{font-size:36px;font-style:italic;letter-spacing:.04em;color:#FFD400;-webkit-text-stroke:1.5px #111;text-shadow:3px 3px 0 #E8322B;transform:rotate(-3deg);display:inline-block}
+[data-theme="komiks"] .title{letter-spacing:.03em;font-style:italic}
+[data-theme="komiks"] .card,[data-theme="komiks"] .row,[data-theme="komiks"] .ci,[data-theme="komiks"] .info{border:3px solid #111!important;box-shadow:5px 5px 0 #111}
+[data-theme="komiks"] .ibtn{background:#fff;border:2.5px solid #111;box-shadow:2px 2px 0 #111}
+[data-theme="komiks"] .btn{font-family:var(--display);font-size:20px;letter-spacing:.06em;border:3px solid #111;box-shadow:4px 4px 0 #111;background:#fff;text-transform:uppercase;font-style:italic}
+[data-theme="komiks"] .btn.yes{background:#3DDC84;color:#111}
+[data-theme="komiks"] .btn.no{background:#FFB3C1;color:#111}
+[data-theme="komiks"] .btn.primary{background:#FFD400;color:#111}
+[data-theme="komiks"] .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #111}
+[data-theme="komiks"] .eyebrow{display:inline-block;align-self:flex-start;background:#FFD400;border:2.5px solid #111;padding:2px 8px;color:#111}
+[data-theme="komiks"] .hero{transform:rotate(.5deg);border-width:4px!important;box-shadow:7px 7px 0 #111}
+[data-theme="komiks"] .hero .datetile{background:#E8322B;border:3px solid #111;transform:rotate(8deg);clip-path:polygon(50% 0,61% 22%,86% 10%,78% 38%,100% 50%,78% 62%,86% 90%,61% 78%,50% 100%,39% 78%,14% 90%,22% 62%,0 50%,22% 38%,14% 10%,39% 22%);width:84px;height:84px}
+[data-theme="komiks"] .hero .datetile .m,[data-theme="komiks"] .hero .datetile .d{color:#fff;-webkit-text-stroke:1px #111}
+[data-theme="komiks"] .hero .datetile .d{font-size:30px}
+[data-theme="komiks"] .face{border-color:#111}
+[data-theme="komiks"] .progress .bar{border:2px solid #111;background:#fff;height:12px}
+[data-theme="komiks"] .progress .bar i{background:#E8322B}
+[data-theme="komiks"] .section-h{display:inline-block;align-self:flex-start;font-family:var(--display);font-size:22px;font-style:italic;letter-spacing:.04em;background:#111;color:#FFD400;padding:2px 10px;transform:rotate(-2deg);margin:18px 0 10px}
+[data-theme="komiks"] .rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+[data-theme="komiks"] .rows .row{flex-direction:column;align-items:flex-start;gap:4px;margin:0;min-height:120px;position:relative}
+[data-theme="komiks"] .rows .row:nth-child(3n+2){background:#E6F7FF;transform:rotate(-1deg)}
+[data-theme="komiks"] .rows .row:nth-child(3n+3){background:#FFE6EC;transform:rotate(.8deg)}
+[data-theme="komiks"] .rows .row .datetile.sm{background:transparent!important;width:auto;height:auto;display:block}
+[data-theme="komiks"] .rows .row .datetile .m{display:none}
+[data-theme="komiks"] .rows .row .datetile .d{font-family:var(--display);font-size:32px;color:#E8322B;-webkit-text-stroke:1px #111}
+[data-theme="komiks"] .rows .row .tx{width:100%}
+[data-theme="komiks"] .rows .row .t,[data-theme="komiks"] .rows .row .s{white-space:normal}
+[data-theme="komiks"] .rows .row .r{position:absolute;top:8px;right:8px;margin:0;background:#FFD400;border:2px solid #111;border-radius:10px;padding:1px 6px;color:#111;font-size:11px}
+[data-theme="komiks"] .rows .row .r:has(.pill){background:none;border:none;padding:0}
+[data-theme="komiks"] .tabbar{left:10px;right:10px;bottom:calc(10px + max(0px, var(--safe-bottom) - 14px));border:4px solid #111;box-shadow:5px 5px 0 #111;background:#fff;padding:2px 4px}
+[data-theme="komiks"] .tabbar a{color:#111;text-transform:uppercase}
+[data-theme="komiks"] .tabbar a.on{color:#E8322B}
+[data-theme="komiks"] .tabbar .plus{width:72px;height:72px;margin-top:-30px;border-radius:0;background:#FFD400;color:#111;box-shadow:none;clip-path:polygon(50% 0,61% 24%,88% 14%,76% 40%,100% 52%,72% 62%,84% 90%,58% 76%,46% 100%,38% 72%,10% 86%,26% 60%,0 46%,28% 38%,16% 10%,42% 24%);filter:drop-shadow(0 0 0 #111)}
+[data-theme="komiks"] .plusmenu{bottom:calc(100px + max(0px, var(--safe-bottom) - 14px));border:3px solid #111;box-shadow:5px 5px 0 #111}
+
+/* ---------- Vodáci: řeka, vlny, záchranný kruh ---------- */
+:root[data-theme="vodaci"]{
+  --bg:#E3F3F6; --card:#FFFFFF; --surface:#E3F4F8; --bar:#0B5C73; --line:#C7E5EC; --line2:#A6D3DE;
+  --ink:#0E3B4A; --ink2:#2D5A68; --muted:#4E7A88;
+  --accent:#0B5C73; --accent-hi:#1A8FB0; --accent-text:#1A8FB0; --accent-soft:#D6EEF4;
+  --coral:#E8322B; --coral-text:#D9412F; --danger:#D9412F; --no-soft:#FBE3E0;
+  --on-accent:#fff; --shadow:rgba(11,92,115,.22); --scrim:rgba(8,40,52,.5);
+  --cover:#1A8FB0; --cover-ink:#FFD35A; --cover-btn:rgba(255,255,255,.9);
+  --warn-bg:#FFF4CF; --warn-line:#E0B84A; --warn-ink:#6B5300;
+  --day-out:#9CBFC8; --check:#1A8FB0; --toast-bg:#0B5C73; --toast-ink:#fff;
+  --gbtn-bg:#fff; --gbtn-ink:#0E3B4A; --gbtn-line:#A6D3DE; --statusbar:#E3F3F6;
+  --r:16px; --r-lg:18px; --r-xl:26px; --btn-r:100px; --ibtn-r:50%;
+  --display-w:800;
+  --font:'Poppins',system-ui,sans-serif; --display:'Montserrat','Poppins',sans-serif;
+}
+html[data-theme="vodaci"],[data-theme="vodaci"] body{background:linear-gradient(#E9F6F8,#CFEAF0) fixed}
+[data-theme="vodaci"] .screen{background:transparent}
+[data-theme="vodaci"] .brand,[data-theme="vodaci"] .h1{color:#0B5C73;letter-spacing:-.02em}
+[data-theme="vodaci"] .ibtn{background:#fff;border:none;color:#0B5C73;box-shadow:0 3px 10px rgba(11,92,115,.15)}
+[data-theme="vodaci"] .card,[data-theme="vodaci"] .row,[data-theme="vodaci"] .ci{border:none;box-shadow:0 4px 14px rgba(11,92,115,.1)}
+[data-theme="vodaci"] .hero{--card:transparent; --ink:#fff; --ink2:#E3F4F8; --muted:#B8E2EC; --line:rgba(255,255,255,.25); --surface:rgba(255,255,255,.16);
+  --coral-text:#FFD35A; --accent-text:#FFD35A; --accent-hi:#FFD35A; --accent-soft:rgba(255,211,90,.2);
+  background:linear-gradient(170deg,#1A8FB0,#0B5C73 70%);color:#fff;position:relative;overflow:hidden;padding-bottom:30px}
+[data-theme="vodaci"] .hero::after{content:'';position:absolute;left:0;right:0;bottom:0;height:22px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11 Q12 0 24 11 T48 11 T72 11 T96 11 V22 H0Z' fill='%23ffffff' fill-opacity='.14'/%3E%3C/svg%3E") repeat-x;background-size:96px 22px;pointer-events:none}
+[data-theme="vodaci"] .hero::before{content:'';position:absolute;right:-34px;top:-24px;width:150px;height:150px;border-radius:50%;border:16px solid rgba(255,255,255,.08);pointer-events:none}
+[data-theme="vodaci"] .hero .datetile{background:rgba(255,255,255,.14);border:none}
+[data-theme="vodaci"] .hero .progress .bar{background:rgba(255,255,255,.22);overflow:visible;position:relative}
+[data-theme="vodaci"] .hero .progress .bar i{background:#FFD35A;position:relative}
+[data-theme="vodaci"] .hero .progress .bar i::after{content:'🛶';position:absolute;right:-12px;top:-14px;font-size:20px}
+[data-theme="vodaci"] .hero .face{border-color:#0B5C73}
+[data-theme="vodaci"] .hero .btn{background:rgba(255,255,255,.16);border:none;color:#fff}
+[data-theme="vodaci"] .hero .btn.yes{background:#FFD35A;color:#0E3B4A}
+[data-theme="vodaci"] .hero .btn.no{background:rgba(232,50,43,.35);color:#fff}
+[data-theme="vodaci"] .hero .wxchip,[data-theme="vodaci"] .hero .likebtn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#fff}
+[data-theme="vodaci"] .section-h{font-family:var(--display);font-weight:800;font-size:15px;color:#0B5C73}
+[data-theme="vodaci"] .section-h::before{content:'🌊 '}
+/* seznam jako zastávky po proudu */
+[data-theme="vodaci"] .rows{position:relative;padding-left:34px}
+[data-theme="vodaci"] .rows::before{content:'';position:absolute;left:13px;top:0;bottom:0;width:8px;border-radius:4px;background:repeating-linear-gradient(#7CC7D9 0 10px,#A8DCE8 10px 20px)}
+[data-theme="vodaci"] .rows .row{position:relative;overflow:visible}
+[data-theme="vodaci"] .rows .row::before{content:'';position:absolute;left:-28px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid #1A8FB0;box-sizing:border-box}
+[data-theme="vodaci"] .rows .row .datetile.sm{display:none}
+[data-theme="vodaci"] .rows .row .r{color:#1A8FB0;font-weight:700;background:#E3F4F8;border-radius:100px;padding:3px 9px}
+[data-theme="vodaci"] .rows .row .r:has(.pill){background:none;padding:0}
+[data-theme="vodaci"] .tabbar{border-top:none;background:#0B5C73;padding-top:10px}
+[data-theme="vodaci"] .tabbar::before{content:'';position:absolute;left:0;right:0;top:-18px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 20' preserveAspectRatio='none'%3E%3Cpath d='M0 10 Q12 0 24 10 T48 10 T72 10 T96 10 V20 H0Z' fill='%230B5C73'/%3E%3C/svg%3E") repeat-x;background-size:96px 20px}
+[data-theme="vodaci"] .tabbar a{color:#9FD3E0}
+[data-theme="vodaci"] .tabbar a.on{color:#FFD35A}
+[data-theme="vodaci"] .tabbar .plus{width:64px;height:64px;margin-top:-30px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.35);background:radial-gradient(circle,#0B5C73 0 15px,transparent 16px),conic-gradient(#E8322B 0 45deg,#fff 45deg 90deg,#E8322B 90deg 135deg,#fff 135deg 180deg,#E8322B 180deg 225deg,#fff 225deg 270deg,#E8322B 270deg 315deg,#fff 315deg)}
+[data-theme="vodaci"] .tabbar .plus svg{width:20px;height:20px}
+
+/* ---------- Western: pergamen, plakát HLEDÁ SE, prkna, šerifská hvězda ---------- */
+:root[data-theme="western"]{
+  --bg:#E8D3A8; --card:#F6E7C4; --surface:#EBD6A8; --bar:#4A2A12; --line:#C9A66B; --line2:#A8854F;
+  --ink:#3B2414; --ink2:#5A3A22; --muted:#7A5A3A;
+  --accent:#5A2E12; --accent-hi:#5A2E12; --accent-text:#9C2A12; --accent-soft:#EBD6A8;
+  --coral:#9C2A12; --coral-text:#9C2A12; --danger:#9C2A12; --no-soft:#F0D2C2;
+  --on-accent:#F6E7C4; --shadow:rgba(90,46,18,.3); --scrim:rgba(59,36,20,.55);
+  --cover:#8A5528; --cover-ink:#F6E7C4; --cover-btn:rgba(246,231,196,.92);
+  --warn-bg:#F6E7C4; --warn-line:#A8713C; --warn-ink:#5A2E12;
+  --day-out:#B8A07A; --check:#5A2E12; --toast-bg:#5A2E12; --toast-ink:#F6E7C4;
+  --gbtn-bg:#F6E7C4; --gbtn-ink:#3B2414; --gbtn-line:#5A2E12; --statusbar:#D9BC85;
+  --r:4px; --r-lg:4px; --r-xl:4px; --btn-r:4px; --ibtn-r:50%;
+  --display-tt:uppercase; --display-w:400;
+  --font:'Crimson Text',Georgia,serif; --display:'Rye','Bitter',Georgia,serif;
+}
+html[data-theme="western"],[data-theme="western"] body{background:#E8D3A8 radial-gradient(120% 80% at 50% 40%,#F1DFB8,#D9BC85 80%,#B8945A) fixed}
+[data-theme="western"] .screen{background:transparent}
+[data-theme="western"] body{font-size:17px}
+[data-theme="western"] .brand,[data-theme="western"] .h1{letter-spacing:.12em;color:#5A2E12}
+[data-theme="western"] .sub{font-style:italic;font-size:14px}
+[data-theme="western"] .ibtn{background:transparent;border:2px solid #5A2E12;color:#5A2E12}
+[data-theme="western"] .btn{font-family:'Bitter',serif;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border:2.5px solid #5A2E12;background:transparent;color:#5A2E12}
+[data-theme="western"] .btn.yes,[data-theme="western"] .btn.primary{background:#5A2E12;color:#F6E7C4}
+[data-theme="western"] .btn.no{background:#9C2A12;color:#F6E7C4;border-color:#9C2A12}
+[data-theme="western"] .card,[data-theme="western"] .ci,[data-theme="western"] .info{border:2px solid #5A2E12}
+/* plakát HLEDÁ SE */
+[data-theme="western"] .hero{border:3px solid #5A2E12;outline:2px solid #5A2E12;outline-offset:4px;text-align:center;margin:6px 4px;box-shadow:0 10px 24px rgba(90,46,18,.3);position:relative;padding-top:56px}
+[data-theme="western"] .hero::before{content:'HLEDÁ SE';position:absolute;left:0;right:0;top:12px;font-family:'Rye','Archivo Black',serif;font-size:34px;letter-spacing:.08em;color:#5A2E12;line-height:1}
+[data-theme="western"] .hero::after{content:'';position:absolute;left:10px;right:10px;top:10px;height:10px;background:radial-gradient(circle at 5px 5px,#555 0 4px,transparent 5px) left/10px 10px no-repeat,radial-gradient(circle at 5px 5px,#555 0 4px,transparent 5px) right/10px 10px no-repeat;pointer-events:none}
+[data-theme="western"] .hero > div:first-child{flex-direction:column;align-items:center}
+[data-theme="western"] .hero .title{border-top:2px solid #5A2E12;border-bottom:2px solid #5A2E12;padding:6px 0;font-family:'Bitter',serif;font-weight:800}
+[data-theme="western"] .hero .eyebrow{font-family:'Bitter',serif;letter-spacing:.3em;color:#3B2414}
+[data-theme="western"] .hero .datetile{background:transparent;border:none;flex-direction:row;gap:6px;width:auto;height:auto}
+[data-theme="western"] .hero .datetile .m,[data-theme="western"] .hero .datetile .d{font-family:'Rye','Archivo Black',serif;font-size:22px;color:#9C2A12}
+[data-theme="western"] .hero .meta{justify-content:center;font-style:italic}
+[data-theme="western"] .hero .face{border-color:#F6E7C4;filter:sepia(.35)}
+[data-theme="western"] .hero .progress .bar i{background:#9C2A12}
+[data-theme="western"] .section-h{display:flex;align-items:center;gap:10px;font-family:'Bitter',serif;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#5A2E12}
+[data-theme="western"] .section-h::after{content:'';flex:1;height:6px;border-radius:3px;background:repeating-linear-gradient(60deg,#8A6A3A 0 4px,#C9A66B 4px 8px)}
+/* seznam jako dřevěné cedule */
+[data-theme="western"] .rows .row{--ink:#FBEBC8; --muted:#F1DDB4; color:#FBEBC8;border:none;border-radius:4px;background:repeating-linear-gradient(0deg,transparent 0 9px,rgba(0,0,0,.07) 9px 10px),linear-gradient(#A8713C,#8A5528);box-shadow:inset 0 -3px 0 #5A2E12,0 3px 6px rgba(0,0,0,.2);clip-path:polygon(0 0,100% 0,98% 50%,100% 100%,0 100%,2% 50%);margin-bottom:8px}
+[data-theme="western"] .rows .row .datetile.sm{background:transparent!important}
+[data-theme="western"] .rows .row .datetile .m{color:#F1DDB4}
+[data-theme="western"] .rows .row .datetile .d{color:#FFE29A;font-family:'Rye','Bitter',serif}
+[data-theme="western"] .rows .row .t{font-family:'Bitter',serif;font-size:16px}
+[data-theme="western"] .rows .row .s{font-style:italic}
+[data-theme="western"] .rows .row .r{color:#FFE29A;font-family:'Bitter',serif;font-weight:800}
+[data-theme="western"] .tabbar{background:repeating-linear-gradient(90deg,transparent 0 96px,rgba(0,0,0,.14) 96px 98px),linear-gradient(#6B3E1C,#4A2A12);border-top:4px solid #3B2414}
+[data-theme="western"] .tabbar a{color:#D9BC85;font-family:'Bitter',serif;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
+[data-theme="western"] .tabbar a.on{color:#FFE29A}
+[data-theme="western"] .tabbar .plus{width:74px;height:74px;margin-top:-34px;border-radius:0;color:#5A2E12;box-shadow:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6 L61 37 L94 37 L67 56 L77 89 L50 69 L23 89 L33 56 L6 37 L39 37Z' fill='%23D9A441' stroke='%237A4E17' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='52' r='16' fill='%23C08A2E' stroke='%237A4E17' stroke-width='3'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+[data-theme="western"] .tabbar .plus svg{width:20px;height:20px;margin-top:4px}

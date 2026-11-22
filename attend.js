@@ -30,8 +30,10 @@ export function attendButtons(ev, att) {
   const me = myName();
   const going = att?.going.includes(me), declined = att?.declined.includes(me);
   const ro = !canWrite(ev);
+  // Některé vzhledy mají vlastní popisky tlačítek.
+  const [yesT, noT] = ({ vodaci: ['Nasedám', 'Zůstávám na břehu'], komiks: ['Jdu!', 'Nejdu…'] })[document.documentElement.dataset.theme] || ['Jdu', 'Nejdu'];
   return `<div class="two">
-    <button class="btn ${going ? 'yes' : ''}" data-att="attend" ${ro ? 'aria-disabled="true"' : ''}>${going ? '✓ Jdu' : 'Jdu'}</button>
-    <button class="btn ${declined ? 'no' : ''}" data-att="decline" ${ro ? 'aria-disabled="true"' : ''}>${declined ? '✕ Nejdu' : 'Nejdu'}</button>
+    <button class="btn ${going ? 'yes' : ''}" data-att="attend" ${ro ? 'aria-disabled="true"' : ''}>${going ? '✓ ' + yesT : yesT}</button>
+    <button class="btn ${declined ? 'no' : ''}" data-att="decline" ${ro ? 'aria-disabled="true"' : ''}>${declined ? '✕ ' + noT : noT}</button>
   </div>`;
 }
