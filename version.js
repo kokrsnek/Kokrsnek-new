@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.06',
+    date: '22. 11. 2026',
+    items: [
+      'Klepnutí na „Akce“ ve spodní liště vrátí velkou kartu na nejbližší akci se stejnou animací jako při swipu (a zavře hledání). Stejně funguje tlačítko „nejbližší“ pod kartou.',
+      'Odstraněný přepínač Nadcházející / Proběhlé. Proběhlé akce najdeš swipem na kartě doprava, v hledání nebo v kalendáři.'
+    ]
+  },
+  {
     version: '1.05',
     date: '22. 11. 2026',
     items: [

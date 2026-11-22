@@ -27,10 +27,6 @@ export function render(root, { tab }) {
       </div>
     </div>
     <div data-sbox style="display:none;padding:0 20px 6px"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"></div>
-    <div class="seg" role="tablist">
-      <button role="tab" class="${tab === 'nadchazejici' ? 'on' : ''}" data-tab="#/akce">Nadcházející</button>
-      <button role="tab" class="${tab === 'probehle' ? 'on' : ''}" data-tab="#/akce/probehle">Proběhlé</button>
-    </div>
     <div class="scroll" data-body>${spinner()}</div>
     ${tabbar('akce')}
   </div>`;
@@ -38,7 +34,6 @@ export function render(root, { tab }) {
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 
-  root.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => location.replace(b.dataset.tab); });
   root.querySelector('[data-bell]').onclick = () => toast('Upozornění přijdou v další fázi.');
   root.querySelector('[data-search]').onclick = () => {
     searchOpen = !searchOpen;
@@ -186,7 +181,6 @@ export function render(root, { tab }) {
       return;
     }
     const now = new Date();
-    root.querySelector('.seg').style.display = q.trim() ? 'none' : '';
     if (q.trim()) return drawSearch(now);
     if (tab === 'nadchazejici') {
       const up = events.list.filter((e) => !isPast(e, now) && match(e));
@@ -251,15 +245,16 @@ export function render(root, { tab }) {
     const W = () => wrap.offsetWidth + 24;
 
     // Karta, na kterou se přechází, přijíždí z opačné strany.
-    function ensureGhost(dir) {
-      if (ghostDir === dir && ghost) return ghost;
+    function ensureGhost(dir, steps = dir) {
+      if (ghostDir === dir && ghost && ghost._steps === steps) return ghost;
       if (ghost) ghost.remove();
       ghost = null; ghostDir = dir;
-      const n = neighbour(dir);
+      const n = neighbour(steps);
       if (!n) return null;
       const box = document.createElement('div');
       box.className = 'hero-ghost';
       box.innerHTML = heroHtml(n.ev, cachedAttendance(n.ev.id), n.sh);
+      box._steps = steps;
       wrap.appendChild(box);
       ghost = box;
       return ghost;
@@ -274,16 +269,21 @@ export function render(root, { tab }) {
       }
     }
     // Dokončení přechodu: aktuální karta odjede, nová zapadne na místo.
-    function finish(dir) {
+    function finish(dir, steps = dir) {
       if (busy) return;
-      if (!ensureGhost(dir)) { place(0, true); toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.'); return; }
+      if (!ensureGhost(dir, steps)) { place(0, true); toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.'); return; }
       busy = true;
       place(-dir * W(), true);
       ghost.style.transition = 'transform .28s ease-out';
       ghost.style.transform = arc(0);
-      setTimeout(() => { shift += dir; enterDir = ''; draw(); }, 290);
+      setTimeout(() => { shift += steps; enterDir = ''; draw(); }, 290);
     }
-    el._finish = finish;
+    // Návrat na nejbližší akci se stejnou animací (tlačítko „nejbližší“, klepnutí na Akce).
+    el._home = () => {
+      if (shift === 0) return false;
+      finish(shift > 0 ? -1 : 1, -shift);
+      return true;
+    };
 
     el.addEventListener('touchstart', (e) => {
       if (busy) return;
@@ -316,7 +316,7 @@ export function render(root, { tab }) {
       const nav = e.target.closest('[data-hnav]');
       if (nav) {
         const d = +nav.dataset.hnav;
-        if (d === 0) { moveHero(0); return; }
+        if (d === 0) { el._home(); return; }
         finish(d);
         return;
       }
@@ -326,6 +326,15 @@ export function render(root, { tab }) {
       location.hash = '#/akce/' + encodeURIComponent(ev.id);
     };
   }
+
+  // Klepnutí na „Akce“ ve spodní liště: zavřít hledání a vrátit kartu na nejbližší akci.
+  root.querySelector('.tabbar a[href="#/akce"]').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (searchOpen) root.querySelector('[data-search]').click();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const el = body.querySelector('.hero');
+    if (el && el._home) el._home();
+  });
 
   const unsub = watchEvents(draw);
   const tick = setInterval(draw, 60000);

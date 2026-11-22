@@ -17,7 +17,7 @@ let lastKey = '';
 
 const ROUTES = [
   [/^\/akce\/?$/, () => akce.render(root, { tab: 'nadchazejici' })],
-  [/^\/akce\/probehle$/, () => akce.render(root, { tab: 'probehle' })],
+  [/^\/akce\/probehle$/, () => { location.replace('#/akce'); }],
   [/^\/kalendar(?:\/(\d{4})-(\d{1,2}))?$/, (m) => kalendar.render(root, { year: m[1] ? +m[1] : null, month: m[2] ? +m[2] - 1 : null })],
   [/^\/akce\/([^/]+)$/, (m) => detail.render(root, { id: decodeURIComponent(m[1]) })],
   [/^\/nova$/, () => editor.render(root, { id: null })],

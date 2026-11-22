@@ -24,7 +24,7 @@ export function render(root, { id }) {
     const mine = ev.isTest && (ev.createdBy === myName() || isAdmin());
     root.innerHTML = `<div class="screen" style="padding-top:0">
       <div class="cover" data-cover>
-        <a class="ibtn l" href="#/akce${past ? '/probehle' : ''}" aria-label="Zpět">${icon('back')}</a>
+        <a class="ibtn l" href="#/akce" aria-label="Zpět">${icon('back')}</a>
         <div class="rr">
           <button class="ibtn" data-share aria-label="Sdílet">${icon('share')}</button>
           ${mine ? `<a class="ibtn" href="#/upravit/${encodeURIComponent(ev.id)}" aria-label="Upravit">${icon('edit')}</a>` : ''}
