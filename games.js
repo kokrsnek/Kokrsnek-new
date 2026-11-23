@@ -2,7 +2,7 @@
 // Online hry jsou ve v2_games/{id}: { type: 'pk'|'ld'|'px', players: [vyzývatel, soupeř],
 // thread, turn, finished, winner, … stav hry }. Hry proti počítači žijí jen v telefonu.
 // Cloudová funkce onV2GameWritten posílá upozornění „Jsi na tahu“ / „Vyzývá tě…“.
-import { db, collection, doc, query, where, onSnapshot, addDoc, updateDoc, getDoc } from './firebase.js';
+import { db, collection, doc, query, where, onSnapshot, addDoc, updateDoc, getDoc, setDoc } from './firebase.js';
 import { esc, icon } from './util.js';
 import { avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
@@ -193,6 +193,13 @@ export function renderGame(root, { id, aiType = null, dmThreadId }) {
   const me = myName();
   let g = null, unsub = () => {}, busy = false, sel = null, pxHide = null;
   const isAi = !!aiType;
+  // Dokud máš hru otevřenou, server ti o ní neposílá upozornění
+  // (presence/{jméno}.viewingGame + čas, obnovuje se každých 20 s).
+  const view = (on) => { if (isAi || !id || !me) return; setDoc(doc(db, 'presence', me), on ? { viewingGame: id, viewingAt: new Date().toISOString() } : { viewingGame: '', viewingAt: '' }, { merge: true }).catch(() => {}); };
+  const onVis = () => view(!document.hidden);
+  view(true);
+  const viewTick = setInterval(() => { if (!document.hidden) view(true); }, 20000);
+  document.addEventListener('visibilitychange', onVis);
   root.innerHTML = `<div class="screen game">
     <div class="top"><a class="ibtn" href="#/hry" data-back aria-label="Zpět">${icon('back')}</a><div style="flex:1;min-width:0"><div class="h1" data-title>Hra</div><div class="sub" data-sub></div></div></div>
     <div class="scroll" data-body>${spinner()}</div></div>`;
@@ -431,7 +438,7 @@ export function renderGame(root, { id, aiType = null, dmThreadId }) {
       }
     }, () => { g = null; draw(); });
   }
-  return () => { unsub(); clearTimeout(pxHide); };
+  return () => { unsub(); clearTimeout(pxHide); clearInterval(viewTick); document.removeEventListener('visibilitychange', onVis); view(false); };
 }
 
 // Stav hry pro kartu ve zprávě.

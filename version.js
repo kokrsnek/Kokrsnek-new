@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.48',
+    date: '23. 11. 2026',
+    items: [
+      'Hry: když máš hru otevřenou, upozornění „Jsi na tahu“ nechodí.',
+      'Upozornění už nechodí dvakrát — kdo má novou aplikaci, dostává je jen do ní.'
+    ]
+  },
+  {
     version: '1.47',
     date: '23. 11. 2026',
     items: [
