@@ -36,6 +36,15 @@ export async function callFunction(name, data) {
   return r.data;
 }
 
+// Soubory (hlasovky) ve Firebase Storage — stejná místa jako stará aplikace.
+let stMod = null;
+export async function uploadFile(path, blob, contentType) {
+  if (!stMod) stMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
+  const r = stMod.ref(stMod.getStorage(app), path);
+  await stMod.uploadBytes(r, blob, { contentType, contentDisposition: 'inline' });
+  return stMod.getDownloadURL(r);
+}
+
 export {
   onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut,

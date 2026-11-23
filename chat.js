@@ -9,6 +9,10 @@ import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc
 import { shrinkPhoto } from './store.js';
 import { isOnline, lastSeenText, watchPresence, watchOne } from './presence.js';
 import { emo, sortedReactions, emojiSheet } from './emoji.js';
+import { setDoc } from './firebase.js';
+import { uploadFile } from './firebase.js';
+import { startRecording } from './voice.js';
+import { watchPolls, pollRows, newPollSheet } from './polls.js';
 
 export const PARTY_THREAD = 'parta-vsichni';
 const TEST_THREAD = 'test';
@@ -51,7 +55,9 @@ export function renderList(root) {
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
   const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
-  let alive = true, pres = {};
+  let alive = true, pres = {}, polls = [];
+  const unsubPolls = watchPolls((l) => { polls = l; if (alive) draw(); });
+  box.addEventListener('click', (e) => { if (e.target.closest('[data-newpoll]')) { e.preventDefault(); newPollSheet(); } });
 
   const draw = () => {
     const rows = threads
@@ -75,7 +81,7 @@ export function renderList(root) {
           <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc((id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
         <div class="r">${m ? esc(stamp(m.at)) : ''}</div>
       </a>`;
-    }).join('') + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
+    }).join('') + pollRows(polls) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
 
   // Kdo je online (zelená tečka u avataru).
@@ -93,7 +99,7 @@ export function renderList(root) {
     }
   }
   draw();
-  return () => { alive = false; unsubP(); clearInterval(presTick); unsubs.forEach((u) => u()); };
+  return () => { alive = false; unsubP(); unsubPolls(); clearInterval(presTick); unsubs.forEach((u) => u()); };
 }
 
 // ---------- konverzace ----------
@@ -110,7 +116,12 @@ export function renderThread(root, { id }) {
       <a class="ibtn" href="#/chat" aria-label="Zpět">${icon('back')}</a>
       <div style="flex:1;min-width:0"><div class="h1" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(threadTitle(id))}</div>
         <div class="sub" data-status>${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : ''}</div></div>
+      <button class="ibtn ghost" data-find aria-label="Hledat ve zprávách">${icon('search', 20)}</button>
+      ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="font-size:19px">👊</button>'}
+      <button class="ibtn ghost" data-mute aria-label="Ztlumit vlákno">${icon('bell', 20)}</button>
     </div>
+    <div class="findbar" data-findbar hidden><input class="input" data-findq placeholder="Hledat ve zprávách" aria-label="Hledat ve zprávách" autocomplete="off"><button class="ibtn ghost" data-findx aria-label="Zavřít hledání">${icon('close', 18)}</button></div>
+    <div class="pinbar" data-pin hidden></div>
     <div class="msgs" data-msgs>${spinner()}</div>
     <div class="composer">
       <div class="replybar" data-reply hidden></div>
@@ -118,8 +129,10 @@ export function renderThread(root, { id }) {
         <button class="ibtn" data-photo aria-label="Poslat fotku">${icon('photo')}</button>
         <input type="file" accept="image/*" multiple data-file hidden>
         <textarea class="input" rows="1" data-text placeholder="Zpráva" aria-label="Zpráva" maxlength="2000"></textarea>
-        <button class="ibtn sendbtn" data-send aria-label="Odeslat">${icon('next', 22, 2.4)}</button>
-      </div>` : `<a class="readonly" href="#/chat/${TEST_THREAD}">${icon('lock', 16)} Ve zkušebním provozu se tu jen čte — psát jde do testovacího vlákna</a>`}
+        <button class="ibtn" data-mic aria-label="Nahrát hlasovku">🎤</button>
+        <button class="ibtn sendbtn" data-send aria-label="Odeslat" hidden>${icon('next', 22, 2.4)}</button>
+      </div>
+      <div class="recrow" data-rec hidden><button class="ibtn" data-reccancel aria-label="Zrušit">${icon('close', 18)}</button><span class="recdot"></span><b data-rectime>0:00</b><span class="sub" style="flex:1;margin:0">Nahrávám…</span><button class="ibtn sendbtn" data-recsend aria-label="Odeslat hlasovku">${icon('next', 22, 2.4)}</button></div>` : `<a class="readonly" href="#/chat/${TEST_THREAD}">${icon('lock', 16)} Ve zkušebním provozu se tu jen čte — psát jde do testovacího vlákna</a>`}
     </div>
   </div>`;
   const box = root.querySelector('[data-msgs]');
@@ -157,12 +170,13 @@ export function renderThread(root, { id }) {
   const vvT = window.visualViewport || window;
   vvT.addEventListener('resize', fit); vvT.addEventListener('scroll', fit);
   // Soukromá konverzace: online (zelená tečka) nebo kdy byl naposledy aktivní.
-  let presUnsub = null, presTick = null;
+  let presUnsub = null, presTick = null, presShow = null;
   if (!group) {
     const other = threadTitle(id);
     const st = root.querySelector('[data-status]');
     let lastIso = null;
-    const show = () => { st.innerHTML = isOnline(lastIso) ? '<i class="onldot inline"></i> online' : esc(lastSeenText(lastIso)); };
+    const show = () => { if (st.dataset.typing) return; st.innerHTML = isOnline(lastIso) ? '<i class="onldot inline"></i> online' : esc(lastSeenText(lastIso)); };
+    presShow = show;
     presUnsub = watchOne(other, (iso) => { lastIso = iso; show(); });
     presTick = setInterval(show, 30000);
   }
@@ -173,7 +187,12 @@ export function renderThread(root, { id }) {
   function draw() {
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
     let html = '', lastDay = null;
-    msgs.forEach((m, i) => {
+    const fq = looseName(findQ || '');
+    const list = fq ? msgs.filter((m) => looseName(m.text || '').includes(fq)) : msgs;
+    // Kdo si co přečetl: u poslední mé zprávy („Přečteno 14:05“ / „Viděli: …“).
+    const lastMine = [...msgs].reverse().find((m) => norm(m.from) === norm(me));
+    const seenMap = meta.lastSeen || {};
+    list.forEach((m, i) => {
       const d = toDate(m.at) || new Date(0);
       if (!lastDay || !sameDay(d, lastDay)) {
         const dd = dayDiff(d, new Date());
@@ -181,7 +200,7 @@ export function renderThread(root, { id }) {
         lastDay = d;
       }
       const mine = norm(m.from) === norm(me);
-      const prev = msgs[i - 1];
+      const prev = list[i - 1];
       const showName = group && !mine && (!prev || prev.from !== m.from || !sameDay(toDate(prev.at) || d, d));
       const reacts = sortedReactions(m.reactions).map(([e, l]) =>
         `<button class="react ${l.includes(me) ? 'on' : ''}" data-react="${esc(e)}" data-id="${esc(m.id)}">${emo(e, 16)}<span>${l.length}</span></button>`).join('');
@@ -196,12 +215,14 @@ export function renderThread(root, { id }) {
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
           </div>
-          <div class="mmeta">${esc(fmtTime(d))}${m.edited ? ' · upraveno' : ''}</div>
+          <div class="mmeta">${meta.pinned && meta.pinned.msgId === m.id ? '📌 ' : ''}${esc(fmtTime(d))}${m.edited ? ' · upraveno' : ''}${m.audioDuration ? ' · ' + Math.floor(m.audioDuration / 60) + ':' + String(m.audioDuration % 60).padStart(2, '0') : ''}</div>
           ${reacts ? `<div class="reacts">${reacts}</div>` : ''}
+          ${!fq && lastMine && m.id === lastMine.id ? seenLine(m, seenMap) : ''}
         </div>
       </div>`;
     });
-    box.innerHTML = html || '<div class="empty">Zatím žádné zprávy.</div>';
+    box.innerHTML = html || `<div class="empty">${fq ? 'Nic nenalezeno.' : 'Zatím žádné zprávy.'}</div>`;
+    if (fq) return;
     if (first || nearBottom) {
       // Na konec (nejnovější zprávy); znovu po načtení fotek, které výšku změní.
       const toEnd = () => { box.scrollTop = box.scrollHeight; };
@@ -211,8 +232,71 @@ export function renderThread(root, { id }) {
     }
   }
 
+  function seenLine(m, seen) {
+    const at = toDate(m.at);
+    if (!at) return '';
+    const others = Object.keys(seen).filter((n) => norm(n) !== norm(me) && toDate(seen[n]) >= at);
+    if (!others.length) return '';
+    if (!group) { const t = toDate(seen[others[0]]); return `<div class="seen">Přečteno ${sameDay(t, new Date()) ? fmtTime(t) : t.getDate() + '. ' + (t.getMonth() + 1) + '. ' + fmtTime(t)}</div>`; }
+    return `<div class="seen">Viděli: ${esc(others.slice(0, 6).join(', '))}${others.length > 6 ? ' +' + (others.length - 6) : ''}</div>`;
+  }
+
+  // Dokument vlákna chats/{id}: lastSeen (přečtení), typing (píše…), muted
+  // (ztlumené notifikace), pinned (připnutá zpráva) — stejné jako stará aplikace.
+  let meta = {}, findQ = '';
+  const threadRef = doc(db, ...threadPath(id).slice(0, -1));
+  const unsubMeta = onSnapshot(threadRef, (s) => { meta = s.exists() ? s.data() : {}; drawMeta(); draw(); }, () => {});
+  const muteBtn = root.querySelector('[data-mute]');
+  const pinEl = root.querySelector('[data-pin]');
+  const statusEl = root.querySelector('[data-status]');
+  function drawMeta() {
+    const muted = !!(meta.muted || {})[me];
+    muteBtn.classList.toggle('muted', muted);
+    muteBtn.innerHTML = muted ? '🔕' : icon('bell', 20);
+    muteBtn.setAttribute('aria-label', muted ? 'Zapnout notifikace z vlákna' : 'Ztlumit vlákno');
+    const p = meta.pinned;
+    pinEl.hidden = !p;
+    if (p) pinEl.innerHTML = `<button data-pingo>📌 <b>${esc(p.from || '')}:</b> ${esc(p.text ? p.text.slice(0, 70) : p.image ? '📷 fotka' : '')}</button><button class="ibtn ghost" data-unpin aria-label="Odepnout">${icon('close', 16)}</button>`;
+    // „píše…“
+    const typers = Object.entries(meta.typing || {}).filter(([n, t]) => norm(n) !== norm(me) && Date.now() - (toDate(t)?.getTime() || 0) < 6000).map(([n]) => n);
+    if (typers.length) { statusEl.dataset.typing = '1'; statusEl.textContent = group ? typers.join(', ') + ' píše…' : 'píše…'; }
+    else if (statusEl.dataset.typing) { delete statusEl.dataset.typing; statusEl.textContent = group ? (id === PARTY_THREAD ? 'skupinové vlákno' : '') : ''; if (!group && presShow) presShow(); }
+  }
+  const typingTick = setInterval(() => { if (meta.typing) drawMeta(); }, 3000);
+  pinEl.addEventListener('click', (e) => {
+    if (e.target.closest('[data-unpin]')) { setDoc(threadRef, { pinned: null }, { merge: true }).catch(() => {}); return; }
+    if (e.target.closest('[data-pingo]') && meta.pinned) {
+      const el = box.querySelector(`[data-id="${CSS.escape(meta.pinned.msgId)}"]`);
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
+    }
+  });
+  muteBtn.onclick = () => {
+    const muted = !!(meta.muted || {})[me];
+    setDoc(threadRef, { muted: { [me]: !muted } }, { merge: true }).then(() => toast(muted ? 'Notifikace z vlákna zapnuté' : 'Vlákno ztlumené 🔕')).catch(() => toast('Nepovedlo se.'));
+  };
+  // Hledání ve zprávách
+  const findBar = root.querySelector('[data-findbar]');
+  root.querySelector('[data-find]').onclick = () => { findBar.hidden = !findBar.hidden; if (!findBar.hidden) findBar.querySelector('input').focus(); else { findQ = ''; findBar.querySelector('input').value = ''; first = true; draw(); } };
+  findBar.querySelector('[data-findx]').onclick = () => { findBar.hidden = true; findQ = ''; findBar.querySelector('input').value = ''; first = true; draw(); };
+  findBar.querySelector('input').addEventListener('input', (e) => { findQ = e.target.value.trim(); if (!findQ) first = true; draw(); });
+  // Hipnutí (šťouchnutí) — cloudová funkce pošle notifikaci „👊 Hipnutí“
+  const pokeBtn = root.querySelector('[data-poke]');
+  if (pokeBtn) pokeBtn.onclick = async () => {
+    try { await addDoc(collection(db, 'pokes'), { from: me, to: norm(threadTitle(id)), type: 'poke', at: new Date().toISOString(), via: 'v2' }); toast(`Hipnul(a) jsi ${threadTitle(id)} 👊`); }
+    catch (x) { toast('Nepovedlo se.'); }
+  };
+  // Přečtení: kdy jsem vlákno naposledy viděl
+  let seenT = 0;
+  const markSeen = () => {
+    if (document.hidden || Date.now() - seenT < 4000) return;
+    seenT = Date.now();
+    setDoc(threadRef, { lastSeen: { [me]: new Date().toISOString() } }, { merge: true }).catch(() => {});
+  };
+  const onVis = () => { if (!document.hidden) { seenT = 0; markSeen(); } };
+  document.addEventListener('visibilitychange', onVis);
+
   const q = query(collection(db, ...threadPath(id)), orderBy('at'));
-  const unsub = onSnapshot(q, (s) => { msgs = s.docs.map((d) => ({ id: d.id, ...d.data() })); draw(); },
+  const unsub = onSnapshot(q, (s) => { msgs = s.docs.map((d) => ({ id: d.id, ...d.data() })); draw(); markSeen(); },
     (err) => { console.error('Chat:', err); box.innerHTML = '<div class="empty">Zprávy se nepodařilo načíst.</div>'; });
 
   // Dlouhé podržení zprávy: reakce, odpověď, smazání vlastní.
@@ -247,6 +331,8 @@ export function renderThread(root, { id }) {
     const r = await emojiSheet({ selected, actions: [
       { id: 'reply', label: 'Odpovědět' },
       ...(m.text ? [{ id: 'copy', label: 'Kopírovat text' }] : []),
+      ...(mine && m.text ? [{ id: 'edit', label: 'Upravit zprávu' }] : []),
+      meta.pinned && meta.pinned.msgId === m.id ? { id: 'unpin', label: 'Odepnout' } : { id: 'pin', label: '📌 Připnout nahoru' },
       ...(mine ? [{ id: 'del', label: 'Smazat zprávu', kind: 'no' }] : [])
     ] });
     if (!r) return;
@@ -256,7 +342,29 @@ export function renderThread(root, { id }) {
       if (a === 'reply') { replyTo = { id: m.id, from: m.from, snippet: snippet(m).slice(0, 80) }; drawReply(); root.querySelector('[data-text]')?.focus(); }
       if (a === 'copy') { try { await navigator.clipboard.writeText(m.text); toast('Zkopírováno'); } catch (x) { /* nic */ } }
       if (a === 'del') { try { await deleteDoc(doc(db, ...threadPath(id), mid)); } catch (x) { toast('Nepovedlo se smazat.'); } }
+      if (a === 'pin') setDoc(threadRef, { pinned: { msgId: m.id, text: m.text || '', image: !!m.image, from: m.from || '', at: m.at || '' } }, { merge: true }).catch(() => toast('Nepovedlo se.'));
+      if (a === 'unpin') setDoc(threadRef, { pinned: null }, { merge: true }).catch(() => {});
+      if (a === 'edit') editMsg(m);
     }
+  }
+
+  function editMsg(m) {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h3>Upravit zprávu</h3>
+      <textarea class="input" rows="4" maxlength="2000" style="height:auto;width:100%">${esc(m.text || '')}</textarea>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn primary big block" data-ok>Uložit</button><button class="btn block" data-x>Zrušit</button></div></div>`;
+    bd.addEventListener('click', async (e) => {
+      if (e.target === bd || e.target.closest('[data-x]')) return bd.remove();
+      if (e.target.closest('[data-ok]')) {
+        const t = bd.querySelector('textarea').value.trim();
+        if (!t) return;
+        bd.remove();
+        try { await updateDoc(doc(db, ...threadPath(id), m.id), { text: t, edited: true }); } catch (x) { toast('Nepovedlo se uložit.'); }
+      }
+    });
+    document.body.appendChild(bd);
+    setTimeout(() => bd.querySelector('textarea').focus(), 50);
   }
 
   function drawReply() {
@@ -269,8 +377,37 @@ export function renderThread(root, { id }) {
 
   if (writable) {
     const ta = root.querySelector('[data-text]');
-    const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; };
-    ta.addEventListener('input', grow);
+    const sendBtn = root.querySelector('[data-send]'), micBtn = root.querySelector('[data-mic]');
+    const grow = () => {
+      ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+      const has = !!ta.value.trim(); sendBtn.hidden = !has; micBtn.hidden = has;
+    };
+    let typT = 0;
+    ta.addEventListener('input', () => {
+      grow();
+      if (ta.value.trim() && Date.now() - typT > 3000) { typT = Date.now(); setDoc(threadRef, { typing: { [me]: new Date().toISOString() } }, { merge: true }).catch(() => {}); }
+    });
+    // Hlasovky: klepnout = nahrávat, ✓ = odeslat, ✕ = zahodit.
+    const inrow = root.querySelector('.composer .inrow'), recRow = root.querySelector('[data-rec]'), recTime = root.querySelector('[data-rectime]');
+    let rec = null, recTick = null;
+    const recEnd = () => { clearInterval(recTick); recRow.hidden = true; inrow.hidden = false; };
+    micBtn.onclick = async () => {
+      try { rec = await startRecording(); } catch (x) { toast('Mikrofon není povolený.'); return; }
+      inrow.hidden = true; recRow.hidden = false; recTime.textContent = '0:00';
+      recTick = setInterval(() => { const sec = Math.round((Date.now() - rec.started) / 1000); recTime.textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); if (sec >= 180) root.querySelector('[data-recsend]').click(); }, 250);
+    };
+    root.querySelector('[data-reccancel]').onclick = () => { if (rec) rec.cancel(); rec = null; recEnd(); };
+    root.querySelector('[data-recsend]').onclick = async () => {
+      if (!rec) return;
+      const { blob, seconds } = rec.stop(); rec = null; recEnd();
+      if (seconds < 1) return;
+      toast('Odesílám hlasovku…');
+      try {
+        const url = await uploadFile(`chatAudio/${id}/${Date.now()}_${me}.wav`, blob, 'audio/wav');
+        await addDoc(collection(db, ...threadPath(id)), { from: me, audio: url, audioType: 'audio/wav', audioDuration: seconds, at: new Date().toISOString(), via: 'v2', ...(replyTo ? { replyTo } : {}) });
+        replyTo = null; drawReply();
+      } catch (x) { console.error(x); toast('Hlasovku se nepodařilo odeslat.'); }
+    };
     const send = async (extra = {}) => {
       const text = ta.value.trim();
       if (!text && !extra.image) return;
@@ -290,5 +427,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return () => { unsub(); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
+  return () => { unsub(); unsubMeta(); clearInterval(typingTick); document.removeEventListener('visibilitychange', onVis); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
 }

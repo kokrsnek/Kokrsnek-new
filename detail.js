@@ -6,8 +6,11 @@ import {
   watchEvents, findEvent, events, isPast, canWrite, watchAttendance, watchComments, addComment,
   deleteComment, watchItems, addItem, toggleItem, loadAlbum, icsFor, shareIcs, prefetchEvent, neighboursOf, cachedAlbum,
   cachedAttendance, cachedComments, cachedItems,
-  cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike, reactComment
+  cachedCover, loadCover, setCover, removeCover, shrinkPhoto, watchLikes, cachedLikes, toggleLike, reactComment, saveAttendees, watchEventCheckins, toggleEventCheckin, deleteItem
 } from './store.js';
+import { geocode } from './map.js';
+import { showPayment, showReceipt, editExpenses, loadExpenses } from './expenses.js';
+import { PARTY_NAMES } from './config.js';
 import { emo, sortedReactions, emojiSheet, onLongPress } from './emoji.js';
 import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf, tempRange } from './weather.js';
 import { plural } from './util.js';
@@ -53,7 +56,7 @@ function mountDetail(host, ev, live) {
   function shell() {
     const past = isPast(ev);
     const ro = !canWrite(ev);
-    const mine = ev.isTest && (ev.createdBy === myName() || isAdmin());
+    const mine = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || (ev.source === 'app' && isAdmin());
     const enterCls = live && enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
     if (live) enterFrom = 0;
     host.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">
@@ -80,12 +83,14 @@ function mountDetail(host, ev, live) {
         </div>
         <div data-wx></div>
         <div data-likes></div>
+        ${past ? '<div class="two moneyrow" data-money style="margin-top:12px"><button class="btn" data-pay>💰 Příspěvek</button><button class="btn" data-exp hidden>🧾 Náklady</button></div>' : ''}
         ${descText(ev) ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(descText(ev))}</div>` : ''}
 
         <div data-mapbox></div>
 
+        <div data-oncheck></div>
         <div data-attsec>
-          <div class="h2"><span>${past ? 'Zúčastnili se' : 'Kdo jde'}</span><span class="sub" data-attcount></span></div>
+          <div class="h2"><span>${past ? 'Zúčastnili se' : 'Kdo jde'}</span><span style="display:flex;align-items:center;gap:10px"><span class="sub" data-attcount></span>${past && isAdmin() ? '<button class="link" data-attedit>Upravit</button>' : ''}</span></div>
           <div data-att>${spinner()}</div>
         </div>
 
@@ -96,7 +101,7 @@ function mountDetail(host, ev, live) {
 
         <div class="h2"><span>Komentáře</span><span class="sub" data-comcount></span></div>
         <div data-coms>${spinner()}</div>
-        ${ro ? '' : `<form class="inrow" data-comform style="margin-top:6px">
+        ${`<form class="inrow" data-comform style="margin-top:6px">
           <input class="input" name="t" placeholder="Napiš komentář" aria-label="Komentář" autocomplete="off" maxlength="2000">
           <button class="ibtn" style="background:var(--accent);border:none;color:var(--on-accent);width:48px;height:48px" aria-label="Odeslat">${icon('next', 22, 2.4)}</button>
         </form>`}
@@ -131,6 +136,40 @@ function mountDetail(host, ev, live) {
     drawWx(cachedWeather(ev));
     eventWeather(ev).then(drawWx);
     unsubs.push(watchLikes(ev, drawLikes));
+    // „Jsem na místě“ — jen v den akce (nebo když právě probíhá).
+    const now0 = new Date();
+    if (!isPast(ev) && (sameDay(ev.start, now0) || (ev.start <= now0 && now0 < ev.end))) {
+      const box = host.querySelector('[data-oncheck]');
+      let list = [];
+      const drawOn = () => {
+        const mine = list.find((c) => c.name === myName());
+        box.innerHTML = `<div class="card oncheck" style="margin-top:14px">
+          <button class="btn big block ${mine ? 'yes' : ''}" data-on>${mine ? '✓ Jsem na místě' : icon('pin', 18) + 'Jsem na místě'}</button>
+          ${mine && mine.verified ? '<div class="sub" style="text-align:center;margin-top:6px">📍 ověřeno polohou</div>' : ''}
+          ${list.length ? `<div class="sub" style="margin:12px 0 6px">Kdo je na místě</div><div class="chips">${list.map((c) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(c.name, 22)}${esc(c.name)}${c.verified ? ' 📍' : ''}</span>`).join('')}</div>` : ''}
+        </div>`;
+        box.querySelector('[data-on]').onclick = async (e) => {
+          e.currentTarget.disabled = true;
+          const coords = ev.place ? await geocode(ev.place).catch(() => null) : null;
+          try { await toggleEventCheckin(ev, !!mine, coords); } catch (x) { toast('Nepovedlo se uložit.'); }
+        };
+      };
+      drawOn();
+      unsubs.push(watchEventCheckins(ev, (l) => { list = l; drawOn(); }));
+    }
+    // Příspěvek (QR) a Náklady akce — u proběhlých akcí.
+    const payB = host.querySelector('[data-pay]');
+    if (payB) {
+      payB.onclick = () => showPayment(ev);
+      const expB = host.querySelector('[data-exp]');
+      let exp = null;
+      const upd = () => { expB.hidden = !(exp || isAdmin()); expB.textContent = exp ? '🧾 Náklady' : '🧾 Zadat náklady'; };
+      loadExpenses(ev).then((d) => { exp = d; upd(); });
+      expB.onclick = () => (exp ? showReceipt(ev, exp, (d) => { exp = d; upd(); }) : editExpenses(ev, null, (d) => { exp = d; upd(); }));
+    }
+    // Dodatečná oprava docházky po akci (správce).
+    const ae = host.querySelector('[data-attedit]');
+    if (ae) ae.onclick = () => editAttendees();
     // Komentáře: dlouhé podržení → emoji reakce (a kopírování); klepnutí na bublinku reakce ji přepne.
     const comBox = host.querySelector('[data-coms]');
     const findCom = (el) => (comments || []).find((x) => x.id === el.closest('[data-cid]')?.dataset.cid);
@@ -284,12 +323,43 @@ function mountDetail(host, ev, live) {
     </div>`;
   }
 
+  async function editAttendees() {
+    const before = att ? [...att.going] : [];
+    const names = [...new Set([...PARTY_NAMES, ...before])].sort((a, b) => a.localeCompare(b, 'cs'));
+    const sel = new Set(before);
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    const draw = () => {
+      bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>
+        <h3>Kdo se opravdu zúčastnil</h3>
+        <div class="chips" style="max-height:46vh;overflow:auto;margin-bottom:12px">${names.map((n) => `<button class="chip ${sel.has(n) ? 'on' : ''}" data-n="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;${sel.has(n) ? 'background:var(--accent-soft);border-color:var(--accent-hi);color:var(--accent-text)' : ''}">${avatar(n, 22)}${esc(n)}${sel.has(n) ? ' ✓' : ''}</button>`).join('')}</div>
+        <form class="inrow" data-add style="margin-bottom:12px"><input class="input" name="n" placeholder="Přidat jméno…" maxlength="40" autocomplete="off"><button class="ibtn" aria-label="Přidat">${icon('plus')}</button></form>
+        <div style="display:flex;flex-direction:column;gap:10px"><button class="btn primary big block" data-save>Uložit (${sel.size})</button><button class="btn block" data-x>Zrušit</button></div>
+      </div>`;
+    };
+    draw();
+    bd.addEventListener('click', async (e) => {
+      if (e.target === bd || e.target.closest('[data-x]')) return bd.remove();
+      const c = e.target.closest('[data-n]');
+      if (c) { const n = c.dataset.n; sel.has(n) ? sel.delete(n) : sel.add(n); draw(); return; }
+      if (e.target.closest('[data-save]')) {
+        try { await saveAttendees(ev, [...sel], before); bd.remove(); toast('Docházka uložena'); } catch (x) { toast('Nepovedlo se uložit.'); }
+      }
+    });
+    bd.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const n = e.target.n.value.trim();
+      if (n) { if (!names.includes(n)) names.push(n); sel.add(n); draw(); }
+    });
+    document.body.appendChild(bd);
+  }
+
   function drawAtt() {
     const el = host.querySelector('[data-att]');
     if (!el) return;
     const past = isPast(ev);
     if (past) {
-      host.querySelector('[data-attsec]').style.display = att.going.length ? '' : 'none';
+      host.querySelector('[data-attsec]').style.display = att.going.length || isAdmin() ? '' : 'none';
       host.querySelector('[data-attcount]').textContent = att.going.length ? String(att.going.length) : '';
       el.innerHTML = `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>`;
       return;
@@ -319,10 +389,11 @@ function mountDetail(host, ev, live) {
         <span style="min-width:0;overflow-wrap:anywhere">${esc(it.name)}</span>
         ${it.takenBy
           ? `<button class="pill ${it.takenBy === me ? 'go' : ''}" data-item="${esc(it.id)}" style="background:transparent;border:1px solid var(--line2);color:var(--ink2);${it.takenBy === me ? 'border-color:var(--accent-hi);color:var(--accent-text)' : ''}" ${ro || it.takenBy !== me ? 'disabled' : ''}>${esc(it.takenBy)}</button>`
-          : `<button class="pill" data-item="${esc(it.id)}" style="background:transparent;border:1px dashed var(--line2);color:var(--muted)" ${ro ? 'disabled' : ''}>Vezmu</button>`}
+          : `<span style="display:inline-flex;gap:6px;align-items:center">${it.addedBy === me || isAdmin() ? `<button class="pill" data-itemdel="${esc(it.id)}" aria-label="Smazat" style="background:transparent;border:none;color:var(--muted);padding:0 4px">✕</button>` : ''}<button class="pill" data-item="${esc(it.id)}" style="background:transparent;border:1px dashed var(--line2);color:var(--muted)" ${ro ? 'disabled' : ''}>Vezmu</button></span>`}
       </div>`).join('')}</div>` : `<div class="sub">${ro ? 'Seznam je prázdný.' : 'Zatím nic. Přidej, co je potřeba.'}</div>`}
       ${ro ? '' : `<form class="inrow" data-itemform style="margin-top:10px"><input class="input" name="n" placeholder="Přidat věc" aria-label="Přidat věc" maxlength="80"><button class="ibtn" aria-label="Přidat">${icon('plus')}</button></form>`}`;
     el.querySelectorAll('[data-item]').forEach((b) => { b.onclick = () => toggleItem(ev, items.find((i) => i.id === b.dataset.item)).catch(() => toast('Nepovedlo se.')); });
+    el.querySelectorAll('[data-itemdel]').forEach((b) => { b.onclick = async () => { const it = items.find((i) => i.id === b.dataset.itemdel); if (it && await confirmDanger('Smazat položku?', it.name)) deleteItem(ev, it).catch(() => toast('Nepovedlo se smazat.')); }; });
     const f = el.querySelector('[data-itemform]');
     if (f) f.onsubmit = async (e) => { e.preventDefault(); const n = f.n.value.trim(); if (!n) return; f.n.value = ''; try { await addItem(ev, n); } catch (x) { toast('Nepovedlo se přidat.'); } };
   }
@@ -331,7 +402,7 @@ function mountDetail(host, ev, live) {
     const el = host.querySelector('[data-coms]');
     if (!el) return;
     const me = myName();
-    const ro = !canWrite(ev);
+    const ro = false; // komentovat jde u všech akcí, i proběhlých a převzatých z kalendáře
     host.querySelector('[data-comcount]').textContent = comments.length ? String(comments.length) : '';
     // Odpovědi hned pod komentář, na který odpovídají.
     const top = comments.filter((c) => !c.parentId || !comments.some((p) => p.id === c.parentId));

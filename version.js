@@ -3,6 +3,69 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.43',
+    date: '22. 11. 2026',
+    items: [
+      'Narozeniny a svátky členů party: jednou denně po otevření dialog s konfetami — oslavenec dostane přání, ostatní připomínku „Nezapomeň popřát…“.',
+      'Kde jsi? → nová záložka Místa: kde se parta nejčastěji schází, kdo tam byl kolikrát, kdy naposledy a jak daleko to je.',
+      'Ukazatel offline: když není signál, nahoře se ukáže „Jsi offline — ukazuju uložená data“.',
+      'Verze pro počítač: na široké obrazovce je lišta vlevo, akce ve dvou až třech sloupcích a detail uprostřed.'
+    ]
+  },
+  {
+    version: '1.42',
+    date: '22. 11. 2026',
+    items: [
+      'U proběhlé akce tlačítko „💰 Příspěvek“ s QR platbou a číslem účtu ke zkopírování.',
+      '„🧾 Náklady“ — účtenka s položkami, příspěvky a výsledkem (v plusu / v mínusu) a roční přehled. Zadává a upravuje správce, stejná data jako stará aplikace.'
+    ]
+  },
+  {
+    version: '1.41',
+    date: '22. 11. 2026',
+    items: [
+      'Chat: hlasovky (🎤 vedle pole pro psaní), úprava vlastní zprávy, připnutí zprávy nahoru, ztlumení vlákna (zvoneček), hledání ve zprávách (lupa).',
+      'U poslední vlastní zprávy je vidět „Přečteno 14:05“ (ve skupině „Viděli: …“) a nahoře „píše…“, když druhý zrovna píše.',
+      'Ankety: v seznamu chatu sekce Ankety s „+ Nová anketa“, hlasování s výsledky a jmény, autor může anketu uzavřít.',
+      'Hipnutí 👊 v soukromé konverzaci — druhý dostane notifikaci.',
+      'Vše ve stejném formátu jako stará aplikace, takže to vidí obě.'
+    ]
+  },
+  {
+    version: '1.40',
+    date: '22. 11. 2026',
+    items: [
+      'Správce zakládá akce naostro: uvidí je celá parta v nové aplikaci a přijde notifikace „📅 Nová akce“ (testovací akci jde pořád založit zaškrtnutím „Jen testovací“).',
+      'Akce založené v aplikaci jde upravovat a mazat (správce). Akce z Google Kalendáře se dál opravují v kalendáři.'
+    ]
+  },
+  {
+    version: '1.39',
+    date: '22. 11. 2026',
+    items: [
+      'Push notifikace: zapínají se zvonečkem na Akcích nebo v Parta → Notifikace. Chodí na stejné věci jako ve staré aplikaci (lajky, Jdu, komentáře, chat, check-iny…).',
+      'Klepnutí na notifikaci otevře rovnou danou akci nebo konverzaci.',
+      'Na iPhonu fungují jen u aplikace přidané na plochu.'
+    ]
+  },
+  {
+    version: '1.38',
+    date: '22. 11. 2026',
+    items: [
+      'Docházka Jdu / Nejdu funguje naostro i u akcí z kalendáře — zapisuje se stejně jako ve staré aplikaci (parta dostane notifikaci).',
+      'Co přinést: přidávání věcí, „Vezmu“ a mazání vlastních položek u všech akcí.',
+      'V den akce je v detailu tlačítko „Jsem na místě“ (s ověřením polohou do 250 m) a seznam, kdo už je na místě.',
+      'Správce může u proběhlé akce dodatečně upravit „Zúčastnili se“ (bez notifikace partě).'
+    ]
+  },
+  {
+    version: '1.37',
+    date: '22. 11. 2026',
+    items: [
+      'Komentáře jdou psát u všech akcí, i u proběhlých a převzatých z kalendáře. Ukládají se stejně jako ve staré aplikaci (parta dostane notifikaci) a svůj komentář jde smazat.'
+    ]
+  },
+  {
     version: '1.36',
     date: '22. 11. 2026',
     items: [

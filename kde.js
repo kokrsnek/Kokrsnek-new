@@ -53,6 +53,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     <div class="seg" role="tablist">
       <button role="tab" class="${tab === 'feed' ? 'on' : ''}" data-tab="#/kde">Feed</button>
       <button role="tab" class="${tab === 'mapa' ? 'on' : ''}" data-tab="#/kde/mapa">Mapa</button>
+      <button role="tab" class="${tab === 'mista' ? 'on' : ''}" data-tab="#/kde/mista">Místa</button>
     </div>
     <div class="scroll" data-body>${spinner()}</div>
     ${tabbar('kde')}
@@ -212,7 +213,54 @@ export function render(root, { tab = 'feed', openNew = false }) {
     setTimeout(() => map.invalidateSize(), 50);
   }
 
-  const draw = () => { if (!alive) return; tab === 'mapa' ? drawMap() : drawFeed(); };
+  // ---------- Místa: kde se parta nejčastěji schází (z posledních check-inů) ----------
+  let allPlaces = null, placesOpen = null, myPos = null;
+  async function drawPlaces() {
+    if (!allPlaces) {
+      body.innerHTML = spinner();
+      try {
+        const s = await getDocs(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(1000)));
+        allPlaces = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } catch (e) { body.innerHTML = '<div class="empty">Místa se nepodařilo načíst.</div>'; return; }
+      if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { myPos = { lat: p.coords.latitude, lng: p.coords.longitude }; if (alive && tab === 'mista') drawPlaces(); }, () => {}, { timeout: 8000, maximumAge: 300000 });
+    }
+    const dist = (a, b) => { const R = 6371000, t = (x) => x * Math.PI / 180; const h = Math.sin(t(b.lat - a.lat) / 2) ** 2 + Math.cos(t(a.lat)) * Math.cos(t(b.lat)) * Math.sin(t(b.lng - a.lng) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+    const nk = (n) => String(n || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const byName = new Map(), groups = [];
+    allPlaces.filter((d) => d.place).forEach((d) => {
+      const k = nk(d.place);
+      if (!byName.has(k)) byName.set(k, []);
+      const list = byName.get(k);
+      const hasC = typeof d.lat === 'number' && typeof d.lng === 'number';
+      let g = hasC ? (list.find((x) => x.lat != null && dist(x, d) < 500) || list.find((x) => x.lat == null)) : (list.find((x) => x.lat == null) || list[0]);
+      if (!g) { g = { key: k + '|' + (hasC ? d.lat.toFixed(3) + ',' + d.lng.toFixed(3) : ''), name: d.place, lat: hasC ? d.lat : null, lng: hasC ? d.lng : null, items: [] }; list.push(g); groups.push(g); }
+      else if (g.lat == null && hasC) { g.lat = d.lat; g.lng = d.lng; }
+      g.items.push(d);
+    });
+    groups.forEach((g) => { const c = {}; g.items.forEach((d) => { c[d.user] = (c[d.user] || 0) + 1; }); g.people = Object.entries(c).sort((a, b) => b[1] - a[1]); });
+    groups.sort((a, b) => (b.items.length - a.items.length) || ((b.items[0].at || '') > (a.items[0].at || '') ? 1 : -1));
+    if (!groups.length) { body.innerHTML = '<div class="empty">Zatím žádná místa. Po prvním check-inu se tu objeví.</div>'; return; }
+    const fmtD = (m) => m < 1000 ? Math.round(m / 10) * 10 + ' m' : (m / 1000).toFixed(m < 10000 ? 1 : 0).replace('.', ',') + ' km';
+    body.innerHTML = `<div class="places">${groups.map((g, i) => {
+      const op = placesOpen === g.key;
+      const ppl = g.people.slice(0, 3).map(([n, k]) => `${esc(n)} ${k}×`).join(', ') + (g.people.length > 3 ? ` a ${g.people.length - 3} další` : '');
+      return `<div class="pl ${op ? 'open' : ''}">
+        <button class="pl-h" data-pg="${esc(g.key)}"><span class="pl-i">${i + 1}.</span>
+          <span class="pl-t"><b>${esc(g.name)}</b><small>${ppl}</small><small>naposledy ${esc(when(g.items[0].at))}${myPos && g.lat != null ? ' · ' + fmtD(dist(myPos, g)) : ''}</small></span>
+          <span class="pl-n">${g.items.length}×</span></button>
+        ${op ? `<div class="pl-d">${g.lat != null ? `<a href="${esc(gplace(g))}" target="_blank" rel="noopener">Otevřít v Google Mapách</a>` : ''}
+          ${g.items.slice(0, 20).map((d) => `<div class="pl-r">${avatar(d.user || '?', 26)}<span><b>${esc(d.user || '?')}</b>${d.note ? `<small>„${esc(d.note)}“</small>` : ''}</span><small>${esc(when(d.at))}</small>${d.photo ? `<img src="${esc(d.photo)}" alt="" loading="lazy">` : ''}</div>`).join('')}
+          ${g.items.length > 20 ? `<div class="sub">…a ${g.items.length - 20} starších</div>` : ''}</div>` : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+  body.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-pg]');
+    if (g && tab === 'mista') { placesOpen = placesOpen === g.dataset.pg ? null : g.dataset.pg; drawPlaces(); }
+  });
+
+  let placesStarted = false;
+  const draw = () => { if (!alive) return; if (tab === 'mista') { if (!placesStarted) { placesStarted = true; drawPlaces(); } return; } tab === 'mapa' ? drawMap() : drawFeed(); };
 
   unsubs.push(onSnapshot(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(60)), (s) => {
     real = s.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() })); draw();

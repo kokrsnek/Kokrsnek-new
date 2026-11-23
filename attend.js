@@ -5,7 +5,6 @@ import { confirmYesNo, toast } from './ui.js';
 import { myName } from './auth.js';
 
 export async function changeAttendance(ev, clicked, att) {
-  if (!canWrite(ev)) { toast('Zkušební provoz: u akcí party se zatím jen čte.'); return false; }
   const me = myName();
   const going = att?.going.includes(me);
   const declined = att?.declined.includes(me);

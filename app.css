@@ -257,7 +257,7 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--safe-to
 .info>a.rowlink:active{background:var(--surface)}
 
 /* Výřez mapy v detailu akce */
-.mapbox{display:block;position:relative;margin-top:12px;height:170px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);text-decoration:none}
+.mapbox{display:block;position:relative;isolation:isolate;margin-top:12px;height:170px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);text-decoration:none}
 .mapbox .map{position:absolute;inset:0;pointer-events:none;background:var(--surface)}
 .mapbox .mapbtn{text-decoration:none;position:absolute;right:10px;bottom:10px;z-index:500;background:var(--card);color:var(--accent-text);border:1px solid var(--line);font-weight:700;font-size:13px;padding:7px 12px;border-radius:100px;box-shadow:0 4px 12px var(--shadow)}
 .mapbox .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.7)}
@@ -470,3 +470,96 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 .emogrid button{width:54px;height:54px;border-radius:50%;border:2px solid transparent;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:0}
 .emogrid button.on{border-color:var(--accent-hi);background:var(--accent-soft)}
 .emogrid button:active{transform:scale(.92)}
+
+/* Chat: hledání, připnutá zpráva, hlasovky, přečtení */
+.findbar{display:flex;gap:6px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.findbar .input{height:40px}
+.pinbar{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 14px;border-bottom:1px solid var(--line);background:var(--surface);flex:0 0 auto}
+.pinbar[hidden],.findbar[hidden],.recrow[hidden]{display:none}
+.pinbar [data-pingo]{flex:1;min-width:0;text-align:left;background:none;border:none;color:var(--ink2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:6px 0}
+.recrow{display:flex;align-items:center;gap:10px}
+.recdot{width:12px;height:12px;border-radius:50%;background:#E0505C;animation:recb 1s ease-in-out infinite alternate}
+@keyframes recb{from{opacity:1}to{opacity:.25}}
+.composer [data-mic]{font-size:19px}
+.composer [hidden]{display:none!important}
+.seen{font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
+.msg:not(.mine) .seen{text-align:left}
+.msg.flash .bubble{animation:flash 1.4s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent-hi)}100%{box-shadow:0 0 0 0 transparent}}
+.ibtn.muted{color:var(--coral)}
+.bubble audio{max-width:240px;height:40px}
+/* Ankety */
+.pollopt{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;gap:6px;text-align:left;padding:12px 14px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600}
+.pollopt.on{border-color:var(--accent-hi)}
+.pollopt i{position:absolute;left:0;top:0;bottom:0;background:var(--accent-soft);z-index:0}
+.pollopt>span{position:relative;z-index:1}
+.pollopt .po-t{flex:1;min-width:0}
+.pollopt .po-n{font-size:12px;color:var(--muted)}
+.pollopt .po-w{flex-basis:100%;display:flex;gap:3px}
+.pollopt .po-w .av{width:20px;height:20px;font-size:9px}
+
+/* Náklady akce — účtenka */
+.receipt{background:#FFFDF6;color:#2A2620;border-radius:12px;padding:16px 16px 14px;font-family:'Courier New',ui-monospace,monospace;box-shadow:0 6px 18px rgba(0,0,0,.18);position:relative}
+.receipt::after{content:'';position:absolute;left:0;right:0;bottom:-8px;height:8px;background:radial-gradient(circle at 6px -2px,transparent 6px,#FFFDF6 6.5px) 0 0/12px 8px repeat-x}
+.receipt .rc-h{text-align:center;font-weight:700;font-size:15px}
+.receipt .rc-t{text-align:center;font-weight:700;font-size:17px;margin-top:2px}
+.receipt .rc-d{text-align:center;font-size:12px;color:#6E6557;margin-bottom:10px}
+.receipt .rc-rows>div,.rc-edit>div{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px dashed #CFC3AC;font-size:13.5px}
+.receipt .rc-rows span,.rc-edit span{flex:1;min-width:0}
+.receipt .rc-rows small,.rc-edit small{color:#6E6557;min-width:44px;text-align:right}
+.receipt .rc-rows b{min-width:70px;text-align:right;color:#B4532A}
+.receipt .rc-sub{margin-top:10px;font-weight:700;font-size:13px}
+.receipt .rc-sum{display:flex;justify-content:space-between;padding:8px 0 2px;font-weight:700}
+.receipt .rc-bal{display:flex;justify-content:space-between;margin-top:8px;padding:8px 10px;border-radius:8px;font-weight:700}
+.receipt .rc-bal.plus{background:#E3F2E6;color:#2F7A56}.receipt .rc-bal.minus{background:#F8E1DA;color:#B4532A}
+.rc-edit>div{color:var(--ink);border-bottom-color:var(--line)}
+.rc-edit>div.c{color:var(--accent-text)}
+.rc-edit b{min-width:70px;text-align:right}
+.rc-edit button{background:none;border:none;color:var(--muted);font-size:14px;padding:0 4px}
+.moneyrow .btn{font-weight:700}
+
+/* Konfety (narozeniny, svátky) */
+.confetti{position:fixed;inset:0;z-index:500;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;display:block;opacity:.9;animation-name:confall;animation-timing-function:ease-in;animation-fill-mode:forwards}
+@keyframes confall{to{transform:translate(30px,110vh) rotate(720deg)}}
+.celebrate h3{font-size:22px}
+/* Offline */
+.offbar{position:fixed;left:50%;top:calc(var(--safe-top) + 8px);transform:translateX(-50%);z-index:60;background:#3A3940;color:#fff;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:nowrap}
+/* Místa */
+.places .pl{border-bottom:1px solid var(--line)}
+.places .pl-h{display:flex;align-items:center;gap:12px;width:100%;padding:12px 0;background:none;border:none;text-align:left;color:var(--ink);font:inherit}
+.places .pl-i{flex:0 0 28px;text-align:right;font-weight:700;color:var(--muted)}
+.places .pl-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.places .pl-t b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.places .pl-t small{font-size:12px;color:var(--muted);margin-top:1px}
+.places .pl-n{font-weight:800;font-size:18px;color:var(--accent-text)}
+.places .pl-d{margin:0 0 10px 40px}
+.places .pl-d>a{display:inline-block;margin:2px 0 8px;font-weight:600;font-size:13px}
+.places .pl-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.places .pl-r>span:not(.av){flex:1;min-width:0;display:flex;flex-direction:column;font-size:13.5px}
+.places .pl-r small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.places .pl-r img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+
+/* ---------- Verze pro počítač (široká obrazovka) ---------- */
+@media (min-width:900px){
+  #app{max-width:1180px;padding-left:108px}
+  .tabbar{left:0;right:auto;top:0;bottom:0;width:96px;border-top:none;border-right:1px solid var(--line);padding:24px 6px;display:flex;align-items:flex-start;border-radius:0!important;box-shadow:none!important;margin:0!important;background:var(--bar)!important;clip-path:none!important}
+  .tabbar::before{display:none!important}
+  .tabbar nav{display:flex!important;flex-direction:column;gap:14px;width:100%;grid-template-columns:none!important}
+  .tabbar a{writing-mode:horizontal-tb!important;transform:none!important;width:auto!important;height:auto!important;margin:0!important;background:none!important;color:var(--muted)!important;box-shadow:none!important;border-radius:12px!important;padding:10px 0!important}
+  .tabbar a svg{display:block!important}
+  .tabbar a.on{color:var(--accent-text)!important;background:var(--accent-soft)!important}
+  .tabbar .plus{position:static!important;order:-1;margin:0 auto 10px!important;transform:none}
+  .tabbar .plus.open{transform:rotate(45deg)}
+  .plusmenu{left:116px;right:auto;bottom:auto;top:90px;width:380px}
+  .screen:has(.tabbar){padding-top:var(--safe-top)!important}
+  .scroll{padding-bottom:40px}
+  .screen:has(.tabbar) .scroll,.screen:has(.tabbar) .top{padding-left:28px;padding-right:28px}
+  .hero-wrap{max-width:640px}
+  .rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rows .row{margin:0}
+  .screen:not(:has(.tabbar)){max-width:760px;margin:0 auto;width:100%}
+  .sheet{max-width:520px}
+  .chatscreen{max-width:760px}
+}
+@media (min-width:1300px){ .rows{grid-template-columns:repeat(3,minmax(0,1fr))} }

@@ -6,6 +6,7 @@ import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE } from './config.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
+import { isPushOn, pushToggle } from './pushui.js';
 import { THEMES, currentTheme, applyTheme, preloadAllFonts } from './theme.js';
 
 export function render(root) {
@@ -21,6 +22,10 @@ export function render(root) {
         <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:17px">${esc(me.name)}</div><div class="sub" style="overflow:hidden;text-overflow:ellipsis">${esc(session.user.email || '')}</div></div>
         <button class="ibtn" data-rename aria-label="Změnit jméno">${icon('edit')}</button>
       </div>
+
+      <div class="section-h">Notifikace</div>
+      <button class="btn block" data-push style="justify-content:space-between"><span style="display:inline-flex;gap:8px;align-items:center">${icon('bell', 18)}Notifikace v tomhle telefonu</span><b data-pushstate>${isPushOn() ? 'zapnuté' : 'vypnuté'}</b></button>
+      <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, check-iny… Pokud máš notifikace zapnuté i ve staré aplikaci, vypni je tam, ať nechodí dvakrát.</div>
 
       <div class="section-h">Vzhled</div>
       <div class="themes" role="radiogroup" aria-label="Styl vzhledu" data-themes></div>
@@ -106,6 +111,7 @@ export function render(root) {
   };
 
   root.querySelector('[data-intro]').onclick = () => showIntro(true);
+  root.querySelector('[data-push]').onclick = async () => { await pushToggle(null); root.querySelector('[data-pushstate]').textContent = isPushOn() ? 'zapnuté' : 'vypnuté'; };
 
   root.querySelector('[data-rename]').onclick = async () => {
     const n = prompt('Jméno v partě (podle něj se páruje docházka a komentáře):', me.name);

@@ -44,3 +44,7 @@ export const MAPY_API_KEY = 'nY-91216wSSQ5waRO4ABMmtDldTuDGTPzp8kd8WcsQM';
 // Chat a Kde jsi? běží naostro: zprávy, reakce, check-iny a komentáře jdou do
 // skutečných dat party (stará aplikace je vidí a posílá notifikace).
 export const CHAT_LIVE = true;
+
+// Push notifikace: veřejný VAPID klíč z Firebase konzole (Project settings →
+// Cloud Messaging → Web Push certificates) — stejný jako ve staré aplikaci.
+export const VAPID_KEY = 'BBuBiHO0wjvozSfhsSTyVWNpZV_gTHNJ6q9-0Q2Pnr-YyFUdnaLL48Gf97IE6p_xodvsQPIRNp5rAFGhtX5tWyk';

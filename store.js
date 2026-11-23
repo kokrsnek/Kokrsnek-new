@@ -72,7 +72,8 @@ export function paths(ev) {
       declines: ['v2_akce', ev.id, 'declines'],
       comments: ['v2_akce', ev.id, 'comments'],
       items: ['v2_akce', ev.id, 'items'],
-      likes: ['v2_akce', ev.id, 'likes']
+      likes: ['v2_akce', ev.id, 'likes'],
+      checkins: ['v2_akce', ev.id, 'checkins']
     };
   }
   return {
@@ -80,10 +81,12 @@ export function paths(ev) {
     declines: ['events', ev.id, 'declines'],
     comments: ['events', ev.id, 'comments'],
     items: ['bringLists', ev.id, 'items'],
-    likes: ['events', ev.id, 'likes']
+    likes: ['events', ev.id, 'likes'],
+    checkins: ['events', ev.id, 'checkins']
   };
 }
-export const canWrite = (ev) => !!ev && (ev.isTest || !TEST_MODE);
+// Docházka, komentáře a věci jdou zapisovat u všech akcí (stejná místa jako stará aplikace).
+export const canWrite = (ev) => !!ev;
 
 // ---------- profilové fotky (v2_avatars/{jméno}) ----------
 export function watchAvatars(cb) {
@@ -166,7 +169,6 @@ export function watchAttendance(ev, cb) {
 
 // target: 'attend' | 'decline'
 export async function setAttendance(ev, target) {
-  if (!canWrite(ev)) throw new Error('readonly');
   const me = myName();
   const p = paths(ev);
   const data = { user: me, at: new Date(), eventTitle: ev.title, eventStart: ev.start.toISOString(), via: 'v2' };
@@ -175,6 +177,38 @@ export async function setAttendance(ev, target) {
   if (target === 'attend') { batch.set(aRef, data); batch.delete(dRef); }
   else { batch.set(dRef, data); batch.delete(aRef); }
   await batch.commit();
+}
+
+// Dodatečná oprava docházky po akci (jen správce). silent:true = cloudová
+// funkce kvůli tomu neposílá notifikaci „Nové Dojdu“ (stejně jako stará aplikace).
+export async function saveAttendees(ev, names, before) {
+  const p = paths(ev);
+  const batch = writeBatch(db);
+  const base = { at: new Date(), eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', silent: true, via: 'v2' };
+  names.filter((n) => !before.includes(n)).forEach((n) => batch.set(doc(db, ...p.attendees, n), { ...base, user: n }));
+  before.filter((n) => !names.includes(n)).forEach((n) => batch.delete(doc(db, ...p.attendees, n)));
+  await batch.commit();
+}
+
+// „Jsem na místě“ v den akce: events/{id}/checkins/{jméno}, ověření polohou do 250 m.
+export function watchEventCheckins(ev, cb) {
+  return onSnapshot(collection(db, ...paths(ev).checkins), (s) => cb(s.docs.map((d) => ({ name: d.id, ...d.data() }))), () => cb([]));
+}
+export async function toggleEventCheckin(ev, mine, coords) {
+  const me = myName();
+  const ref = doc(db, ...paths(ev).checkins, me);
+  if (mine) { await deleteDoc(ref); return; }
+  let verified = false;
+  if (coords && navigator.geolocation) {
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000, maximumAge: 60000 }));
+      const R = 6371000, toR = (x) => x * Math.PI / 180;
+      const dLat = toR(coords.lat - pos.coords.latitude), dLng = toR(coords.lng - pos.coords.longitude);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toR(pos.coords.latitude)) * Math.cos(toR(coords.lat)) * Math.sin(dLng / 2) ** 2;
+      verified = 2 * R * Math.asin(Math.sqrt(a)) <= 250;
+    } catch (e) { /* bez polohy se zapíše bez ověření */ }
+  }
+  await setDoc(ref, { at: new Date().toISOString(), verified, user: me, eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', via: 'v2' });
 }
 
 // ---------- komentáře ----------
@@ -193,9 +227,13 @@ export function watchComments(ev, cb) {
     cb(list);
   }, (err) => { console.error('Komentáře:', err); cb([]); });
 }
-export async function addComment(ev, text) {
-  if (!canWrite(ev)) throw new Error('readonly');
-  await addDoc(collection(db, ...paths(ev).comments), { user: myName(), text: text.trim(), at: new Date().toISOString(), via: 'v2' });
+// Komentáře jdou psát u všech akcí (i proběhlých) — stejný formát jako stará
+// aplikace, takže cloudová funkce pošle partě notifikaci jako dřív.
+export async function addComment(ev, text, parentId = null) {
+  await addDoc(collection(db, ...paths(ev).comments), {
+    user: myName(), text: text.trim(), at: new Date().toISOString(), parentId,
+    eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', via: 'v2'
+  });
 }
 // Reakce na komentář (emoji). Jde i u akcí z kalendáře — mění se jen pole reactions.
 export async function reactComment(ev, c, key) {
@@ -208,7 +246,6 @@ export async function reactComment(ev, c, key) {
   await updateDoc(doc(db, ...paths(ev).comments, c.id), { reactions: cur });
 }
 export async function deleteComment(ev, id) {
-  if (!canWrite(ev)) throw new Error('readonly');
   await deleteDoc(doc(db, ...paths(ev).comments, id));
 }
 
@@ -221,12 +258,17 @@ export function watchItems(ev, cb) {
     cb(list);
   }, () => cb([]));
 }
-export async function addItem(ev, name) {
-  if (!canWrite(ev)) throw new Error('readonly');
-  await addDoc(collection(db, ...paths(ev).items), { name: name.trim(), takenBy: null, at: new Date() });
+export async function addItem(ev, name, takeNow = false) {
+  const me = myName();
+  await addDoc(collection(db, ...paths(ev).items), {
+    name: name.trim(), takenBy: takeNow ? me : null, addedBy: me,
+    eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', at: new Date().toISOString(), via: 'v2'
+  });
+}
+export async function deleteItem(ev, item) {
+  await deleteDoc(doc(db, ...paths(ev).items, item.id));
 }
 export async function toggleItem(ev, item) {
-  if (!canWrite(ev)) throw new Error('readonly');
   const me = myName();
   if (item.takenBy && item.takenBy !== me) return;
   await updateDoc(doc(db, ...paths(ev).items, item.id), { takenBy: item.takenBy ? null : me });
@@ -337,7 +379,7 @@ export async function saveEvent(data, id = null) {
   }
   const ref = doc(collection(db, 'v2_akce'));
   await setDoc(ref, {
-    ...payload, driveFiles: [], source: 'app', isTest: TEST_MODE,
+    ...payload, driveFiles: [], source: 'app', isTest: data.isTest !== false,
     createdBy: myName(), createdByUid: session.user.uid, createdAt: serverTimestamp()
   });
   return ref.id;

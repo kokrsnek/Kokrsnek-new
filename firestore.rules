@@ -91,10 +91,35 @@ service cloud.firestore {
       allow write: if isV2Approved() && get(memberPath()).data.name == name;
     }
 
-    // Reakce (emoji) na komentáře u akcí — smí se měnit jen pole reactions.
+    // Docházka (Jdu / Nejdu) — stejná místa jako stará aplikace. Každý mění
+    // jen svoji odpověď; správce smí dodatečně opravit „Zúčastnili se“.
+    match /events/{ev}/attendees/{name} {
+      allow write: if isV2Approved() && (get(memberPath()).data.name == name || isV2Admin());
+    }
+    match /events/{ev}/declines/{name} {
+      allow write: if isV2Approved() && (get(memberPath()).data.name == name || isV2Admin());
+    }
+    // „Jsem na místě“ v den akce.
+    match /events/{ev}/checkins/{name} {
+      allow write: if isV2Approved() && get(memberPath()).data.name == name;
+    }
+    // Co přinést.
+    match /bringLists/{ev}/items/{item} {
+      allow create, update: if isV2Approved();
+      allow delete: if isV2Approved()
+        && (resource.data.addedBy == get(memberPath()).data.name || isV2Admin());
+    }
+
+    // Komentáře u akcí: psát smí každý schválený člen pod svým jménem, mazat
+    // jen svoje; reakce (emoji) mění jen pole reactions.
     match /events/{ev}/comments/{c} {
+      allow create: if isV2Approved()
+        && request.resource.data.user == get(memberPath()).data.name
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000;
       allow update: if isV2Approved()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+      allow delete: if isV2Approved() && resource.data.user == get(memberPath()).data.name;
     }
 
     // Profilové fotky (zmenšené JPEG). Každý mění jen svoji.
@@ -103,6 +128,27 @@ service cloud.firestore {
       allow create, update: if isV2Approved() && get(memberPath()).data.name == name
         && request.resource.data.img is string && request.resource.data.img.size() < 200000;
       allow delete: if isV2Approved() && get(memberPath()).data.name == name;
+    }
+
+    // Push notifikace: token telefonu (stejně jako stará aplikace). Každý
+    // ukládá a maže jen tokeny pod svým jménem.
+    match /pushTokens/{token} {
+      allow create, update: if isV2Approved() && request.resource.data.user == get(memberPath()).data.name;
+      allow delete: if isV2Approved() && resource.data.user == get(memberPath()).data.name;
+    }
+
+    // Ankety party (polls) a hipnutí (pokes) — stejně jako stará aplikace.
+    match /polls/{id} {
+      allow create: if isV2Approved() && request.resource.data.createdBy == get(memberPath()).data.name;
+      allow update: if isV2Approved();
+    }
+    match /pokes/{id} {
+      allow create: if isV2Approved() && request.resource.data.from == get(memberPath()).data.name;
+    }
+
+    // Náklady akce — zadává a upravuje jen správce, číst smí všichni schválení.
+    match /expensePdfs/{ev} {
+      allow write: if isV2Admin();
     }
 
     // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).

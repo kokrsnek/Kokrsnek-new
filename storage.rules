@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Stará aplikace: anonymní identita s razítkem partyMember:true.
+    function isPartyMember() {
+      return request.auth != null && request.auth.token.partyMember == true;
+    }
+
+    // Nová aplikace: schválený člen (v2_members/{uid}.status == 'approved').
+    function isV2Approved() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && firestore.exists(/databases/(default)/documents/v2_members/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/v2_members/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    // Hlasovky z chatu — cesta chatAudio/{threadId}/{soubor}.
+    match /chatAudio/{threadId}/{fileName} {
+      allow read: if isPartyMember() || isV2Approved();
+      allow write: if isPartyMember()
+        || (isV2Approved() && request.resource.size < 8 * 1024 * 1024);
+    }
+
+    // Fotky ke check-inům „Kde jsi?“ — cesta placeCheckinPhotos/{checkinId}/{soubor}.
+    match /placeCheckinPhotos/{checkinId}/{fileName} {
+      allow read: if isPartyMember() || isV2Approved();
+      allow write: if isPartyMember()
+        || (isV2Approved() && request.resource.size < 8 * 1024 * 1024);
+    }
+  }
+}

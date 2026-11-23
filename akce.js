@@ -5,6 +5,7 @@ import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
 import { prefetchEvent, neighboursOf, cachedLikes, loadLikes, watchLikes, toggleLike } from './store.js';
 import { eventWeather, cachedWeather, tempRange } from './weather.js';
+import { isPushOn, pushToggle } from './pushui.js';
 import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAttendance, cachedAttendance } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 
@@ -26,7 +27,7 @@ export function render(root, { tab }) {
       <div class="icons">
         <button class="ibtn" data-search aria-label="Hledat">${icon('search')}</button>
         <a class="ibtn" href="#/kalendar" aria-label="Kalendář">${icon('calendarGrid')}</a>
-        <button class="ibtn" data-bell aria-label="Upozornění">${icon('bell')}</button>
+        <button class="ibtn ${isPushOn() ? 'on' : ''}" data-bell aria-label="Upozornění">${icon('bell')}</button>
       </div>
     </div>
     <div data-sbox style="display:none;padding:0 20px 6px"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"></div>
@@ -37,7 +38,7 @@ export function render(root, { tab }) {
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 
-  root.querySelector('[data-bell]').onclick = () => toast('Upozornění přijdou v další fázi.');
+  root.querySelector('[data-bell]').onclick = (e) => pushToggle(e.currentTarget);
   root.querySelector('[data-search]').onclick = () => {
     searchOpen = !searchOpen;
     sbox.style.display = searchOpen ? 'block' : 'none';

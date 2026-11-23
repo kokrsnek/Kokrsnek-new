@@ -26,7 +26,9 @@ export function render(root, { id }) {
         <button class="side r" data-save>Uložit</button>
       </div>
       <form class="form" novalidate>
-        ${TEST_MODE ? `<div class="banner" style="margin:0">${icon('lock', 18)}<span>Zkušební provoz: akce se uloží jako testovací — uvidí ji jen nová aplikace, ne stará ani Google Kalendář.</span></div>` : ''}
+        ${ev ? '' : isAdmin()
+          ? `<label class="banner" style="margin:0;display:flex;gap:10px;align-items:center"><input type="checkbox" name="isTest"><span><b>Jen testovací</b> — uvidí ji jen nová aplikace a parta nedostane notifikaci. Bez zaškrtnutí je akce naostro pro celou partu (stará aplikace ji neuvidí, ta bere akce jen z Google Kalendáře).</span></label>`
+          : `<div class="banner" style="margin:0">${icon('lock', 18)}<span>Akce se uloží jako testovací — naostro je zakládá jen správce.</span></div>`}
         <div class="field"><label for="f-title">Název</label><input id="f-title" class="input" name="title" maxlength="120" value="${esc(ev?.title || '')}" placeholder="Např. Grilovačka u Pifa"></div>
         <div class="group">
           <label>Celý den <input type="checkbox" name="allDay" ${allDay ? 'checked' : ''}></label>
@@ -62,7 +64,7 @@ export function render(root, { id }) {
       if (album && !/^https?:\/\//.test(album)) { err.textContent = 'Odkaz na album musí začínat https://'; return; }
       root.querySelectorAll('button').forEach((b) => { b.disabled = true; });
       try {
-        const newId = await saveEvent({ title, place: form.place.value, description: form.description.value, start, end, allDay: ad, photoAlbum: album }, ev?.id || null);
+        const newId = await saveEvent({ title, place: form.place.value, description: form.description.value, start, end, allDay: ad, photoAlbum: album, isTest: !isAdmin() || !!(form.isTest && form.isTest.checked) }, ev?.id || null);
         toast('Uloženo');
         location.replace('#/akce/' + encodeURIComponent(newId));
       } catch (x) {
@@ -86,8 +88,9 @@ export function render(root, { id }) {
     if (drawn) return;
     const ev = findEvent(id);
     if (!ev) { if (events.loaded) root.innerHTML = '<div class="screen"><div class="empty">Akce nenalezena. <a href="#/akce">Zpět</a></div></div>'; return; }
-    if (!ev.isTest || (ev.createdBy !== myName() && !isAdmin())) {
-      root.innerHTML = `<div class="screen"><div class="empty">Tuhle akci tady zatím upravit nejde${ev.isTest ? '' : ' — patří starému kalendáři'}.<br><a href="#/akce/${encodeURIComponent(ev.id)}">Zpět</a></div></div>`;
+    const editable = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || (ev.source === 'app' && isAdmin());
+    if (!editable) {
+      root.innerHTML = `<div class="screen"><div class="empty">Tuhle akci tady upravit nejde${ev.source === 'gcal' ? ' — patří Google Kalendáři (opravuje se tam a pak znovu importuje)' : ''}.<br><a href="#/akce/${encodeURIComponent(ev.id)}">Zpět</a></div></div>`;
       drawn = true;
       return;
     }
