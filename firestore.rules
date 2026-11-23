@@ -151,6 +151,18 @@ service cloud.firestore {
       allow write: if isV2Admin();
     }
 
+    // Hry v chatu (piškvorky, lodě, pexeso). Hrát smí jen ti dva, kdo jsou ve hře.
+    match /v2_games/{id} {
+      allow read: if isV2Approved();
+      allow create: if isV2Approved()
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 2
+        && get(memberPath()).data.name in request.resource.data.players;
+      allow update: if isV2Approved()
+        && get(memberPath()).data.name in resource.data.players
+        && request.resource.data.players == resource.data.players;
+    }
+
     // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).
     match /presence/{name} {
       allow read, write: if isV2Approved();

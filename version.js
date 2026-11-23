@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.44',
+    date: '23. 11. 2026',
+    items: [
+      'Hry v chatu: piškvorky (15×15, pět v řadě), lodě (10×10, 5 lodí) a pexeso s emoji party.',
+      'V soukromé konverzaci tlačítko 🎮 — výzva přijde jako karta ve zprávách a druhý dostane upozornění, když je na tahu.',
+      'Přehled her: rozehrané hry, nová hra s kamarádem nebo proti počítači a statistiky výher.'
+    ]
+  },
+  {
     version: '1.43',
     date: '22. 11. 2026',
     items: [

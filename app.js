@@ -13,6 +13,7 @@ import * as parta from './parta.js';
 import * as chat from './chat.js';
 import * as kde from './kde.js';
 import { renderPoll } from './polls.js';
+import { renderHub, renderGame } from './games.js';
 import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
 import { startWeatherEffect } from './weather.js';
@@ -45,7 +46,11 @@ const ROUTES = [
   // Cíle z notifikací (chatWith = jméno nebo celá parta)
   [/^\/s\/chat\/([^/]+)$/, (m) => { const n = decodeURIComponent(m[1]); location.replace('#/chat/' + encodeURIComponent(n === PARTY_THREAD ? PARTY_THREAD : dmThreadId(myName(), n))); }],
   [/^\/s\/anketa\/([^/]+)$/, (m) => { location.replace('#/anketa/' + m[1]); }],
-  [/^\/anketa\/([^/]+)$/, (m) => renderPoll(root, { id: decodeURIComponent(m[1]) })]
+  [/^\/anketa\/([^/]+)$/, (m) => renderPoll(root, { id: decodeURIComponent(m[1]) })],
+  [/^\/hry$/, () => renderHub(root, { dmThreadId, threadPath: chat.threadPath })],
+  [/^\/hry\/s\/([^/]+)$/, (m) => renderHub(root, { with: decodeURIComponent(m[1]), dmThreadId, threadPath: chat.threadPath })],
+  [/^\/hra\/ai\/(pk|ld|px)$/, (m) => renderGame(root, { aiType: m[1], dmThreadId })],
+  [/^\/hra\/([^/]+)$/, (m) => renderGame(root, { id: decodeURIComponent(m[1]), dmThreadId })]
 ];
 
 function mount(key, fn) {

@@ -13,6 +13,8 @@ import { setDoc } from './firebase.js';
 import { uploadFile } from './firebase.js';
 import { startRecording } from './voice.js';
 import { watchPolls, pollRows, newPollSheet } from './polls.js';
+import { gameCardHtml } from './games.js';
+import { where } from './firebase.js';
 
 export const PARTY_THREAD = 'parta-vsichni';
 const TEST_THREAD = 'test';
@@ -20,7 +22,7 @@ const TEST_THREAD = 'test';
 const norm = (s) => String(s || '').normalize('NFC').trim();
 export const dmThreadId = (a, b) => [norm(a), norm(b)].sort().join('__');
 
-function threadPath(id) {
+export function threadPath(id) {
   return id === TEST_THREAD ? ['v2_chats', TEST_THREAD, 'messages'] : ['chats', id, 'messages'];
 }
 const canWriteThread = (id) => id === TEST_THREAD || !TEST_MODE || CHAT_LIVE;
@@ -41,7 +43,7 @@ function stamp(at) {
   if (diff < 7) return DAYS_FULL[d.getDay()].slice(0, 2);
   return `${d.getDate()}. ${d.getMonth() + 1}.`;
 }
-const snippet = (m) => m ? (m.text ? m.text : m.image ? '📷 Fotka' : m.audio ? '🎤 Hlasovka' : '') : '';
+const snippet = (m) => m ? (m.game ? '🎮 Hra' : m.text ? m.text : m.image ? '📷 Fotka' : m.audio ? '🎤 Hlasovka' : '') : '';
 
 // ---------- seznam vláken ----------
 export function renderList(root) {
@@ -117,6 +119,7 @@ export function renderThread(root, { id }) {
       <div style="flex:1;min-width:0"><div class="h1" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(threadTitle(id))}</div>
         <div class="sub" data-status>${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : ''}</div></div>
       <button class="ibtn ghost" data-find aria-label="Hledat ve zprávách">${icon('search', 20)}</button>
+      ${group ? '' : `<a class="ibtn gamebtn" href="#/hry/s/${encodeURIComponent(threadTitle(id))}" aria-label="Hry">🎮</a>`}
       ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="font-size:19px">👊</button>'}
       <button class="ibtn ghost" data-mute aria-label="Ztlumit vlákno">${icon('bell', 20)}</button>
     </div>
@@ -208,13 +211,13 @@ export function renderThread(root, { id }) {
         ${!mine && group ? (showName ? avatar(m.from || '?', 28) : '<span class="avsp"></span>') : ''}
         <div class="mcol">
           ${showName ? `<div class="mname">${esc(m.from || '?')}</div>` : ''}
-          <div class="bubble ${m.image || m.audio ? 'media' : ''}">
+          ${m.game ? gameCardHtml(m.game, gamesMap.get(m.game.id), me) : `<div class="bubble ${m.image || m.audio ? 'media' : ''}">
             ${m.forwardedFrom ? `<div class="fwd">přeposláno od ${esc(m.forwardedFrom)}</div>` : ''}
             ${m.replyTo ? `<div class="quote"><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
             ${m.image ? `<img src="${esc(m.image)}" alt="">` : ''}
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
-          </div>
+          </div>`}
           <div class="mmeta">${meta.pinned && meta.pinned.msgId === m.id ? '📌 ' : ''}${esc(fmtTime(d))}${m.edited ? ' · upraveno' : ''}${m.audioDuration ? ' · ' + Math.floor(m.audioDuration / 60) + ':' + String(m.audioDuration % 60).padStart(2, '0') : ''}</div>
           ${reacts ? `<div class="reacts">${reacts}</div>` : ''}
           ${!fq && lastMine && m.id === lastMine.id ? seenLine(m, seenMap) : ''}
@@ -244,6 +247,9 @@ export function renderThread(root, { id }) {
   // Dokument vlákna chats/{id}: lastSeen (přečtení), typing (píše…), muted
   // (ztlumené notifikace), pinned (připnutá zpráva) — stejné jako stará aplikace.
   let meta = {}, findQ = '';
+  // Hry v tomhle vlákně (stav pro karty ve zprávách).
+  const gamesMap = new Map();
+  const unsubGames = group ? () => {} : onSnapshot(query(collection(db, 'v2_games'), where('thread', '==', id)), (s) => { gamesMap.clear(); s.docs.forEach((d) => gamesMap.set(d.id, { id: d.id, ...d.data() })); draw(); }, () => {});
   const threadRef = doc(db, ...threadPath(id).slice(0, -1));
   const unsubMeta = onSnapshot(threadRef, (s) => { meta = s.exists() ? s.data() : {}; drawMeta(); draw(); }, () => {});
   const muteBtn = root.querySelector('[data-mute]');
@@ -427,5 +433,5 @@ export function renderThread(root, { id }) {
       }
     };
   }
-  return () => { unsub(); unsubMeta(); clearInterval(typingTick); document.removeEventListener('visibilitychange', onVis); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
+  return () => { unsub(); unsubMeta(); unsubGames(); clearInterval(typingTick); document.removeEventListener('visibilitychange', onVis); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
 }
