@@ -2,7 +2,7 @@
 // Skutečná vlákna party (chats/{id}/messages) se čtou. Ve zkušebním provozu
 // se píše jen do testovacího vlákna v2_chats/test; s CHAT_LIVE se píše naostro.
 import { esc, icon, fmtTime, sameDay, dayDiff, toDate, DAYS_FULL, looseName } from './util.js';
-import { tabbar, avatar, toast, spinner } from './ui.js';
+import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
@@ -57,19 +57,31 @@ export function renderList(root) {
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
   const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
-  let alive = true, pres = {}, polls = [];
+  let alive = true, pres = {}, polls = [], metas = {}, openId = null, dragging = false, pending = false;
   const unsubPolls = watchPolls((l) => { polls = l; if (alive) draw(); });
-  box.addEventListener('click', (e) => { if (e.target.closest('[data-newpoll]')) { e.preventDefault(); newPollSheet(); } });
+  const M = (id) => metas[id] || {};
+  const isPinned = (id) => !!(M(id).pinnedBy || {})[me];
+  const isMuted = (id) => !!(M(id).muted || {})[me];
+  // Smazaný chat se skryje, dokud nepřijde novější zpráva.
+  const isHidden = (id) => {
+    const h = (M(id).hiddenBy || {})[me];
+    if (!h) return false;
+    const t = toDate(last.get(id)?.at)?.getTime() || 0;
+    return t <= new Date(h).getTime();
+  };
 
   const draw = () => {
+    if (dragging) { pending = true; return; }
     const rows = threads
-      .filter((id) => id === PARTY_THREAD || id === TEST_THREAD || last.get(id))
+      .filter((id) => (id === PARTY_THREAD || id === TEST_THREAD || last.get(id)) && !isHidden(id))
       .sort((a, b) => {
+        const pa = isPinned(a), pb = isPinned(b);
+        if (pa !== pb) return pa ? -1 : 1;
         if (a === PARTY_THREAD) return -1;
         if (b === PARTY_THREAD) return 1;
         return (toDate(last.get(b)?.at)?.getTime() || 0) - (toDate(last.get(a)?.at)?.getTime() || 0);
       });
-    const noDm = others.filter((n) => !last.get(dmThreadId(me, n)));
+    const noDm = others.filter((n) => !last.get(dmThreadId(me, n)) || isHidden(dmThreadId(me, n)));
     box.innerHTML = rows.map((id) => {
       const m = last.get(id);
       const title = threadTitle(id);
@@ -77,14 +89,87 @@ export function renderList(root) {
         ? `<span class="av" style="background:var(--accent);color:var(--on-accent)">${icon('people', 18)}</span>`
         : id === TEST_THREAD ? `<span class="av" style="background:var(--surface);color:var(--warn-ink)">${icon('chat', 18)}</span>`
         : `<span class="avwrap">${avatar(title, 40)}${isOnline(pres[title]) ? '<i class="onldot"></i>' : ''}</span>`;
-      return `<a class="row" href="#/chat/${encodeURIComponent(id)}">
+      const pin = isPinned(id), mute = isMuted(id), canDel = id !== PARTY_THREAD && id !== TEST_THREAD;
+      return `<div class="swrow${openId === id ? ' open' : ''}" data-sw="${esc(id)}" style="--sww:${canDel ? 210 : 140}px">
+        <div class="swact">
+          <button data-act="mute">${mute ? '🔔' : '🔕'}<span>${mute ? 'Zapnout' : 'Ztlumit'}</span></button>
+          <button data-act="pin">📌<span>${pin ? 'Odepnout' : 'Připnout'}</span></button>
+          ${canDel ? '<button data-act="del" class="del">🗑<span>Smazat</span></button>' : ''}
+        </div>
+        <a class="row swfront" href="#/chat/${encodeURIComponent(id)}">
         ${av}
         <div style="min-width:0;flex:1"><div class="t">${esc(title)}${id === TEST_THREAD ? ' <span class="pill test" style="height:20px;font-size:11px">test</span>' : ''}</div>
           <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc((id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
-        <div class="r">${m ? esc(stamp(m.at)) : ''}</div>
-      </a>`;
+        <div class="r">${m ? esc(stamp(m.at)) : ''}<span class="swicons">${mute ? '🔕' : ''}${pin ? '📌' : ''}</span></div>
+      </a></div>`;
     }).join('') + pollRows(polls) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
+
+  // Nastavení vláken (ztlumení, připnutí, smazání) — chats/{id}.
+  const unsubMeta = onSnapshot(collection(db, 'chats'), (s) => {
+    metas = {}; s.docs.forEach((d) => { metas[d.id] = d.data(); }); if (alive) draw();
+  }, () => {});
+  const metaRef = (id) => (id === TEST_THREAD ? doc(db, 'v2_chats', TEST_THREAD) : doc(db, 'chats', id));
+  const setMeta = (id, field, val) => {
+    metas[id] = { ...M(id), [field]: { ...(M(id)[field] || {}), [me]: val } };
+    openId = null; draw();
+    return setDoc(metaRef(id), { [field]: { [me]: val } }, { merge: true }).catch(() => toast('Nepovedlo se uložit.'));
+  };
+
+  // Odsunutí řádku doleva odkryje tlačítka (jako ve WhatsAppu).
+  const W = (row) => row.querySelector('.swact').offsetWidth;
+  let sx = 0, sy = 0, dx = 0, cur = null, axis = null, moved = false;
+  box.addEventListener('touchstart', (e) => {
+    const f = e.target.closest('.swfront');
+    if (!f || e.touches.length !== 1) return;
+    cur = f.parentElement; sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; axis = null; moved = false;
+  }, { passive: true });
+  box.addEventListener('touchmove', (e) => {
+    if (!cur) return;
+    const x = e.touches[0].clientX - sx, y = e.touches[0].clientY - sy;
+    if (!axis) { if (Math.abs(x) < 8 && Math.abs(y) < 8) return; axis = Math.abs(x) > Math.abs(y) ? 'x' : 'y'; }
+    if (axis !== 'x') { cur = null; return; }
+    if (e.cancelable) e.preventDefault();
+    dragging = true; moved = true;
+    const w = W(cur), base = cur.classList.contains('open') ? -w : 0;
+    dx = Math.max(-w - 30, Math.min(0, base + x));
+    const f = cur.querySelector('.swfront');
+    f.style.transition = 'none'; f.style.transform = `translateX(${dx}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (!cur) return;
+    const row = cur, f = row.querySelector('.swfront'), w = W(row);
+    cur = null;
+    if (!moved) return;
+    f.style.transition = ''; f.style.transform = '';
+    const open = dx < -w / 2;
+    box.querySelectorAll('.swrow.open').forEach((r) => { if (r !== row) r.classList.remove('open'); });
+    row.classList.toggle('open', open);
+    openId = open ? row.dataset.sw : null;
+    setTimeout(() => { dragging = false; if (pending) { pending = false; draw(); } }, 50);
+  };
+  box.addEventListener('touchend', end);
+  box.addEventListener('touchcancel', end);
+
+  box.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-newpoll]')) { e.preventDefault(); newPollSheet(); return; }
+    const front = e.target.closest('.swfront');
+    if (front && (moved || front.parentElement.classList.contains('open'))) {
+      // Klepnutí při odsunutí jen zavře řádek, nikam nenaviguje.
+      e.preventDefault(); moved = false;
+      front.parentElement.classList.remove('open'); openId = null; return;
+    }
+    if (!front && openId && !e.target.closest('.swact')) { box.querySelectorAll('.swrow.open').forEach((r) => r.classList.remove('open')); openId = null; }
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const id = b.closest('[data-sw]').dataset.sw;
+    if (b.dataset.act === 'mute') { const on = !isMuted(id); await setMeta(id, 'muted', on); toast(on ? 'Chat ztlumený 🔕' : 'Notifikace zapnuté 🔔'); }
+    else if (b.dataset.act === 'pin') { const on = !isPinned(id); await setMeta(id, 'pinnedBy', on); toast(on ? 'Chat připnutý 📌' : 'Chat odepnutý'); }
+    else if (b.dataset.act === 'del') {
+      if (!await confirmDanger('Smazat chat?', 'Zmizí jen u tebe. Když přijde nová zpráva, chat se znovu objeví — se staršími zprávami skrytými.', 'Smazat')) return;
+      await setMeta(id, 'hiddenBy', new Date().toISOString()); toast('Chat smazaný');
+    }
+  });
 
   // Kdo je online (zelená tečka u avataru).
   const unsubP = watchPresence((m) => { pres = m; if (alive) draw(); });
@@ -101,7 +186,7 @@ export function renderList(root) {
     }
   }
   draw();
-  return () => { alive = false; unsubP(); unsubPolls(); clearInterval(presTick); unsubs.forEach((u) => u()); };
+  return () => { alive = false; unsubP(); unsubPolls(); unsubMeta(); clearInterval(presTick); unsubs.forEach((u) => u()); };
 }
 
 // ---------- konverzace ----------
@@ -118,14 +203,13 @@ export function renderThread(root, { id }) {
       <a class="ibtn" href="#/chat" aria-label="Zpět">${icon('back')}</a>
       <div style="flex:1;min-width:0"><div class="h1" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(threadTitle(id))}</div>
         <div class="sub" data-status>${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : ''}</div></div>
-      <button class="ibtn ghost" data-find aria-label="Hledat ve zprávách">${icon('search', 20)}</button>
       ${group ? '' : `<a class="ibtn gamebtn" href="#/hry/s/${encodeURIComponent(threadTitle(id))}" aria-label="Hry">🎮</a>`}
-      ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="font-size:19px">👊</button>'}
-      <button class="ibtn ghost" data-mute aria-label="Ztlumit vlákno">${icon('bell', 20)}</button>
+      ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="font-size:19px" hidden>👊</button>'}
     </div>
     <div class="findbar" data-findbar hidden><input class="input" data-findq placeholder="Hledat ve zprávách" aria-label="Hledat ve zprávách" autocomplete="off"><button class="ibtn ghost" data-findx aria-label="Zavřít hledání">${icon('close', 18)}</button></div>
     <div class="pinbar" data-pin hidden></div>
-    <div class="msgs" data-msgs>${spinner()}</div>
+    <div class="msgwrap"><div class="msgs" data-msgs>${spinner()}</div>
+      <button class="jumpdown" data-jump hidden aria-label="Na poslední zprávu">${icon('back', 20)}</button></div>
     <div class="composer">
       <div class="replybar" data-reply hidden></div>
       ${writable ? `<div class="inrow">
@@ -185,13 +269,26 @@ export function renderThread(root, { id }) {
   }
   // Drží se dole, dokud uživatel sám neodroluje nahoru.
   let stick = true;
-  box.addEventListener('scroll', () => { stick = box.scrollHeight - box.scrollTop - box.clientHeight < 120; }, { passive: true });
+  // Po odscrolování od poslední zprávy: nahoře hledací pole, dole šipka zpět dolů.
+  const jumpBtn = root.querySelector('[data-jump]');
+  const onScrollUi = () => {
+    const away = box.scrollHeight - box.scrollTop - box.clientHeight;
+    stick = away < 120;
+    const far = away > 240;
+    jumpBtn.hidden = !far;
+    const fb = root.querySelector('[data-findbar]');
+    if (fb) { if (far && fb.hidden) fb.hidden = false; else if (!far && !findQ && !fb.hidden && document.activeElement !== fb.querySelector('input')) fb.hidden = true; }
+  };
+  box.addEventListener('scroll', onScrollUi, { passive: true });
+  jumpBtn.onclick = () => { box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); };
 
   function draw() {
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
     let html = '', lastDay = null;
     const fq = looseName(findQ || '');
-    const list = fq ? msgs.filter((m) => looseName(m.text || '').includes(fq)) : msgs;
+    const cut = (meta.hiddenBy || {})[me];
+    const vis = cut ? msgs.filter((m) => (toDate(m.at)?.getTime() || 0) > new Date(cut).getTime()) : msgs;
+    const list = fq ? vis.filter((m) => looseName(m.text || '').includes(fq)) : vis;
     // Kdo si co přečetl: u poslední mé zprávy („Přečteno 14:05“ / „Viděli: …“).
     const lastMine = [...msgs].reverse().find((m) => norm(m.from) === norm(me));
     const seenMap = meta.lastSeen || {};
@@ -252,14 +349,9 @@ export function renderThread(root, { id }) {
   const unsubGames = group ? () => {} : onSnapshot(query(collection(db, 'v2_games'), where('thread', '==', id)), (s) => { gamesMap.clear(); s.docs.forEach((d) => gamesMap.set(d.id, { id: d.id, ...d.data() })); draw(); }, () => {});
   const threadRef = doc(db, ...threadPath(id).slice(0, -1));
   const unsubMeta = onSnapshot(threadRef, (s) => { meta = s.exists() ? s.data() : {}; drawMeta(); draw(); }, () => {});
-  const muteBtn = root.querySelector('[data-mute]');
   const pinEl = root.querySelector('[data-pin]');
   const statusEl = root.querySelector('[data-status]');
   function drawMeta() {
-    const muted = !!(meta.muted || {})[me];
-    muteBtn.classList.toggle('muted', muted);
-    muteBtn.innerHTML = muted ? '🔕' : icon('bell', 20);
-    muteBtn.setAttribute('aria-label', muted ? 'Zapnout notifikace z vlákna' : 'Ztlumit vlákno');
     const p = meta.pinned;
     pinEl.hidden = !p;
     if (p) pinEl.innerHTML = `<button data-pingo>📌 <b>${esc(p.from || '')}:</b> ${esc(p.text ? p.text.slice(0, 70) : p.image ? '📷 fotka' : '')}</button><button class="ibtn ghost" data-unpin aria-label="Odepnout">${icon('close', 16)}</button>`;
@@ -276,13 +368,8 @@ export function renderThread(root, { id }) {
       if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); }
     }
   });
-  muteBtn.onclick = () => {
-    const muted = !!(meta.muted || {})[me];
-    setDoc(threadRef, { muted: { [me]: !muted } }, { merge: true }).then(() => toast(muted ? 'Notifikace z vlákna zapnuté' : 'Vlákno ztlumené 🔕')).catch(() => toast('Nepovedlo se.'));
-  };
   // Hledání ve zprávách
   const findBar = root.querySelector('[data-findbar]');
-  root.querySelector('[data-find]').onclick = () => { findBar.hidden = !findBar.hidden; if (!findBar.hidden) findBar.querySelector('input').focus(); else { findQ = ''; findBar.querySelector('input').value = ''; first = true; draw(); } };
   findBar.querySelector('[data-findx]').onclick = () => { findBar.hidden = true; findQ = ''; findBar.querySelector('input').value = ''; first = true; draw(); };
   findBar.querySelector('input').addEventListener('input', (e) => { findQ = e.target.value.trim(); if (!findQ) first = true; draw(); });
   // Hipnutí (šťouchnutí) — cloudová funkce pošle notifikaci „👊 Hipnutí“

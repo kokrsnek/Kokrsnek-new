@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.45',
+    date: '23. 11. 2026',
+    items: [
+      'Chat: odsunutím konverzace doleva se odkryjí tlačítka Ztlumit, Připnout a Smazat (jako ve WhatsAppu). Připnuté chaty jsou nahoře.',
+      'Ve vlákně zmizela lupa a zvoneček — hledací pole se ukáže samo nahoře, když odscroluješ od poslední zprávy.',
+      'Šipka dole vrátí na poslední zprávu. Šťouchnutí je zatím skryté.'
+    ]
+  },
+  {
     version: '1.44',
     date: '23. 11. 2026',
     items: [
