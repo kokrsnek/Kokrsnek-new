@@ -104,7 +104,7 @@ export function render(root, { group = null } = {}) {
     const years = [...new Set(list.map((a) => a.ev.start.getFullYear()))];
     let html = '';
     if (!group) {
-      html += `<div class="ftchips">${[['all', 'Vše'], ...years.map((y) => [String(y), String(y)]), ['akce', 'Podle akce']]
+      html += `<div class="ftchips">${[['all', 'Vše'], ['akce', 'Podle akce'], ...years.map((y) => [String(y), String(y)])]
         .map(([k, l]) => `<button class="chip${filter === k ? ' on' : ''}" data-f="${k}">${l}</button>`).join('')}</div>`;
     }
     if (filter === 'akce' && !group) {

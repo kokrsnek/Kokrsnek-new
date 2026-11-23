@@ -295,6 +295,15 @@ export function renderThread(root, { id }) {
     const lastMine = [...msgs].reverse().find((m) => norm(m.from) === norm(me));
     const seenMap = meta.lastSeen || {};
     list.forEach((m, i) => {
+      // Fotky poslané najednou (stejné batch od stejného odesílatele) → jedna mřížka.
+      const prevB = list[i - 1];
+      if (m.batch && m.image && prevB && prevB.batch === m.batch && prevB.image && prevB.from === m.from) return;
+      let batchImgs = null;
+      if (m.batch && m.image) {
+        batchImgs = [m];
+        for (let j = i + 1; j < list.length && list[j].batch === m.batch && list[j].image && list[j].from === m.from; j++) batchImgs.push(list[j]);
+        if (batchImgs.length < 2) batchImgs = null;
+      }
       const d = toDate(m.at) || new Date(0);
       if (!lastDay || !sameDay(d, lastDay)) {
         const dd = dayDiff(d, new Date());
@@ -313,7 +322,7 @@ export function renderThread(root, { id }) {
           ${m.game ? gameCardHtml(m.game, gamesMap.get(m.game.id), me) : `<div class="bubble ${m.image || m.audio ? 'media' : ''}">
             ${m.forwardedFrom ? `<div class="fwd">přeposláno od ${esc(m.forwardedFrom)}</div>` : ''}
             ${m.replyTo ? `<div class="quote"><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
-            ${m.image ? `<img src="${esc(m.image)}" alt="">` : ''}
+            ${batchImgs ? photoGrid(batchImgs) : m.image ? `<img src="${esc(m.image)}" alt="" data-photo-id="${esc(m.id)}">` : ''}
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
           </div>`}
@@ -332,6 +341,50 @@ export function renderThread(root, { id }) {
       box.querySelectorAll('img').forEach((im) => { if (!im.complete) im.addEventListener('load', () => { if (stick) toEnd(); }, { once: true }); });
       first = false;
     }
+  }
+
+  // Mřížka fotek: 2 vedle sebe, 3 = velká + dvě, 4+ = 2×2 a „+N“ na poslední.
+  function photoGrid(imgs) {
+    const n = imgs.length, show = imgs.slice(0, 4);
+    return `<div class="pgrid n${Math.min(n, 4)}">${show.map((x, k) => `<div class="pcell"><img src="${esc(x.image)}" alt="" loading="lazy" data-photo-id="${esc(x.id)}">${k === 3 && n > 4 ? `<span class="pmore" data-photo-id="${esc(x.id)}">+${n - 4}</span>` : ''}</div>`).join('')}</div>`;
+  }
+
+  // Fotka přes celou obrazovku, posouvání do stran po všech fotkách konverzace.
+  let menuAt = 0;
+  function openViewer(startId) {
+    const cut = (meta.hiddenBy || {})[me];
+    const all = msgs.filter((m) => m.image && (!cut || (toDate(m.at)?.getTime() || 0) > new Date(cut).getTime()));
+    let idx = Math.max(0, all.findIndex((m) => m.id === startId));
+    const v = document.createElement('div');
+    v.className = 'pviewer';
+    v.innerHTML = `<div class="pvtop"><div class="pvinfo" data-pvinfo></div><button class="pvx" data-pvx aria-label="Zavřít">${icon('close', 24)}</button></div>
+      <div class="pvtrack" data-pvtrack>${all.map((m) => `<div class="pvslide"><img src="${esc(m.image)}" alt="" loading="lazy" draggable="false"></div>`).join('')}</div>
+      <button class="pvnav l" data-pvl aria-label="Předchozí">${icon('back', 24)}</button><button class="pvnav r" data-pvr aria-label="Další">${icon('back', 24)}</button>`;
+    document.body.appendChild(v);
+    const track = v.querySelector('[data-pvtrack]'), info = v.querySelector('[data-pvinfo]');
+    const showInfo = () => {
+      const m = all[idx]; const d = toDate(m.at);
+      info.innerHTML = `<b>${esc(m.from || '')}</b><span>${d ? `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} · ${esc(fmtTime(d))}` : ''} · ${idx + 1} / ${all.length}</span>`;
+    };
+    const go = (i, smooth) => { idx = Math.max(0, Math.min(all.length - 1, i)); track.scrollTo({ left: idx * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' }); showInfo(); };
+    requestAnimationFrame(() => go(idx, false));
+    let st = 0;
+    track.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(() => { const i = Math.round(track.scrollLeft / track.clientWidth); if (i !== idx) { idx = i; showInfo(); } }, 60); }, { passive: true });
+    const close = () => { v.remove(); document.removeEventListener('keydown', key); };
+    const key = (e) => { if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') go(idx - 1, true); if (e.key === 'ArrowRight') go(idx + 1, true); };
+    document.addEventListener('keydown', key);
+    v.querySelector('[data-pvx]').onclick = close;
+    v.querySelector('[data-pvl]').onclick = () => go(idx - 1, true);
+    v.querySelector('[data-pvr]').onclick = () => go(idx + 1, true);
+    // Svislé tažení fotky dolů zavře prohlížeč.
+    let y0 = null, x0 = 0;
+    track.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; } else y0 = null; }, { passive: true });
+    track.addEventListener('touchend', (e) => {
+      if (y0 == null) return;
+      const t = e.changedTouches[0], dy = t.clientY - y0, dx = t.clientX - x0;
+      if (dy > 110 && Math.abs(dy) > Math.abs(dx) * 1.5) close();
+      y0 = null;
+    }, { passive: true });
   }
 
   function seenLine(m, seen) {
@@ -399,11 +452,13 @@ export function renderThread(root, { id }) {
   box.addEventListener('touchstart', (e) => {
     const el = e.target.closest('.msg');
     if (!el || !writable) return;
-    pressT = setTimeout(() => msgMenu(el.dataset.id), 450);
+    pressT = setTimeout(() => { menuAt = Date.now(); msgMenu(el.dataset.id); }, 450);
   }, { passive: true });
   ['touchend', 'touchmove', 'touchcancel'].forEach((t) => box.addEventListener(t, () => clearTimeout(pressT), { passive: true }));
   box.addEventListener('contextmenu', (e) => { const el = e.target.closest('.msg'); if (el && writable) { e.preventDefault(); msgMenu(el.dataset.id); } });
   box.addEventListener('click', (e) => {
+    const ph = e.target.closest('[data-photo-id]');
+    if (ph && Date.now() - menuAt > 800) { openViewer(ph.dataset.photoId); return; }
     const r = e.target.closest('[data-react]');
     if (r && writable) toggleReact(r.dataset.id, r.dataset.react);
   });
@@ -428,7 +483,7 @@ export function renderThread(root, { id }) {
       ...(m.text ? [{ id: 'copy', label: 'Kopírovat text' }] : []),
       ...(mine && m.text ? [{ id: 'edit', label: 'Upravit zprávu' }] : []),
       meta.pinned && meta.pinned.msgId === m.id ? { id: 'unpin', label: 'Odepnout', icon: 'thumbtack' } : { id: 'pin', label: 'Připnout nahoru', icon: 'thumbtack' },
-      ...(mine ? [{ id: 'del', label: 'Smazat zprávu', kind: 'no' }] : [])
+      ...(mine ? [{ id: 'del', label: m.batch && msgs.filter((x) => x.batch === m.batch).length > 1 ? 'Smazat všechny fotky' : 'Smazat zprávu', kind: 'no' }] : [])
     ] });
     if (!r) return;
     if (r.emoji) { toggleReact(mid, r.emoji); return; }
@@ -436,7 +491,10 @@ export function renderThread(root, { id }) {
       const a = r.action;
       if (a === 'reply') { replyTo = { id: m.id, from: m.from, snippet: snippet(m).slice(0, 80) }; drawReply(); root.querySelector('[data-text]')?.focus(); }
       if (a === 'copy') { try { await navigator.clipboard.writeText(m.text); toast('Zkopírováno'); } catch (x) { /* nic */ } }
-      if (a === 'del') { try { await deleteDoc(doc(db, ...threadPath(id), mid)); } catch (x) { toast('Nepovedlo se smazat.'); } }
+      if (a === 'del') {
+        const ids = m.batch ? msgs.filter((x) => x.batch === m.batch && x.from === m.from).map((x) => x.id) : [mid];
+        try { await Promise.all(ids.map((x) => deleteDoc(doc(db, ...threadPath(id), x)))); } catch (x) { toast('Nepovedlo se smazat.'); }
+      }
       if (a === 'pin') setDoc(threadRef, { pinned: { msgId: m.id, text: m.text || '', image: !!m.image, from: m.from || '', at: m.at || '' } }, { merge: true }).catch(() => toast('Nepovedlo se.'));
       if (a === 'unpin') setDoc(threadRef, { pinned: null }, { merge: true }).catch(() => {});
       if (a === 'edit') editMsg(m);
@@ -517,9 +575,22 @@ export function renderThread(root, { id }) {
     file.onchange = async () => {
       const files = [...(file.files || [])];
       file.value = '';
-      for (const f of files) {
-        try { const img = await shrinkPhoto(f, 1024, 300000); await send({ image: img }); } catch (x) { toast('Fotku se nepodařilo odeslat.'); }
+      if (!files.length) return;
+      if (files.length === 1) {
+        try { const img = await shrinkPhoto(files[0], 1024, 300000); await send({ image: img }); } catch (x) { toast('Fotku se nepodařilo odeslat.'); }
+        return;
       }
+      // Víc fotek: rozepsaný text zvlášť, fotky se společným batch → v chatu jako mřížka.
+      if (ta.value.trim()) await send();
+      const batch = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      toast(`Odesílám ${files.length} fotek…`);
+      for (let k = 0; k < files.length; k++) {
+        try {
+          const img = await shrinkPhoto(files[k], 1024, 300000);
+          await addDoc(collection(db, ...threadPath(id)), { from: me, text: '', image: img, batch, batchIdx: k, at: new Date(Date.now() + k).toISOString(), via: 'v2' });
+        } catch (x) { toast('Některou fotku se nepodařilo odeslat.'); }
+      }
+      box.scrollTop = box.scrollHeight;
     };
   }
   return () => { unsub(); unsubMeta(); unsubGames(); clearInterval(typingTick); document.removeEventListener('visibilitychange', onVis); if (presUnsub) presUnsub(); clearInterval(presTick); vvT.removeEventListener('resize', fit); vvT.removeEventListener('scroll', fit); fitT.forEach(clearTimeout); document.documentElement.classList.remove('tall-fix'); document.documentElement.style.removeProperty('--app-h'); };
