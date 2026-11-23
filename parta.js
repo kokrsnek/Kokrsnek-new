@@ -3,7 +3,8 @@ import { esc, icon, fmtStamp } from './util.js';
 import { tabbar, avatar, toast, choose, confirmDanger, spinner, avatarImage } from './ui.js';
 import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeMember, changeMyName } from './auth.js';
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
-import { TEST_MODE } from './config.js';
+import { TEST_MODE, PARTY_NAMES } from './config.js';
+import { db, doc, updateDoc } from './firebase.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
 import { isPushOn, pushToggle } from './pushui.js';
@@ -158,9 +159,22 @@ export function render(root) {
     let html = '';
     if (admin && pending.length) {
       html += `<div class="sub" style="margin-bottom:8px;color:var(--coral-text);font-weight:700">Čekají na schválení (${pending.length})</div>`;
-      html += pending.map((m) => line(m, `<div style="display:flex;gap:6px">
-        <button class="btn yes" style="height:38px;padding:0 12px" data-ok="${esc(m.id)}">Přijmout</button>
-        <button class="ibtn" style="width:38px;height:38px" data-rm="${esc(m.id)}" aria-label="Zamítnout">${icon('close', 18)}</button></div>`)).join('');
+      // U žádosti: je to jméno ze staré aplikace? Nemá ho už někdo schválený?
+      const lc = (n) => String(n || '').trim().toLocaleLowerCase('cs');
+      const oldIdx = new Map(PARTY_NAMES.map((n) => [lc(n), n]));
+      html += pending.map((m) => {
+        const taken = approved.find((a) => lc(a.name) === lc(m.name));
+        const old = oldIdx.get(lc(m.name));
+        const tag = taken
+          ? `<div class="mtag bad">⚠ Jméno ${esc(m.name)} už má schválený člen${taken.email ? ' (' + esc(taken.email) + ')' : ''}</div>`
+          : old
+            ? `<div class="mtag ok">✓ Ze staré aplikace: <b>${esc(old)}</b> — převezme jeho docházku, chaty a upozornění</div>`
+            : `<div class="mtag warn">⚠ Nové jméno — ve staré aplikaci není. Pokud ji používal, změň mu jméno.</div>`;
+        return `<div class="pendwrap">${line(m, `<div style="display:flex;gap:6px">
+        <button class="btn yes" style="height:38px;padding:0 12px" data-ok="${esc(m.id)}"${taken ? ' disabled' : ''}>Přijmout</button>
+        <button class="ibtn" style="width:38px;height:38px" data-rm="${esc(m.id)}" aria-label="Zamítnout">${icon('close', 18)}</button></div>`)}
+        ${tag}<button class="link mrename" data-rename="${esc(m.id)}">Změnit jméno před přijetím</button></div>`;
+      }).join('');
       html += '<div style="height:8px"></div>';
     }
     const dupes = new Set(approved.map((m) => m.name).filter((n, i, a) => a.indexOf(n) !== i));
@@ -169,6 +183,30 @@ export function render(root) {
     root.querySelector('[data-memh]').textContent = `Členové (${approved.length})`;
 
     memEl.querySelectorAll('[data-ok]').forEach((b) => { b.onclick = () => approveMember(b.dataset.ok).then(() => toast('Přijato')).catch(() => toast('Nepovedlo se.')); });
+    memEl.querySelectorAll('[data-rename]').forEach((b) => {
+      b.onclick = async () => {
+        const m = members.find((x) => x.id === b.dataset.rename);
+        const lc = (n) => String(n || '').trim().toLocaleLowerCase('cs');
+        const used = new Set(approved.map((a) => lc(a.name)));
+        const free = PARTY_NAMES.filter((n) => !used.has(lc(n)));
+        const v = await new Promise((res) => {
+          const bd = document.createElement('div');
+          bd.className = 'backdrop';
+          bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>
+            <h3 style="text-align:center;overflow-wrap:anywhere">Jméno pro ${esc(m.email || m.name)}</h3>
+            <p class="sub" style="text-align:center;margin-top:-4px">Vyber jméno, pod kterým byl ve staré aplikaci. Zabraná jména tu nejsou.</p>
+            <div class="namegrid">${free.map((n) => `<button class="chip${n === m.name ? ' on' : ''}" data-n="${esc(n)}">${avatar(n, 24)}${esc(n)}</button>`).join('')}</div>
+            <button class="btn block" data-x style="margin-top:14px">Zrušit</button></div>`;
+          bd.addEventListener('click', (e) => {
+            const c = e.target.closest('[data-n]');
+            if (c) { bd.remove(); res(c.dataset.n); } else if (e.target === bd || e.target.closest('[data-x]')) { bd.remove(); res(null); }
+          });
+          document.body.appendChild(bd);
+        });
+        if (!v || v === m.name) return;
+        try { await updateDoc(doc(db, 'v2_members', m.id), { name: v }); toast('Jméno změněno na ' + v); } catch (e) { toast('Nepovedlo se.'); }
+      };
+    });
     memEl.querySelectorAll('[data-rm]').forEach((b) => {
       b.onclick = async () => { if (await confirmDanger('Zamítnout žádost?', 'Člověk se může přihlásit znovu a požádat znovu.', 'Zamítnout')) removeMember(b.dataset.rm).catch(() => toast('Nepovedlo se.')); };
     });

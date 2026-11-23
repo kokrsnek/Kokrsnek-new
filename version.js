@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.53',
+    date: '23. 11. 2026',
+    items: [
+      'Parta (správce): u žádosti o přijetí je vidět, jestli si člověk vybral jméno ze staré aplikace, nebo nové, a jestli jméno už nemá někdo jiný. Jméno jde před přijetím změnit.'
+    ]
+  },
+  {
     version: '1.52',
     date: '23. 11. 2026',
     items: [

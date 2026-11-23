@@ -698,3 +698,15 @@ html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,
 .pvnav{position:absolute;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:none;place-items:center;cursor:pointer;z-index:2}
 .pvnav.l{left:16px}.pvnav.r{right:16px}.pvnav.r svg{transform:rotate(180deg)}
 @media (hover:hover) and (pointer:fine){.pvnav{display:grid}}
+
+/* 1.53 — kontrola jména u žádosti o přijetí */
+.pendwrap{margin-bottom:12px}.pendwrap .row{margin-bottom:0;border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+.mtag{margin:4px 2px 0;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.35}
+.mtag.ok{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent-text)}
+.mtag.warn{background:color-mix(in srgb,#e5a50a 22%,transparent);color:var(--ink)}
+.mtag.bad{background:color-mix(in srgb,#e5484d 24%,transparent);color:var(--ink)}
+.mrename{display:block;margin:6px 2px 0;font-size:13px}
+.mrename{display:inline-block;margin:6px 2px 0;padding:4px 2px;border:0;background:none;color:var(--accent-text);font:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.namegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.namegrid .chip{display:flex;align-items:center;gap:6px;padding:6px 8px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;justify-content:flex-start;min-width:0;overflow:hidden;white-space:nowrap}
+.namegrid .chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent)}
