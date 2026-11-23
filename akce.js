@@ -5,7 +5,6 @@ import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
 import { prefetchEvent, neighboursOf, cachedLikes, loadLikes, watchLikes, toggleLike } from './store.js';
 import { eventWeather, cachedWeather, tempRange } from './weather.js';
-import { isPushOn, pushToggle } from './pushui.js';
 import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAttendance, cachedAttendance } from './store.js';
 import { changeAttendance, attendButtons } from './attend.js';
 
@@ -25,12 +24,12 @@ export function render(root, { tab }) {
     <div class="top">
       <div><div class="brand">KoKrŠNeK</div><div class="sub">${esc(fmtLongDate(today))}${nd ? ' · svátek má ' + esc(nd) : ''}</div></div>
       <div class="icons">
-        <button class="ibtn" data-search aria-label="Hledat">${icon('search')}</button>
         <a class="ibtn" href="#/kalendar" aria-label="Kalendář">${icon('calendarGrid')}</a>
-        <button class="ibtn ${isPushOn() ? 'on' : ''}" data-bell aria-label="Upozornění">${icon('bell')}</button>
+        <a class="ibtn gearbtn" href="#/parta" aria-label="Parta a nastavení">${icon('gear')}</a>
       </div>
     </div>
-    <div data-sbox style="display:none;padding:0 20px 6px"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"></div>
+    <div class="pullind" data-pull aria-hidden="true"><div class="pullpill">${icon('search', 18)}<span>Hledat akci nebo místo</span></div><div class="pulltxt" data-pulltxt>↓ Táhni dál</div></div>
+    <div data-sbox class="sboxrow" style="display:none"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"><button class="ibtn" data-sclose aria-label="Zavřít hledání">${icon('close', 20)}</button></div>
     <div class="scroll" data-body>${spinner()}</div>
     ${tabbar('akce')}
   </div>`;
@@ -38,13 +37,57 @@ export function render(root, { tab }) {
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 
-  root.querySelector('[data-bell]').onclick = (e) => pushToggle(e.currentTarget);
-  root.querySelector('[data-search]').onclick = () => {
-    searchOpen = !searchOpen;
-    sbox.style.display = searchOpen ? 'block' : 'none';
-    root.querySelector('[data-search]').classList.toggle('on', searchOpen);
-    if (searchOpen) sinput.focus(); else { q = ''; sinput.value = ''; draw(); }
+  // Hledání: otevře se potažením obsahu dolů (když je stránka nahoře), zavře křížkem.
+  const setSearch = (open) => {
+    searchOpen = open;
+    sbox.style.display = open ? 'flex' : 'none';
+    if (open) sinput.focus(); else { q = ''; sinput.value = ''; sinput.blur(); draw(); }
   };
+  root.querySelector('[data-sclose]').onclick = () => setSearch(false);
+  const pull = root.querySelector('[data-pull]'), pullTxt = root.querySelector('[data-pulltxt]');
+  const PULL = 70;
+  let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false;
+  const atTop = () => (body.scrollTop || 0) <= 0 && (window.scrollY || 0) <= 0;
+  body.addEventListener('touchstart', (e) => {
+    pulling = false; pAxis = null; pd = 0;
+    if (searchOpen || e.touches.length !== 1 || !atTop()) return;
+    py0 = e.touches[0].clientY; px0 = e.touches[0].clientX; pulling = true;
+  }, { passive: true });
+  body.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - py0, dx = e.touches[0].clientX - px0;
+    if (!pAxis) {
+      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+      pAxis = dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.3 ? 'down' : 'no';
+      if (pAxis === 'no') { pulling = false; return; }
+    }
+    if (e.cancelable) e.preventDefault();
+    pd = Math.max(0, dy) * 0.55;
+    pull.style.transition = 'none';
+    pull.style.height = Math.min(pd, 110) + 'px';
+    pull.classList.toggle('ready', pd >= PULL);
+    pullTxt.textContent = pd >= PULL ? '↓ Pusť pro hledání' : '↓ Táhni dál';
+  }, { passive: false });
+  const pullEnd = () => {
+    if (!pulling) return;
+    pulling = false;
+    pull.style.transition = '';
+    pull.style.height = '0px';
+    pull.classList.remove('ready');
+    if (pAxis === 'down' && pd >= PULL) setSearch(true);
+  };
+  body.addEventListener('touchend', pullEnd);
+  body.addEventListener('touchcancel', pullEnd);
+  // Počítač: kolečkem myši nahoru na začátku stránky, nebo klávesou „/“.
+  let wheelAcc = 0, wheelT = 0;
+  body.addEventListener('wheel', (e) => {
+    if (searchOpen || !atTop() || e.deltaY >= 0) { wheelAcc = 0; return; }
+    if (Date.now() - wheelT > 400) wheelAcc = 0;
+    wheelT = Date.now(); wheelAcc -= e.deltaY;
+    if (wheelAcc > 160) { wheelAcc = 0; setSearch(true); }
+  }, { passive: true });
+  const onKey = (e) => { if (e.key === '/' && !searchOpen && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName || '')) { e.preventDefault(); setSearch(true); } };
+  document.addEventListener('keydown', onKey);
   sinput.addEventListener('input', () => { q = sinput.value; shown = PAGE; draw(); });
 
   const match = (ev) => {
@@ -401,7 +444,7 @@ export function render(root, { tab }) {
   const akceTab = root.querySelector('.tabbar a[href="#/akce"]');
   let tabTouched = 0;
   const goHome = () => {
-    if (searchOpen) root.querySelector('[data-search]').click();
+    if (searchOpen) setSearch(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const el = body.querySelector('.hero');
     if (el && el._home) el._home();
@@ -411,5 +454,5 @@ export function render(root, { tab }) {
 
   const unsub = watchEvents(draw);
   const tick = setInterval(draw, 60000);
-  return () => { unsub(); clearInterval(tick); if (heroUnsub) heroUnsub(); if (likeUnsub) likeUnsub(); };
+  return () => { unsub(); clearInterval(tick); if (heroUnsub) heroUnsub(); if (likeUnsub) likeUnsub(); document.removeEventListener('keydown', onKey); };
 }

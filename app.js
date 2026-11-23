@@ -14,6 +14,8 @@ import * as chat from './chat.js';
 import * as kde from './kde.js';
 import { renderPoll } from './polls.js';
 import { renderHub, renderGame } from './games.js';
+import * as fotky from './fotky.js';
+import { askPushOnInstall } from './pushui.js';
 import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
 import { startWeatherEffect } from './weather.js';
@@ -48,6 +50,8 @@ const ROUTES = [
   [/^\/s\/chat\/([^/]+)$/, (m) => { const n = decodeURIComponent(m[1]); location.replace('#/chat/' + encodeURIComponent(n === PARTY_THREAD ? PARTY_THREAD : dmThreadId(myName(), n))); }],
   [/^\/s\/anketa\/([^/]+)$/, (m) => { location.replace('#/anketa/' + m[1]); }],
   [/^\/anketa\/([^/]+)$/, (m) => renderPoll(root, { id: decodeURIComponent(m[1]) })],
+  [/^\/fotky$/, () => fotky.render(root, {})],
+  [/^\/fotky\/akce\/([^/]+)$/, (m) => fotky.render(root, { group: decodeURIComponent(m[1]) })],
   [/^\/hry$/, () => renderHub(root, { dmThreadId, threadPath: chat.threadPath })],
   [/^\/hry\/s\/([^/]+)$/, (m) => renderHub(root, { with: decodeURIComponent(m[1]), dmThreadId, threadPath: chat.threadPath })],
   [/^\/hra\/ai\/(pk|ld|px)$/, (m) => renderGame(root, { aiType: m[1], dmThreadId })],
@@ -76,6 +80,8 @@ function route(force = false) {
     checkCelebrations();
     refreshPush();
     watchPendingMembers();
+    fotky.watchNewAlbums();
+    setTimeout(askPushOnInstall, 2500);
     consumePendingNav((h) => { if (location.hash !== h) location.hash = h; });
   }
 

@@ -90,7 +90,7 @@ const TABS = [
   { id: 'kde', label: 'Kde jsi?', icon: 'pin', href: '#/kde' },
   null, // místo pro tlačítko +
   { id: 'chat', label: 'Chat', icon: 'chat', href: '#/chat' },
-  { id: 'parta', label: 'Parta', icon: 'people', href: '#/parta' }
+  { id: 'fotky', label: 'Fotky', icon: 'camera', href: '#/fotky' }
 ];
 export function tabbar(active) {
   return `<div class="tabbar"><nav aria-label="Hlavní menu">${TABS.map((t) => t

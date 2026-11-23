@@ -27,3 +27,22 @@ export async function pushToggle(btn) {
     return false;
   }
 }
+
+// Po instalaci (první spuštění z plochy): upozornění zapnout samo, nebo
+// jedním klepnutím — iPhone i Android chtějí povolení potvrdit prstem.
+const ASKED = 'kokrsnek2PushAsked';
+export async function askPushOnInstall() {
+  const installed = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!installed || isPushOn() || !('Notification' in window)) return;
+  let asked = null;
+  try { asked = localStorage.getItem(ASKED); } catch (e) { /* nic */ }
+  if (asked || Notification.permission === 'denied') return;
+  try { localStorage.setItem(ASKED, '1'); } catch (e) { /* nic */ }
+  if (Notification.permission === 'granted') {
+    try { await enablePush(); } catch (e) { /* zkusí se v Partě */ }
+    return;
+  }
+  const v = await choose({ title: '🔔 Zapnout upozornění?', text: 'Dáme ti vědět o nových akcích, zprávách v chatu, hrách a fotkách. Vypnout to jde kdykoli v Partě (ozubené kolo).', buttons: [
+    { label: 'Zapnout upozornění', value: 'on', kind: 'primary' }, { label: 'Teď ne', value: null }] });
+  if (v === 'on') await pushToggle();
+}

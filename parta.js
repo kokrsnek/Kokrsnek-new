@@ -15,7 +15,7 @@ export function render(root) {
   let members = null;
 
   root.innerHTML = `<div class="screen">
-    <div class="top"><div><div class="h1">Parta</div><div class="sub">${admin ? 'Jsi správce' : 'Člen party'}</div></div></div>
+    <div class="top"><a class="ibtn" href="#/akce" aria-label="Zpět">${icon('back')}</a><div style="flex:1;min-width:0"><div class="h1">Parta</div><div class="sub">${admin ? 'Jsi správce' : 'Člen party'}</div></div></div>
     <div class="scroll">
       <div class="card" style="display:flex;align-items:center;gap:14px">
         <button class="avbtn" data-avatar aria-label="Profilová fotka">${avatar(me.name, 52)}<span class="avcam">${icon('photo', 13, 2.4)}</span></button><input type="file" accept="image/*" data-avfile hidden>
@@ -25,7 +25,7 @@ export function render(root) {
 
       <div class="section-h">Notifikace</div>
       <button class="btn block" data-push style="justify-content:space-between"><span style="display:inline-flex;gap:8px;align-items:center">${icon('bell', 18)}Notifikace v tomhle telefonu</span><b data-pushstate>${isPushOn() ? 'zapnuté' : 'vypnuté'}</b></button>
-      <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, check-iny… Pokud máš notifikace zapnuté i ve staré aplikaci, vypni je tam, ať nechodí dvakrát.</div>
+      <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, hry, nová alba… Když máš zapnuté obě aplikace, chodí upozornění jen do nové.</div>
 
       <div class="section-h">Vzhled</div>
       <div class="themes" role="radiogroup" aria-label="Styl vzhledu" data-themes></div>

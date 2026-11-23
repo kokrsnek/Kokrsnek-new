@@ -1,14 +1,14 @@
 // Service worker nové aplikace: soubory aplikace se berou ze sítě a při
 // výpadku z mezipaměti, takže se aplikace otevře i offline. Data řeší
 // Firestore sám (offline mezipaměť v prohlížeči).
-const CACHE = 'kokrsnek-1.48';
+const CACHE = 'kokrsnek-1.51';
 const SHELL = [
   './', 'index.html', 'manifest.json', 'app.css', 'themes.css',
   'app.js', 'config.js', 'firebase.js', 'util.js', 'ui.js', 'namedays.js',
   'auth.js', 'store.js', 'attend.js', 'theme.js', 'version.js', 'plus.js', 'map.js', 'coverart.js',
   'login.js', 'akce.js', 'kalendar.js', 'detail.js',
-  'editor.js', 'parta.js', 'chat.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'people.js', 'celebrate.js', 'qr-platba.png',
-  'logo-badge.png', 'icon-192.png', 'icon-512.png'
+  'editor.js', 'parta.js', 'chat.js', 'fotky.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'people.js', 'celebrate.js', 'qr-platba.png',
+  'logo-badge.png', 'icon-192.png', 'icon-512.png', 'badge-96.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -41,7 +41,7 @@ self.addEventListener('push', (e) => {
   try { raw = e.data ? e.data.json() : {}; } catch (x) { /* nic */ }
   const d = raw && typeof raw.data === 'object' ? raw.data : raw;
   e.waitUntil(self.registration.showNotification(d.title || 'KoKrŠNeK', {
-    body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', data: d
+    body: d.body || '', icon: 'icon-192.png', badge: 'badge-96.png', data: d
   }));
 });
 

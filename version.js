@@ -3,6 +3,29 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.51',
+    date: '23. 11. 2026',
+    items: [
+      'Akce: lupa zmizela — hledání otevřeš potažením hlavní karty dolů (na počítači kolečkem myši nahoru nebo klávesou /). Zavře se křížkem nebo klepnutím na Akce dole.'
+    ]
+  },
+  {
+    version: '1.50',
+    date: '23. 11. 2026',
+    items: [
+      'Nová záložka Fotky: fotoalba z akcí jako galerie, filtr podle roku a „Podle akce“ (stejná akce napříč roky). Nová alba mají značku NOVÉ a počet na záložce.',
+      'Parta se otevírá ozubeným kolem vpravo nahoře v Akcích (tam je i odznak čekajících žádostí). Zvoneček z Akcí zmizel — notifikace se zapínají v Partě.',
+      'Po instalaci na plochu se aplikace sama nabídne zapnout upozornění (stačí jedno klepnutí).'
+    ]
+  },
+  {
+    version: '1.49',
+    date: '23. 11. 2026',
+    items: [
+      'Android: v horní liště u upozornění je místo bílého čtverečku bílý šnek.'
+    ]
+  },
+  {
     version: '1.48',
     date: '23. 11. 2026',
     items: [
