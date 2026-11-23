@@ -43,7 +43,9 @@ function stamp(at) {
   if (diff < 7) return DAYS_FULL[d.getDay()].slice(0, 2);
   return `${d.getDate()}. ${d.getMonth() + 1}.`;
 }
-const snippet = (m) => m ? (m.game ? '🎮 Hra' : m.text ? m.text : m.image ? '📷 Fotka' : m.audio ? '🎤 Hlasovka' : '') : '';
+const snippet = (m) => m ? (m.game ? 'Hra' : m.text ? m.text : m.image ? 'Fotka' : m.audio ? 'Hlasovka' : '') : '';
+// Ikona před textem v seznamu chatů (fotka, hlasovka, hra).
+const snipIcon = (m) => { const n = !m || m.text ? '' : m.game ? 'gamepad' : m.image ? 'camera' : m.audio ? 'mic' : ''; return n ? `<span class="snipic">${icon(n, 15)}</span>` : ''; };
 
 // ---------- seznam vláken ----------
 export function renderList(root) {
@@ -92,15 +94,15 @@ export function renderList(root) {
       const pin = isPinned(id), mute = isMuted(id), canDel = id !== PARTY_THREAD && id !== TEST_THREAD;
       return `<div class="swrow${openId === id ? ' open' : ''}" data-sw="${esc(id)}" style="--sww:${canDel ? 210 : 140}px">
         <div class="swact">
-          <button data-act="mute">${mute ? '🔔' : '🔕'}<span>${mute ? 'Zapnout' : 'Ztlumit'}</span></button>
-          <button data-act="pin">📌<span>${pin ? 'Odepnout' : 'Připnout'}</span></button>
-          ${canDel ? '<button data-act="del" class="del">🗑<span>Smazat</span></button>' : ''}
+          <button data-act="mute">${icon(mute ? 'bell2' : 'bellOff', 26)}<span>${mute ? 'Zapnout' : 'Ztlumit'}</span></button>
+          <button data-act="pin">${icon('thumbtack', 26)}<span>${pin ? 'Odepnout' : 'Připnout'}</span></button>
+          ${canDel ? `<button data-act="del" class="del">${icon('bin', 26)}<span>Smazat</span></button>` : ''}
         </div>
         <a class="row swfront" href="#/chat/${encodeURIComponent(id)}">
         ${av}
         <div style="min-width:0;flex:1"><div class="t">${esc(title)}${id === TEST_THREAD ? ' <span class="pill test" style="height:20px;font-size:11px">test</span>' : ''}</div>
-          <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc((id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
-        <div class="r">${m ? esc(stamp(m.at)) : ''}<span class="swicons">${mute ? '🔕' : ''}${pin ? '📌' : ''}</span></div>
+          <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc(id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snipIcon(m) + esc(snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
+        <div class="r">${m ? esc(stamp(m.at)) : ''}<span class="swicons">${mute ? icon('bellOff', 14) : ''}${pin ? `<i class="pinic">${icon('thumbtack', 14)}</i>` : ''}</span></div>
       </a></div>`;
     }).join('') + pollRows(polls) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
@@ -163,8 +165,8 @@ export function renderList(root) {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const id = b.closest('[data-sw]').dataset.sw;
-    if (b.dataset.act === 'mute') { const on = !isMuted(id); await setMeta(id, 'muted', on); toast(on ? 'Chat ztlumený 🔕' : 'Notifikace zapnuté 🔔'); }
-    else if (b.dataset.act === 'pin') { const on = !isPinned(id); await setMeta(id, 'pinnedBy', on); toast(on ? 'Chat připnutý 📌' : 'Chat odepnutý'); }
+    if (b.dataset.act === 'mute') { const on = !isMuted(id); await setMeta(id, 'muted', on); toast(on ? 'Chat ztlumený' : 'Notifikace zapnuté'); }
+    else if (b.dataset.act === 'pin') { const on = !isPinned(id); await setMeta(id, 'pinnedBy', on); toast(on ? 'Chat připnutý' : 'Chat odepnutý'); }
     else if (b.dataset.act === 'del') {
       if (!await confirmDanger('Smazat chat?', 'Zmizí jen u tebe. Když přijde nová zpráva, chat se znovu objeví — se staršími zprávami skrytými.', 'Smazat')) return;
       await setMeta(id, 'hiddenBy', new Date().toISOString()); toast('Chat smazaný');
@@ -203,8 +205,8 @@ export function renderThread(root, { id }) {
       <a class="ibtn" href="#/chat" aria-label="Zpět">${icon('back')}</a>
       <div style="flex:1;min-width:0"><div class="h1" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(threadTitle(id))}</div>
         <div class="sub" data-status>${id === PARTY_THREAD ? 'skupinové vlákno' : id === TEST_THREAD ? 'zkušební provoz' : ''}</div></div>
-      ${group ? '' : `<a class="ibtn gamebtn" href="#/hry/s/${encodeURIComponent(threadTitle(id))}" aria-label="Hry">🎮</a>`}
-      ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="font-size:19px" hidden>👊</button>'}
+      ${group ? '' : `<a class="ibtn gamebtn" href="#/hry/s/${encodeURIComponent(threadTitle(id))}" aria-label="Hry">${icon('gamepad', 22)}</a>`}
+      ${group ? '' : '<button class="ibtn ghost" data-poke aria-label="Hipnout" style="display:none">👊</button>'}
     </div>
     <div class="findbar" data-findbar hidden><input class="input" data-findq placeholder="Hledat ve zprávách" aria-label="Hledat ve zprávách" autocomplete="off"><button class="ibtn ghost" data-findx aria-label="Zavřít hledání">${icon('close', 18)}</button></div>
     <div class="pinbar" data-pin hidden></div>
@@ -216,7 +218,7 @@ export function renderThread(root, { id }) {
         <button class="ibtn" data-photo aria-label="Poslat fotku">${icon('photo')}</button>
         <input type="file" accept="image/*" multiple data-file hidden>
         <textarea class="input" rows="1" data-text placeholder="Zpráva" aria-label="Zpráva" maxlength="2000"></textarea>
-        <button class="ibtn" data-mic aria-label="Nahrát hlasovku">🎤</button>
+        <button class="ibtn" data-mic aria-label="Nahrát hlasovku">${icon('mic', 22)}</button>
         <button class="ibtn sendbtn" data-send aria-label="Odeslat" hidden>${icon('next', 22, 2.4)}</button>
       </div>
       <div class="recrow" data-rec hidden><button class="ibtn" data-reccancel aria-label="Zrušit">${icon('close', 18)}</button><span class="recdot"></span><b data-rectime>0:00</b><span class="sub" style="flex:1;margin:0">Nahrávám…</span><button class="ibtn sendbtn" data-recsend aria-label="Odeslat hlasovku">${icon('next', 22, 2.4)}</button></div>` : `<a class="readonly" href="#/chat/${TEST_THREAD}">${icon('lock', 16)} Ve zkušebním provozu se tu jen čte — psát jde do testovacího vlákna</a>`}
@@ -354,7 +356,7 @@ export function renderThread(root, { id }) {
   function drawMeta() {
     const p = meta.pinned;
     pinEl.hidden = !p;
-    if (p) pinEl.innerHTML = `<button data-pingo>📌 <b>${esc(p.from || '')}:</b> ${esc(p.text ? p.text.slice(0, 70) : p.image ? '📷 fotka' : '')}</button><button class="ibtn ghost" data-unpin aria-label="Odepnout">${icon('close', 16)}</button>`;
+    if (p) pinEl.innerHTML = `<button data-pingo><i class="pinic">${icon('thumbtack', 14)}</i> <b>${esc(p.from || '')}:</b> ${esc(p.text ? p.text.slice(0, 70) : p.image ? 'fotka' : '')}</button><button class="ibtn ghost" data-unpin aria-label="Odepnout">${icon('close', 16)}</button>`;
     // „píše…“
     const typers = Object.entries(meta.typing || {}).filter(([n, t]) => norm(n) !== norm(me) && Date.now() - (toDate(t)?.getTime() || 0) < 6000).map(([n]) => n);
     if (typers.length) { statusEl.dataset.typing = '1'; statusEl.textContent = group ? typers.join(', ') + ' píše…' : 'píše…'; }

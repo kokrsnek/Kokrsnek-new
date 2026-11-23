@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.46',
+    date: '23. 11. 2026',
+    items: [
+      'Nové ikony v chatu (tučné obrysové): ztlumit, připnout, smazat, fotka, hlasovka a hra místo systémových emoji.'
+    ]
+  },
+  {
     version: '1.45',
     date: '23. 11. 2026',
     items: [

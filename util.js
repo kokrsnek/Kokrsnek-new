@@ -126,7 +126,15 @@ const P = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
   download: '<path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  // Ikony z návrhu C (kresleno na 64×64, zmenšeno; tloušťka čáry jako ostatní).
+  bell2: '<g transform="scale(.375)" stroke-width="5.3"><path d="M32 10c-9 0-14 7-14 16v11l-5 8h38l-5-8V26c0-9-5-16-14-16z"/><path d="M27 51a5 5 0 0 0 10 0"/></g>',
+  bellOff: '<g transform="scale(.375)" stroke-width="5.3"><path d="M32 10c-9 0-14 7-14 16v11l-5 8h38l-5-8V26c0-9-5-16-14-16z"/><path d="M27 51a5 5 0 0 0 10 0M12 12l40 40"/></g>',
+  thumbtack: '<g transform="scale(.375)" stroke-width="5.3"><path d="M24 40L10 54"/><path d="M36 10l18 18-6 3-9 9 1 8-4 3-23-23 3-4 8 1 9-9z"/></g>',
+  bin: '<g transform="scale(.375)" stroke-width="5.3"><path d="M12 18h40M26 18v-6h12v6M17 18l3 36a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4l3-36M28 28v20M36 28v20"/></g>',
+  camera: '<g transform="scale(.375)" stroke-width="5.3"><path d="M10 22h10l4-7h16l4 7h10v30H10z"/><circle cx="32" cy="36" r="9"/></g>',
+  mic: '<g transform="scale(.375)" stroke-width="5.3"><rect x="24" y="8" width="16" height="28" rx="8"/><path d="M16 30a16 16 0 0 0 32 0M32 46v10M24 56h16"/></g>',
+  gamepad: '<g transform="scale(.375)" stroke-width="5.3"><path d="M18 22h28a10 10 0 0 1 10 9l2 12a6 6 0 0 1-11 4l-5-5H22l-5 5a6 6 0 0 1-11-4l2-12a10 10 0 0 1 10-9zM20 29v8M16 33h8"/><circle cx="43" cy="31" r="1.6" fill="currentColor"/><circle cx="48" cy="36" r="1.6" fill="currentColor"/></g>'
 };
 export function icon(name, size = 20, sw = 2) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
