@@ -6,7 +6,7 @@ export const CHANGELOG = [
     version: '1.46',
     date: '23. 11. 2026',
     items: [
-      'Nové ikony v chatu (tučné obrysové): ztlumit, připnout, smazat, fotka, hlasovka a hra místo systémových emoji.'
+      'Nové ikony v chatu (tučné obrysové): ztlumit, připnout, smazat, fotka, hlasovka a hra místo systémových emoji — i v menu zprávy (Připnout nahoru) a u připnuté zprávy.'
     ]
   },
   {

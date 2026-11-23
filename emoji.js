@@ -1,6 +1,6 @@
 // Emoji v aplikaci: vlastní sada party („Naše“) + běžné emoji („Běžné“).
 // Vlastní emoji se ukládají jako klíč „k:pivo“, běžné jako samotný znak.
-import { esc } from './util.js';
+import { esc, icon } from './util.js';
 import { CUSTOM } from './emoji-data.js';
 
 export { CUSTOM };
@@ -43,7 +43,7 @@ export function emojiSheet({ selected = [], actions = [], title = '' } = {}) {
       ${title ? `<h3>${esc(title)}</h3>` : ''}
       <div class="emotabs"><button data-tab="nase" class="${tab === 'nase' ? 'on' : ''}">Naše</button><button data-tab="bezne" class="${tab === 'bezne' ? 'on' : ''}">Běžné</button></div>
       <div class="emogrid" data-grid>${grid()}</div>
-      ${actions.length ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">${actions.map((a) => `<button class="btn big block ${a.kind || ''}" data-a="${esc(a.id)}">${esc(a.label)}</button>`).join('')}</div>` : ''}
+      ${actions.length ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">${actions.map((a) => `<button class="btn big block ${a.kind || ''}" data-a="${esc(a.id)}">${a.icon ? `<span class="aic">${icon(a.icon, 20)}</span>` : ''}${esc(a.label)}</button>`).join('')}</div>` : ''}
     </div>`;
     const done = (v) => { bd.remove(); resolve(v); };
     bd.addEventListener('click', (e) => {

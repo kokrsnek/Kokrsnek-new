@@ -640,3 +640,5 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 .swicons{display:flex;gap:4px;justify-content:flex-end;align-items:center;color:var(--muted)}
 .swicons .pinic,.pinbar .pinic{color:var(--accent-text);display:inline-flex}
 .pinbar .pinic{vertical-align:-2px}
+.btn .aic{display:inline-flex;margin-right:8px;vertical-align:-3px;color:var(--accent-text)}
+.mmeta .pinic{display:inline-flex;vertical-align:-1px;color:var(--accent-text)}

@@ -317,7 +317,7 @@ export function renderThread(root, { id }) {
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
           </div>`}
-          <div class="mmeta">${meta.pinned && meta.pinned.msgId === m.id ? '📌 ' : ''}${esc(fmtTime(d))}${m.edited ? ' · upraveno' : ''}${m.audioDuration ? ' · ' + Math.floor(m.audioDuration / 60) + ':' + String(m.audioDuration % 60).padStart(2, '0') : ''}</div>
+          <div class="mmeta">${meta.pinned && meta.pinned.msgId === m.id ? `<i class="pinic">${icon('thumbtack', 12)}</i> ` : ''}${esc(fmtTime(d))}${m.edited ? ' · upraveno' : ''}${m.audioDuration ? ' · ' + Math.floor(m.audioDuration / 60) + ':' + String(m.audioDuration % 60).padStart(2, '0') : ''}</div>
           ${reacts ? `<div class="reacts">${reacts}</div>` : ''}
           ${!fq && lastMine && m.id === lastMine.id ? seenLine(m, seenMap) : ''}
         </div>
@@ -427,7 +427,7 @@ export function renderThread(root, { id }) {
       { id: 'reply', label: 'Odpovědět' },
       ...(m.text ? [{ id: 'copy', label: 'Kopírovat text' }] : []),
       ...(mine && m.text ? [{ id: 'edit', label: 'Upravit zprávu' }] : []),
-      meta.pinned && meta.pinned.msgId === m.id ? { id: 'unpin', label: 'Odepnout' } : { id: 'pin', label: '📌 Připnout nahoru' },
+      meta.pinned && meta.pinned.msgId === m.id ? { id: 'unpin', label: 'Odepnout', icon: 'thumbtack' } : { id: 'pin', label: 'Připnout nahoru', icon: 'thumbtack' },
       ...(mine ? [{ id: 'del', label: 'Smazat zprávu', kind: 'no' }] : [])
     ] });
     if (!r) return;
