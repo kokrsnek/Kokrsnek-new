@@ -83,7 +83,7 @@ function mountDetail(host, ev, live) {
         </div>
         <div data-wx></div>
         <div data-likes></div>
-        ${past ? '<div class="two moneyrow" data-money style="margin-top:12px"><button class="btn" data-pay>💰 Příspěvek</button><button class="btn" data-exp hidden>🧾 Náklady</button></div>' : ''}
+        ${past ? `<div class="two moneyrow" data-money style="margin-top:12px"><button class="btn" data-pay>${icon('wallet', 20)}<span>Příspěvek</span></button><button class="btn" data-exp hidden>${icon('receipt', 20)}<span>Náklady</span></button></div>` : ''}
         ${descText(ev) ? `<div class="card" style="margin-top:12px;padding:14px;font-size:14px;line-height:1.5;color:var(--ink2);overflow-wrap:anywhere">${linkify(descText(ev))}</div>` : ''}
 
         <div data-mapbox></div>
@@ -163,7 +163,7 @@ function mountDetail(host, ev, live) {
       payB.onclick = () => showPayment(ev);
       const expB = host.querySelector('[data-exp]');
       let exp = null;
-      const upd = () => { expB.hidden = !(exp || isAdmin()); expB.textContent = exp ? '🧾 Náklady' : '🧾 Zadat náklady'; };
+      const upd = () => { expB.hidden = !(exp || isAdmin());  };
       loadExpenses(ev).then((d) => { exp = d; upd(); });
       expB.onclick = () => (exp ? showReceipt(ev, exp, (d) => { exp = d; upd(); }) : editExpenses(ev, null, (d) => { exp = d; upd(); }));
     }

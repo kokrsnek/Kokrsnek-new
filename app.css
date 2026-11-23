@@ -710,3 +710,8 @@ html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,
 .namegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .namegrid .chip{display:flex;align-items:center;gap:6px;padding:6px 8px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;justify-content:flex-start;min-width:0;overflow:hidden;white-space:nowrap}
 .namegrid .chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent)}
+
+/* 1.55 — tlačítka Příspěvek/Náklady s ikonami, odkazová tlačítka */
+.moneyrow .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.moneyrow .btn svg{color:var(--accent-text);flex:0 0 auto}
+button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px;font-weight:700;color:var(--accent-text);cursor:pointer}

@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.55',
+    date: '23. 11. 2026',
+    items: [
+      'Detail akce: Příspěvek a Náklady mají nové ikony (peněženka, účtenka), text jen „Náklady“.',
+      'Opraveno bílé tlačítko „Upravit“ u účastníků a další odkazová tlačítka (např. „+ Nová anketa“).'
+    ]
+  },
+  {
     version: '1.54',
     date: '23. 11. 2026',
     items: [
