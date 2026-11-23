@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.54',
+    date: '23. 11. 2026',
+    items: [
+      'Nabídka „Zapnout upozornění?“ se ukáže až po úvodní animaci, na obrazovce Akce.'
+    ]
+  },
+  {
     version: '1.53',
     date: '23. 11. 2026',
     items: [

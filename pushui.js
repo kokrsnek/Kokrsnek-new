@@ -37,11 +37,19 @@ export async function askPushOnInstall() {
   let asked = null;
   try { asked = localStorage.getItem(ASKED); } catch (e) { /* nic */ }
   if (asked || Notification.permission === 'denied') return;
-  try { localStorage.setItem(ASKED, '1'); } catch (e) { /* nic */ }
   if (Notification.permission === 'granted') {
+    try { localStorage.setItem(ASKED, '1'); } catch (e) { /* nic */ }
     try { await enablePush(); } catch (e) { /* zkusí se v Partě */ }
     return;
   }
+  // Až doběhne úvodní animace a je vidět obrazovka Akce (bez otevřeného okna).
+  await new Promise((res) => {
+    const ok = () => !document.querySelector('.intro') && !document.querySelector('.backdrop')
+      && /^#?\/?(akce)?$/.test(location.hash) && !document.hidden;
+    let calm = 0;
+    const t = setInterval(() => { calm = ok() ? calm + 1 : 0; if (calm >= 3) { clearInterval(t); res(); } }, 400);
+  });
+  try { localStorage.setItem(ASKED, '1'); } catch (e) { /* nic */ }
   const v = await choose({ title: '🔔 Zapnout upozornění?', text: 'Dáme ti vědět o nových akcích, zprávách v chatu, hrách a fotkách. Vypnout to jde kdykoli v Partě (ozubené kolo).', buttons: [
     { label: 'Zapnout upozornění', value: 'on', kind: 'primary' }, { label: 'Teď ne', value: null }] });
   if (v === 'on') await pushToggle();

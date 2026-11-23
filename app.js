@@ -81,7 +81,7 @@ function route(force = false) {
     refreshPush();
     watchPendingMembers();
     fotky.watchNewAlbums();
-    setTimeout(askPushOnInstall, 2500);
+    askPushOnInstall();
     consumePendingNav((h) => { if (location.hash !== h) location.hash = h; });
   }
 
