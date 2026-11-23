@@ -21,7 +21,8 @@ import { watchAvatars } from './store.js';
 import { setAvatarImages } from './ui.js';
 import { refreshPush, consumePendingNav } from './push.js';
 import { checkCelebrations } from './celebrate.js';
-import { myName } from './auth.js';
+import { myName, isAdmin } from './auth.js';
+import { db, collection, query, where, onSnapshot } from './firebase.js';
 import { dmThreadId, PARTY_THREAD } from './chat.js';
 let pushChecked = false;
 
@@ -74,6 +75,7 @@ function route(force = false) {
     pushChecked = true;
     checkCelebrations();
     refreshPush();
+    watchPendingMembers();
     consumePendingNav((h) => { if (location.hash !== h) location.hash = h; });
   }
 
@@ -111,4 +113,15 @@ if ('serviceWorker' in navigator) {
   // Klepnutí na notifikaci, když je aplikace otevřená.
   navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.nav) location.hash = e.data.nav; });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+// Správce: odznak s počtem čekajících žádostí na záložce Parta.
+function watchPendingMembers() {
+  if (!isAdmin()) return;
+  onSnapshot(query(collection(db, 'v2_members'), where('status', '==', 'pending')), (s) => {
+    const n = s.size;
+    const el = document.documentElement;
+    if (n) { el.dataset.pending = '1'; el.style.setProperty('--pending-n', `"${n}"`); }
+    else { delete el.dataset.pending; el.style.removeProperty('--pending-n'); }
+  }, () => {});
 }
