@@ -3,7 +3,7 @@ import { esc, icon, pad2 } from './util.js';
 import { toast, confirmDanger, spinner } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import { watchEvents, findEvent, events, saveEvent, deleteEvent } from './store.js';
-import { TEST_MODE } from './config.js';
+import { TEST_MODE, LIVE } from './config.js';
 
 const dStr = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const tStr = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -26,7 +26,7 @@ export function render(root, { id }) {
         <button class="side r" data-save>Uložit</button>
       </div>
       <form class="form" novalidate>
-        ${ev ? '' : isAdmin()
+        ${ev || LIVE ? '' : isAdmin()
           ? `<label class="banner" style="margin:0;display:flex;gap:10px;align-items:center"><input type="checkbox" name="isTest"><span><b>Jen testovací</b> — uvidí ji jen nová aplikace a parta nedostane notifikaci. Bez zaškrtnutí je akce naostro pro celou partu (stará aplikace ji neuvidí, ta bere akce jen z Google Kalendáře).</span></label>`
           : `<div class="banner" style="margin:0">${icon('lock', 18)}<span>Akce se uloží jako testovací — naostro je zakládá jen správce.</span></div>`}
         <div class="field"><label for="f-title">Název</label><input id="f-title" class="input" name="title" maxlength="120" value="${esc(ev?.title || '')}" placeholder="Např. Grilovačka u Pifa"></div>
@@ -88,7 +88,7 @@ export function render(root, { id }) {
     if (drawn) return;
     const ev = findEvent(id);
     if (!ev) { if (events.loaded) root.innerHTML = '<div class="screen"><div class="empty">Akce nenalezena. <a href="#/akce">Zpět</a></div></div>'; return; }
-    const editable = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || (ev.source === 'app' && isAdmin());
+    const editable = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || ((ev.source === 'app' || LIVE) && isAdmin());
     if (!editable) {
       root.innerHTML = `<div class="screen"><div class="empty">Tuhle akci tady upravit nejde${ev.source === 'gcal' ? ' — patří Google Kalendáři (opravuje se tam a pak znovu importuje)' : ''}.<br><a href="#/akce/${encodeURIComponent(ev.id)}">Zpět</a></div></div>`;
       drawn = true;

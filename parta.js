@@ -3,7 +3,7 @@ import { esc, icon, fmtStamp } from './util.js';
 import { tabbar, avatar, toast, choose, confirmDanger, spinner, avatarImage } from './ui.js';
 import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeMember, changeMyName } from './auth.js';
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
-import { TEST_MODE, PARTY_NAMES } from './config.js';
+import { TEST_MODE, PARTY_NAMES, LIVE } from './config.js';
 import { db, doc, updateDoc } from './firebase.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
@@ -32,7 +32,7 @@ export function render(root) {
       <div class="themes" role="radiogroup" aria-label="Styl vzhledu" data-themes></div>
       <div class="note" style="margin-top:8px">Volba platí v tomhle zařízení.</div>
 
-      ${admin ? `<div class="section-h">Akce</div>
+      ${admin && !LIVE ? `<div class="section-h">Akce</div>
       <div class="card" style="display:flex;flex-direction:column;gap:10px">
         <div style="font-weight:700">Import z Google Kalendáře</div>
         <div class="sub" style="line-height:1.45">Převezme všechny akce z kalendáře party (i proběhlé) se stejným id, takže se k nim připojí docházka, komentáře, věci a alba. Jde pouštět opakovaně — jen aktualizuje.</div>
@@ -122,7 +122,7 @@ export function render(root) {
   };
 
   const unsubs = [];
-  if (admin) {
+  if (admin && !LIVE) {
     const cnt = root.querySelector('[data-evcount]');
     unsubs.push(watchEvents(() => {
       const g = events.list.filter((e) => e.source === 'gcal').length;

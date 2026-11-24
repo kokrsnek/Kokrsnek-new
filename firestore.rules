@@ -5,7 +5,9 @@ service cloud.firestore {
     // ---------- stará aplikace (beze změny) ----------
     // Po zadání hesla party dostane anonymní identita razítko partyMember:true.
     function isPartyMember() {
-      return request.auth != null && request.auth.token.partyMember == true;
+      // Stará aplikace funguje jen do přepnutí na novou (1. 12. 2026, 1:00 SEČ).
+      return request.auth != null && request.auth.token.partyMember == true
+        && request.time < timestamp.date(2026, 12, 1);
     }
 
     // ---------- nová aplikace ----------

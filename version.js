@@ -3,6 +3,21 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.57',
+    date: '24. 11. 2026',
+    items: [
+      'Opraveno: vybraný vzhled (např. Táborák, Komiks, Vodáci, Western) zůstane i po zavření a aktualizaci aplikace.'
+    ]
+  },
+  {
+    version: '1.56',
+    date: '24. 11. 2026',
+    items: [
+      'Připraveno přepnutí naostro: od 1. 12. 2026 se aplikace sama přepne — konec zkušebního provozu, správce upravuje všechny akce, import z Google Kalendáře zmizí.',
+      'Formulář na obědy běží i v nové aplikaci (kokrsnek.cz/obed).'
+    ]
+  },
+  {
     version: '1.55',
     date: '23. 11. 2026',
     items: [

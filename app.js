@@ -5,6 +5,9 @@ import { spinner, installSheetGestures } from './ui.js';
 import * as login from './login.js';
 let avatarsOn = false;
 import { showIntro } from './intro.js';
+import { applyTheme, currentTheme } from './theme.js';
+// Uložený vzhled hned po startu (pojistka k úvodnímu skriptu v index.html).
+applyTheme(currentTheme().id, false);
 import * as akce from './akce.js';
 import * as kalendar from './kalendar.js';
 import * as detail from './detail.js';

@@ -21,21 +21,23 @@ export const GOOGLE_CALENDAR_ID = 'kokrsnek@gmail.com';
 // E-mail správce (přihlášení přes Google).
 export const ADMIN_EMAILS = ['l.juracka@gmail.com'];
 
-// Zkušební provoz: nová aplikace data party jen ČTE. Docházka, komentáře
-// apod. jdou zapisovat jen u testovacích akcí (ty žijí celé v v2_akce).
-// Až se bude přepínat naostro (fáze 2), změní se na false.
-export const TEST_MODE = true;
+// Přepnutí naostro: od půlnoci 1. 12. 2026 je nová aplikace jediná.
+// Do té doby zkušební provoz (testovací akce a vlákno, import z Google
+// Kalendáře). Po přepnutí se všechno přepne samo, nic se nenasazuje.
+export const CUTOVER = new Date('2026-12-01T00:00:00+01:00');
+export const LIVE = Date.now() >= CUTOVER.getTime();
+export const TEST_MODE = !LIVE;
 
 // Jména, pod kterými lidé používají současnou aplikaci — nabídka v "Kdo jsi?".
 export const PARTY_NAMES = [
   'Šuraj', 'Dáša', 'Míra', 'Pecak', 'Peca', 'Pif', 'Guči', 'Gudas', 'Iva',
-  'Majkl', 'Alex', 'Bazi', 'Čento', 'Pavel', 'Dejv', 'Zuzi', 'Android'
+  'Majkl', 'Alex', 'Bazi', 'Čento', 'Pavel', 'Dejv', 'Zuzi'
 ];
 
 // Číslo verze a seznam změn jsou ve version.js.
 
 // Adresa nové aplikace (odkazy v odběru kalendáře).
-export const APP_URL = 'https://kokrsnek-new.vercel.app';
+export const APP_URL = LIVE ? 'https://kokrsnek.cz' : 'https://kokrsnek-new.vercel.app';
 
 // API klíč Mapy.com pro podklad mapy v detailu akce (developer.mapy.com → Můj účet
 // → projekt → API klíč). Prázdný = použije se OpenStreetMap.

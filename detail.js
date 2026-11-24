@@ -10,7 +10,7 @@ import {
 } from './store.js';
 import { geocode } from './map.js';
 import { showPayment, showReceipt, editExpenses, loadExpenses } from './expenses.js';
-import { PARTY_NAMES } from './config.js';
+import { PARTY_NAMES, LIVE } from './config.js';
 import { emo, sortedReactions, emojiSheet, onLongPress } from './emoji.js';
 import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf, tempRange } from './weather.js';
 import { plural } from './util.js';
@@ -56,7 +56,7 @@ function mountDetail(host, ev, live) {
   function shell() {
     const past = isPast(ev);
     const ro = !canWrite(ev);
-    const mine = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || (ev.source === 'app' && isAdmin());
+    const mine = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || ((ev.source === 'app' || LIVE) && isAdmin());
     const enterCls = live && enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
     if (live) enterFrom = 0;
     host.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">

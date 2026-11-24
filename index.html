@@ -18,11 +18,9 @@
 <script>
 // Styl vzhledu hned při startu, ať obrazovka neprobliká v jiných barvách.
 (function(){var t=null;try{t=localStorage.getItem('kokrsnek2Theme')}catch(e){}
-var F={puvodni:'family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700',
-chata:'family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700',
-festival:'family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700',
-hlidka:'family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700'};
-var S={puvodni:'#1C1B20',chata:'#2F5D46',festival:'#0D0D10',hlidka:'#1D2B4F'};
+// Všechny vzhledy (vygenerováno z theme.js — při přidání vzhledu doplnit).
+var F={"puvodni":"family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700","chata":"family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700","festival":"family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700","hlidka":"family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700","taborak":"family=Bitter:wght@700;800&family=Source+Sans+3:wght@400;500;600;700&family=Anton","zapisnik":"family=Comic+Relief:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400","znaceni":"family=Anton&family=Fira+Sans:wght@400;500;600;700","neon":"family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700","komiks":"family=Bangers&family=Comic+Neue:wght@400;700","vodaci":"family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700","western":"family=Rye&family=Bitter:wght@700;800&family=Crimson+Text:ital,wght@0,400;0,600;1,400"};
+var S={"puvodni":"#1C1B20","chata":"#2F5D46","festival":"#0D0D10","hlidka":"#1D2B4F","taborak":"#140E0A","zapisnik":"#FBF5E6","znaceni":"#1E2422","neon":"#070B18","komiks":"#FFF6D9","vodaci":"#E3F3F6","western":"#D9BC85"};
 if(!F[t])t='puvodni';
 if(t!=='puvodni')document.documentElement.setAttribute('data-theme',t);
 document.querySelector('meta[name="theme-color"]').setAttribute('content',S[t]);
