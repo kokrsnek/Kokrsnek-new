@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.59',
+    date: '24. 11. 2026',
+    items: [
+      'Vzhled Vodáci: tečky u akcí jsou přesně uprostřed svislé linie.'
+    ]
+  },
+  {
     version: '1.58',
     date: '24. 11. 2026',
     items: [
