@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.61',
+    date: '24. 11. 2026',
+    items: [
+      'Nová hra Sudoku (Chat → Hry): závod s kamarádem na stejném zadání, hra o samotě a Sudoku dne pro celou partu se žebříčkem časů.',
+      'Tři obtížnosti, poznámky, krok zpět a jedna nápověda na hru. Chyby se ukážou až po vyplnění celé mřížky, každá přidá k času 30 s.'
+    ]
+  },
+  {
     version: '1.60',
     date: '24. 11. 2026',
     items: [

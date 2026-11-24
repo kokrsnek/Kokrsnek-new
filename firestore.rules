@@ -153,7 +153,7 @@ service cloud.firestore {
       allow write: if isV2Admin();
     }
 
-    // Hry v chatu (piškvorky, lodě, pexeso). Hrát smí jen ti dva, kdo jsou ve hře.
+    // Hry v chatu (piškvorky, lodě, pexeso, sudoku). Hrát smí jen ti dva, kdo jsou ve hře.
     match /v2_games/{id} {
       allow read: if isV2Approved();
       allow create: if isV2Approved()
@@ -163,6 +163,14 @@ service cloud.firestore {
       allow update: if isV2Approved()
         && get(memberPath()).data.name in resource.data.players
         && request.resource.data.players == resource.data.players;
+    }
+
+    // Sudoku dne: každý zapisuje jen svůj výsledek, číst může celá parta.
+    match /v2_sudoku/{day}/times/{name} {
+      allow read: if isV2Approved();
+      allow write: if isV2Approved()
+        && get(memberPath()).data.name == name
+        && request.resource.data.name == name;
     }
 
     // Online stav (stejně jako stará aplikace: presence/{jméno}.lastActive).

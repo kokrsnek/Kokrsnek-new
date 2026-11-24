@@ -566,7 +566,7 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 
 /* ---------- Hry ---------- */
 .gamebtn{font-size:19px;background:var(--accent);color:var(--on-accent);border:none;text-decoration:none}
-.gtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
+.gtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px}
 .gtabs button{font:inherit;font-weight:700;font-size:13px;padding:10px 0;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
 .gtabs button i{display:block;font-style:normal;font-size:20px;margin-bottom:2px}
 .gtabs button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
@@ -737,3 +737,42 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .modeseg[hidden]{display:none}
 .modeseg button{flex:1;height:38px;border:0;border-radius:10px;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .modeseg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px var(--shadow)}
+
+/* ----- sudoku ----- */
+.sdlv{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:4px;margin-bottom:10px}
+.sdlv button{height:36px;border-radius:10px;border:none;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:14px}
+.sdlv button.on{background:var(--accent);color:var(--on-accent);font-weight:700}
+.sdday{display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;background:transparent}
+.sdday small{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.sdclock{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;padding:0 4px}
+.sdrace{display:flex;flex-direction:column;gap:7px;margin:2px 0 12px}
+.sdrc{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.sdrc .nm{width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sdrc small{color:var(--muted);font-size:12.5px;min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+.sdbar{flex:1;height:8px;border-radius:9px;background:var(--surface);overflow:hidden}.sdbar span{display:block;height:100%;border-radius:9px;transition:width .3s}
+.sdb{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));background:#FDFCF8;border:2.5px solid #1C1B20;border-radius:10px;overflow:hidden;max-width:440px;margin:0 auto;touch-action:manipulation}
+.sdb button{aspect-ratio:1;min-width:0;border:none;border-right:1px solid #D6D3DC;border-bottom:1px solid #D6D3DC;border-radius:0;padding:0;background:#FDFCF8;color:#1C1B20;font:inherit;font-weight:700;font-size:clamp(16px,5.2vw,23px);line-height:1;display:flex;align-items:center;justify-content:center}
+.sdb button:nth-child(9n){border-right:none}.sdb button:nth-child(n+73){border-bottom:none}
+.sdb button.r3{border-right:2px solid #1C1B20}.sdb button.b3{border-bottom:2px solid #1C1B20}
+.sdb button.u{color:#2F7A56;font-weight:600}
+.sdb button.hl{background:#EAF4EE}.sdb button.same{background:#C8E9D5}.sdb button.sel{background:#8FD6B0}
+.sdb button.err{color:#D2462F;background:#FBE3DD;text-decoration:line-through;text-decoration-thickness:2px}
+.sdn{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;padding:1px 2px}
+.sdn i{font-style:normal;font-size:clamp(7px,2.2vw,10px);font-weight:600;color:#6E6A76;display:flex;align-items:center;justify-content:center;line-height:1}
+.sdpad{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;margin:12px auto 0;max-width:440px}
+.sdpad button{background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--ink);font:inherit;font-weight:800;font-size:21px;padding:7px 0 4px;line-height:1.1}
+.sdpad button small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.sdpad button.dn{opacity:.35}
+.sdtools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px auto 0;max-width:440px}
+.sdtools button{background:transparent;border:1px solid transparent;border-radius:14px;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 0}
+.sdtools button b{display:block;font-size:20px;color:var(--ink);line-height:1.2}
+.sdtools button.on{background:var(--accent-soft);border-color:var(--accent-hi);color:var(--accent-text)}
+.sdtools button.used{opacity:.4}
+.sdress{display:flex;gap:8px}
+.sdres{flex:1;background:var(--surface);border-radius:14px;padding:8px;display:flex;flex-direction:column;align-items:center}
+.sdres span{font-size:12px;color:var(--muted)}.sdres b{font-size:24px;font-variant-numeric:tabular-nums}.sdres small{font-size:11.5px;color:var(--muted)}
+.sdlb{display:flex;flex-direction:column;gap:4px;text-align:left}
+.sdlb div{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;font-weight:700}
+.sdlb div.me{background:var(--accent-soft)}
+.sdlb .pos{width:22px;color:var(--muted)}.sdlb .nm{flex:1}.sdlb small{color:var(--muted);font-size:12px;font-weight:500}.sdlb b{font-variant-numeric:tabular-nums}
+.sd .gend{margin-top:14px}

@@ -17,6 +17,7 @@ import * as chat from './chat.js';
 import * as kde from './kde.js';
 import { renderPoll } from './polls.js';
 import { renderHub, renderGame } from './games.js';
+import { renderSudoku } from './sudoku.js';
 import * as fotky from './fotky.js';
 import { askPushOnInstall } from './pushui.js';
 import { installPlus } from './plus.js';
@@ -57,6 +58,9 @@ const ROUTES = [
   [/^\/fotky\/akce\/([^/]+)$/, (m) => fotky.render(root, { group: decodeURIComponent(m[1]) })],
   [/^\/hry$/, () => renderHub(root, { dmThreadId, threadPath: chat.threadPath })],
   [/^\/hry\/s\/([^/]+)$/, (m) => renderHub(root, { with: decodeURIComponent(m[1]), dmThreadId, threadPath: chat.threadPath })],
+  [/^\/sudoku\/sam$/, () => renderSudoku(root, { mode: 'solo' })],
+  [/^\/sudoku\/den$/, () => renderSudoku(root, { mode: 'daily' })],
+  [/^\/sudoku\/([^/]+)$/, (m) => renderSudoku(root, { mode: 'race', id: decodeURIComponent(m[1]) })],
   [/^\/hra\/ai\/(pk|ld|px)$/, (m) => renderGame(root, { aiType: m[1], dmThreadId })],
   [/^\/hra\/([^/]+)$/, (m) => renderGame(root, { id: decodeURIComponent(m[1]), dmThreadId })]
 ];

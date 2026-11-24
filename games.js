@@ -1,5 +1,5 @@
-// Hry v chatu: piškvorky (15×15, pět v řadě), lodě (10×10) a pexeso (emoji party).
-// Online hry jsou ve v2_games/{id}: { type: 'pk'|'ld'|'px', players: [vyzývatel, soupeř],
+// Hry v chatu: piškvorky (15×15, pět v řadě), lodě (10×10), pexeso (emoji party) a sudoku (sudoku.js).
+// Online hry jsou ve v2_games/{id}: { type: 'pk'|'ld'|'px'|'sd', players: [vyzývatel, soupeř],
 // thread, turn, finished, winner, … stav hry }. Hry proti počítači žijí jen v telefonu.
 // Cloudová funkce onV2GameWritten posílá upozornění „Jsi na tahu“ / „Vyzývá tě…“.
 import { db, collection, doc, query, where, onSnapshot, addDoc, updateDoc, getDoc, setDoc } from './firebase.js';
@@ -8,9 +8,11 @@ import { avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
 import { PARTY_NAMES } from './config.js';
 import { CUSTOM } from './emoji-data.js';
+import { LEVELS, newRaceState, newSolo, sdLoad, sdSave, fmtMs, filledCount, todayKey } from './sudoku.js';
 
-export const GAME_NAMES = { pk: 'Piškvorky', ld: 'Lodě', px: 'Pexeso' };
-export const GAME_ICONS = { pk: '✕○', ld: '⚓', px: '🃏' };
+export const GAME_NAMES = { pk: 'Piškvorky', ld: 'Lodě', px: 'Pexeso', sd: 'Sudoku' };
+export const GAME_ICONS = { pk: '✕○', ld: '⚓', px: '🃏', sd: '🔢' };
+const TAB_KEY = 'kokrsnek2GamesTab';
 const N_PK = 15, N_LD = 10, FLEET = [5, 4, 3, 3, 2];
 const PX_FACES = ['pivo', 'gril', 'taborak', 'kokrsnek', 'vodnik', 'kytara', 'chata', 'lod', 'stan', 'panak'];
 const norm = (s) => String(s || '').normalize('NFC').trim();
@@ -106,6 +108,7 @@ const AI = 'Počítač';
 
 function newState(type, players, extra = {}) {
   const [a, b] = players;
+  if (type === 'sd') return { type, players, ...newRaceState(extra.level || 'm'), ...extra };
   if (type === 'pk') return { type, players, turn: a, board: '.'.repeat(N_PK * N_PK), moves: 0, last: -1, ...extra };
   if (type === 'ld') return { type, players, turn: a, phase: 'place', fleets: {}, shots: { [a]: [], [b]: [] }, moves: 0, ...extra };
   const deck = shuffle([...PX_FACES, ...PX_FACES]);
@@ -113,18 +116,21 @@ function newState(type, players, extra = {}) {
 }
 
 // Výzva kamarádovi: hra + karta do soukromé konverzace.
-export async function challenge(type, opponent, threadId, threadPathFn) {
+export async function challenge(type, opponent, threadId, threadPathFn, opts = {}) {
   const me = myName();
-  const g = newState(type, [me, opponent], { thread: threadId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), finished: false, winner: null, by: me });
+  const g = newState(type, [me, opponent], { ...opts, thread: threadId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), finished: false, winner: null, by: me });
   const ref = await addDoc(collection(db, 'v2_games'), g);
-  const verb = { pk: 'na piškvorky', ld: 'na lodě', px: 'na pexeso' }[type];
+  const verb = { pk: 'na piškvorky', ld: 'na lodě', px: 'na pexeso', sd: 'na závod v sudoku' }[type];
   await addDoc(collection(db, ...threadPathFn(threadId)), { from: me, text: `🎮 Vyzývám tě ${verb}`, game: { id: ref.id, type }, at: new Date().toISOString(), via: 'v2' });
   return ref.id;
 }
 
 // ---------- přehled her ----------
-export function renderHub(root, { with: withName = '', tab = 'pk', dmThreadId, threadPath }) {
+export function renderHub(root, { with: withName = '', tab = null, dmThreadId, threadPath }) {
   const me = myName();
+  try { tab = tab || sessionStorage.getItem(TAB_KEY) || 'pk'; } catch (e) { tab = tab || 'pk'; }
+  if (!GAME_NAMES[tab]) tab = 'pk';
+  let sdLevel = sdLoad().lastLevel || 'm';
   let games = [];
   const ai = aiLoad();
   root.innerHTML = `<div class="screen">
@@ -134,8 +140,9 @@ export function renderHub(root, { with: withName = '', tab = 'pk', dmThreadId, t
   const body = root.querySelector('[data-body]');
   const draw = () => {
     const mine = games.filter((g) => g.players.some((p) => norm(p) === norm(me)));
-    const onTurn = mine.filter((g) => !g.finished && (g.type === 'ld' && g.phase === 'place' ? !(g.fleets || {})[me] : norm(g.turn) === norm(me))).length;
-    root.querySelector('[data-sub]').textContent = onTurn ? `jsi na tahu v ${onTurn} ${onTurn === 1 ? 'hře' : 'hrách'}` : 'piškvorky, lodě, pexeso';
+    const onTurn = mine.filter((g) => !g.finished && (g.type === 'sd' ? !((g.st || {})[me] || {}).done : g.type === 'ld' && g.phase === 'place' ? !(g.fleets || {})[me] : norm(g.turn) === norm(me))).length;
+    root.querySelector('[data-sub]').textContent = onTurn ? `jsi na tahu v ${onTurn} ${onTurn === 1 ? 'hře' : 'hrách'}` : 'piškvorky, lodě, pexeso, sudoku';
+    if (tab === 'sd') return drawSd(mine);
     const list = mine.filter((g) => g.type === tab && !g.finished).sort((a, b) => (b.updatedAt || '') > (a.updatedAt || '') ? 1 : -1);
     const done = mine.filter((g) => g.type === tab && g.finished);
     const w = done.filter((g) => g.winner && norm(g.winner) === norm(me)).length, d = done.filter((g) => !g.winner).length, l = done.length - w - d;
@@ -145,7 +152,7 @@ export function renderHub(root, { with: withName = '', tab = 'pk', dmThreadId, t
       return norm(g.turn) === norm(me) ? 'jsi na tahu' : 'čeká';
     };
     body.innerHTML = `
-      <div class="gtabs">${['pk', 'ld', 'px'].map((k) => `<button class="${tab === k ? 'on' : ''}" data-gt="${k}"><i>${GAME_ICONS[k]}</i>${GAME_NAMES[k]}</button>`).join('')}</div>
+      <div class="gtabs">${['pk', 'ld', 'px', 'sd'].map((k) => `<button class="${tab === k ? 'on' : ''}" data-gt="${k}"><i>${GAME_ICONS[k]}</i>${GAME_NAMES[k]}</button>`).join('')}</div>
       <div class="section-h">Rozehrané</div>
       ${list.map((g) => { const o = other(g, me), my = status(g) === 'jsi na tahu' || status(g) === 'rozmisti lodě';
         return `<a class="row" href="#/hra/${encodeURIComponent(g.id)}">${avatar(o, 36)}<div style="flex:1;min-width:0"><div class="t">${esc(o)}</div><div class="s">${g.moves ? (g.type === 'ld' ? 'výstřel ' : 'tah ') + g.moves + ' · ' : ''}${status(g)}</div></div><span class="pill ${my ? 'hot' : ''}">${my ? 'hraj!' : 'čeká'}</span></a>`; }).join('')}
@@ -158,9 +165,47 @@ export function renderHub(root, { with: withName = '', tab = 'pk', dmThreadId, t
       <div class="section-h">Tvoje statistiky · ${GAME_NAMES[tab]}</div>
       <div class="gstats"><div><b>${w}</b><small>výher</small></div><div><b>${l}</b><small>proher</small></div><div><b>${d}</b><small>remíz</small></div></div>`;
   };
+  // Sudoku: závody, hra o samotě, sudoku dne.
+  const drawSd = (mine) => {
+    const races = mine.filter((g) => g.type === 'sd' && !g.finished).sort((a, b) => (b.updatedAt || '') > (a.updatedAt || '') ? 1 : -1);
+    const done = mine.filter((g) => g.type === 'sd' && g.finished);
+    const wins = done.filter((g) => g.winner && norm(g.winner) === norm(me)).length;
+    const loc = sdLoad(), solo = loc.solo, st = loc.stats || { solved: 0, best: {} };
+    const daily = loc.daily && loc.daily.date === todayKey() ? loc.daily : null;
+    const lvName = (l) => (LEVELS[l] ? LEVELS[l].name.toLowerCase() : '');
+    const raceRow = (g) => {
+      const o = other(g, me), ms = (g.st || {})[me] || {}, os = (g.st || {})[o] || {};
+      const my = !ms.done;
+      const line = ms.done ? `hotovo za ${fmtMs(ms.total)} · čeká se na soupeře` : `${lvName(g.level)} · ty ${filledCount(ms.cells || g.puzzle)}/81 · ${esc(o)} ${os.done ? 'hotovo' : filledCount(os.cells || g.puzzle) + '/81'}`;
+      return `<a class="row" href="#/sudoku/${encodeURIComponent(g.id)}">${avatar(o, 36)}<div style="flex:1;min-width:0"><div class="t">Závod s ${esc(o)}</div><div class="s">${line}</div></div><span class="pill ${my ? 'hot' : ''}">${my ? 'hraj!' : 'čeká'}</span></a>`;
+    };
+    const soloRow = solo && !solo.done ? `<a class="row" href="#/sudoku/sam"><span class="av" style="width:36px;height:36px;background:var(--surface);font-size:18px">🧩</span><div style="flex:1;min-width:0"><div class="t">Sám</div><div class="s">${lvName(solo.level)} · ${fmtMs(solo.ms)} · ${filledCount(solo.cells)}/81</div></div><span class="pill hot">pokračuj</span></a>` : '';
+    const best = st.best && st.best[sdLevel];
+    body.innerHTML = `
+      <div class="gtabs">${['pk', 'ld', 'px', 'sd'].map((k) => `<button class="${tab === k ? 'on' : ''}" data-gt="${k}"><i>${GAME_ICONS[k]}</i>${GAME_NAMES[k]}</button>`).join('')}</div>
+      <div class="section-h">Rozehrané</div>
+      ${races.map(raceRow).join('')}${soloRow}
+      ${!races.length && !soloRow ? '<div class="sub" style="padding:0 2px 8px">Žádná rozehraná hra.</div>' : ''}
+      <div class="section-h">Nová hra</div>
+      <div class="sdlv">${Object.entries(LEVELS).map(([k, v]) => `<button class="${k === sdLevel ? 'on' : ''}" data-lv="${k}">${v.name}</button>`).join('')}</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn primary big block" data-ch>🔢 ${withName ? 'Závod s: ' + esc(withName) : 'Závod s kamarádem'}</button>
+        <button class="btn big block" data-solo>🧩 Hrát sám</button>
+        <a class="btn big block sdday" href="#/sudoku/den">📅 Sudoku dne pro celou partu<small>${daily && daily.done ? 'vyřešeno · ' + fmtMs(daily.total) : daily ? 'rozehráno · ' + filledCount(daily.cells) + '/81' : 'každý den nové, stejné pro všechny'}</small></a></div>
+      <div class="section-h">Tvoje statistiky · Sudoku</div>
+      <div class="gstats"><div><b>${st.solved || 0}</b><small>vyřešeno</small></div><div><b>${best ? fmtMs(best) : '–'}</b><small>nejlepší · ${lvName(sdLevel)}</small></div><div><b>${wins}</b><small>vyhraných závodů</small></div></div>`;
+  };
   body.addEventListener('click', async (e) => {
     const t = e.target.closest('[data-gt]');
-    if (t) { tab = t.dataset.gt; draw(); return; }
+    if (t) { tab = t.dataset.gt; try { sessionStorage.setItem(TAB_KEY, tab); } catch (x) { /* nic */ } draw(); return; }
+    const lv = e.target.closest('[data-lv]');
+    if (lv) { sdLevel = lv.dataset.lv; const all = sdLoad(); all.lastLevel = sdLevel; sdSave(all); draw(); return; }
+    if (e.target.closest('[data-solo]')) {
+      const cur = sdLoad().solo;
+      if (!cur || cur.done || await confirmDanger('Nová hra sudoku?', 'Rozehraná hra o samotě se zahodí.', 'Nová hra')) newSolo(sdLevel);
+      location.hash = '#/sudoku/sam';
+      return;
+    }
     if (e.target.closest('[data-ai]')) {
       const all = aiLoad();
       if (!all[tab] || all[tab].finished || await confirmDanger('Nová hra proti počítači?', 'Rozehraná hra se zahodí.', 'Nová hra')) {
@@ -173,7 +218,7 @@ export function renderHub(root, { with: withName = '', tab = 'pk', dmThreadId, t
     }
     if (e.target.closest('[data-ch]')) {
       const go = async (name) => {
-        try { const id = await challenge(tab, name, dmThreadId(me, name), threadPath); location.hash = '#/hra/' + encodeURIComponent(id); }
+        try { const id = await challenge(tab, name, dmThreadId(me, name), threadPath, tab === 'sd' ? { level: sdLevel } : {}); location.hash = (tab === 'sd' ? '#/sudoku/' : '#/hra/') + encodeURIComponent(id); }
         catch (x) { console.error(x); toast('Výzvu se nepodařilo poslat.'); }
       };
       if (withName) return go(withName);
@@ -426,6 +471,7 @@ export function renderGame(root, { id, aiType = null, dmThreadId }) {
     unsub = onSnapshot(doc(db, 'v2_games', id), (snap) => {
       if (busy) return;
       g = snap.exists() ? { id: snap.id, ...snap.data() } : null;
+      if (g && g.type === 'sd') { location.replace('#/sudoku/' + encodeURIComponent(g.id)); return; }
       draw();
       // Pexeso: kdyby hráč po otočení dvou karet zavřel aplikaci, karty se po chvíli otočí zpět samy.
       clearTimeout(pxHide);
@@ -455,6 +501,16 @@ export function gameCardHtml(game, g, me) {
       else title += ' – výzva';
       line = norm(g.turn) === norm(me) ? 'Jsi na tahu' : `Na tahu je ${esc(g.turn)}`;
     }
+  }
+  if (type === 'sd') {
+    title = `🔢 Sudoku${g && g.level && LEVELS[g.level] ? ' · ' + LEVELS[g.level].name.toLowerCase() : ''}`; btn = 'Hrát';
+    if (g) {
+      const o = other(g, me), ms = (g.st || {})[me] || {};
+      if (g.finished) { title += ' – konec'; line = !g.winner ? 'Remíza' : norm(g.winner) === norm(me) ? 'Vyhrál(a) jsi 🏆' : `Vyhrál(a) ${esc(g.winner)}`; btn = 'Výsledky'; }
+      else if (ms.done) { line = `Tvůj čas ${fmtMs(ms.total)} · čeká se na ${esc(o)}`; btn = 'Otevřít'; }
+      else { title += ' – závod'; line = 'Stejné zadání, vyhraje rychlejší'; }
+    }
+    return `<div class="gcard"><b>${title}</b><small>${line}</small><a class="gbtn" href="#/sudoku/${encodeURIComponent(game.id)}">${btn}</a></div>`;
   }
   let mini = '';
   if (g && type === 'pk' && g.moves) {
