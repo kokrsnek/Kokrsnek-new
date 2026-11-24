@@ -417,7 +417,7 @@ html[data-theme="vodaci"],[data-theme="vodaci"] body{background:linear-gradient(
 [data-theme="vodaci"] .rows{position:relative;padding-left:34px}
 [data-theme="vodaci"] .rows::before{content:'';position:absolute;left:13px;top:0;bottom:0;width:8px;border-radius:4px;background:repeating-linear-gradient(#7CC7D9 0 10px,#A8DCE8 10px 20px)}
 [data-theme="vodaci"] .rows .row{position:relative;overflow:visible}
-[data-theme="vodaci"] .rows .row::before{content:'';position:absolute;left:-26px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid #1A8FB0;box-sizing:border-box}
+[data-theme="vodaci"] .rows .row::before{content:'';position:absolute;left:-25px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid #1A8FB0;box-sizing:border-box}
 [data-theme="vodaci"] .rows .row .datetile.sm{display:none}
 [data-theme="vodaci"] .rows .row .r{color:#1A8FB0;font-weight:700;background:#E3F4F8;border-radius:100px;padding:3px 9px}
 [data-theme="vodaci"] .rows .row .r:has(.pill){background:none;padding:0}
