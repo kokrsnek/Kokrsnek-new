@@ -23,7 +23,10 @@ var F={"puvodni":"family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wgh
 var S={"puvodni":"#1C1B20","chata":"#2F5D46","festival":"#0D0D10","hlidka":"#1D2B4F","taborak":"#140E0A","zapisnik":"#FBF5E6","znaceni":"#1E2422","neon":"#070B18","komiks":"#FFF6D9","vodaci":"#E3F3F6","western":"#D9BC85"};
 if(!F[t])t='puvodni';
 if(t!=='puvodni')document.documentElement.setAttribute('data-theme',t);
-document.querySelector('meta[name="theme-color"]').setAttribute('content',S[t]);
+var m=null;try{m=localStorage.getItem('kokrsnek2Mode')}catch(e){}
+var lt=t==='puvodni'&&(m==='light'||(m==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches));
+if(lt)document.documentElement.setAttribute('data-mode','light');
+document.querySelector('meta[name="theme-color"]').setAttribute('content',lt?'#2F7A56':S[t]);
 document.write('<link id="font-'+t+'" rel="stylesheet" href="https://fonts.googleapis.com/css2?'+F[t]+'&display=swap">');})();
 </script>
 </head>

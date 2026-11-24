@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c2410c">
+<title>Objednávka oběda</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f5f2;--card:#fff;--text:#1c1b19;--hint:#6b6963;--line:#e4e2dc;
+    --accent:#c2410c;--accent-text:#fff;--soft:#fdf1ea;--err:#b42318;--ok:#15803d;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#161615;--card:#22211f;--text:#f2f1ee;--hint:#a3a19b;--line:#36342f;--soft:#3a2418;--err:#f97066;--ok:#4ade80}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--tg-theme-secondary-bg-color,var(--bg));color:var(--tg-theme-text-color,var(--text));
+    padding:16px 12px calc(24px + env(safe-area-inset-bottom))}
+  main{max-width:560px;margin:0 auto}
+  h1{font-size:22px;margin:4px 0 2px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .sub{color:var(--tg-theme-hint-color,var(--hint));font-size:14px;margin:0 0 16px}
+  .card{background:var(--tg-theme-bg-color,var(--card));border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .pad{padding:14px}
+  label.f{display:block;font-size:13px;color:var(--tg-theme-hint-color,var(--hint));margin-bottom:6px}
+  input[type=text]{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:transparent;color:inherit}
+  input[type=text]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .por{padding:12px 14px;border-top:1px solid var(--line)}
+  .por:first-child{border-top:0}
+  .porHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .porHead b{font-size:15px}
+  .del{background:none;border:0;color:var(--tg-theme-hint-color,var(--hint));font:inherit;font-size:14px;padding:4px 0 4px 10px;cursor:pointer}
+  .lbl{font-size:12px;color:var(--tg-theme-hint-color,var(--hint));margin:6px 0 4px}
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .chip{font:inherit;font-size:14px;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer;touch-action:manipulation}
+  .chip.on{background:var(--tg-theme-button-color,var(--accent));border-color:var(--tg-theme-button-color,var(--accent));color:var(--tg-theme-button-text-color,var(--accent-text));font-weight:600}
+  .add{display:block;width:100%;font:inherit;font-weight:600;padding:12px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--tg-theme-link-color,var(--accent));cursor:pointer}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:12px;font-weight:600;color:var(--tg-theme-hint-color,var(--hint));
+    background:var(--tg-theme-secondary-bg-color,var(--bg));padding:7px 14px}
+  td{padding:10px 14px;border-top:1px solid var(--line)}
+  .sum{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--tg-theme-hint-color,var(--hint))}
+  .msg{font-size:14px;margin:8px 0 0;min-height:20px}
+  .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
+  .btn{display:block;width:100%;font:inherit;font-weight:600;padding:13px;border-radius:12px;border:0;cursor:pointer;
+    background:var(--tg-theme-button-color,var(--accent));color:var(--tg-theme-button-text-color,var(--accent-text));margin-top:10px}
+  .btn.sec{background:transparent;color:inherit;border:1px solid var(--line);font-weight:500}
+  .btn:disabled{opacity:.5;cursor:default}
+  .row2{display:flex;gap:8px} .row2 .btn{flex:1}
+  .qrbox{display:flex;gap:14px;align-items:center}
+  .qr{background:#fff;padding:6px;border-radius:8px;flex-shrink:0;line-height:0}
+  .qr svg{width:100%;height:100%;display:block}
+  .kv{font-size:14px;margin:2px 0}
+  .kv b{font-weight:600}
+  .muted{color:var(--tg-theme-hint-color,var(--hint))}
+  .big{font-size:22px;font-weight:700}
+  .tot td{padding:7px 14px}
+  .tot td:last-child{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .pt{table-layout:fixed;font-size:13px}
+  .pt th{text-align:center;padding:7px 2px;font-size:11px;line-height:1.2}
+  .pt td{text-align:center;padding:8px 2px;font-variant-numeric:tabular-nums}
+  .pt th.n,.pt td.n{text-align:left;width:31%;padding-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pt td.x{color:var(--accent);font-weight:700}
+  .pt .sep{border-left:1px solid var(--line)}
+  .pt tr.g td{border-top:2px solid var(--line)}
+  .pt tr.s td{font-weight:700;background:var(--tg-theme-secondary-bg-color,var(--bg))}
+  .person{padding:14px;border-top:1px solid var(--line)}
+  .person:first-child{border-top:0}
+  .banner{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+  .back{background:none;border:0;font:inherit;color:var(--tg-theme-link-color,var(--accent));padding:0 0 12px;cursor:pointer}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Objednávka oběda</h1>
+  <p class="sub" id="sub">Uzávěrka 26. 11. 2026 · 170 Kč za porci (jídlo + příloha)</p>
+  <div id="demo" class="banner hidden">Zkušební režim: objednávky se ukládají jen v tomto prohlížeči. Pro ostrý provoz doplň <code>firebaseConfig</code>.</div>
+
+  <!-- Formulář objednávky -->
+  <section id="vForm" class="hidden">
+    <div class="card pad">
+      <label class="f" for="jmeno">Jméno a příjmení</label>
+      <input type="text" id="jmeno" autocomplete="name" maxlength="40" placeholder="Jan Novák">
+    </div>
+    <div class="card">
+      <div id="porceBox"></div>
+      <button type="button" class="add" id="btnAdd">+ Přidat další porci</button>
+    </div>
+    <div class="card pad">
+      <div class="sum"><span id="sumInfo"></span><span id="sumKc"></span></div>
+      <p class="msg" id="formMsg"></p>
+      <button class="btn" id="btnSend">Odeslat objednávku</button>
+      <button class="btn sec hidden" id="btnCancelEdit">Zpět bez změn</button>
+    </div>
+  </section>
+
+  <!-- Moje objednávka + QR -->
+  <section id="vMine" class="hidden">
+    <div class="card pad">
+      <div class="muted" style="font-size:13px">Tvoje objednávka</div>
+      <div id="mineName" style="font-weight:600;font-size:18px;margin:2px 0 6px"></div>
+      <div id="mineItems" class="kv"></div>
+    </div>
+    <div class="card pad">
+      <div class="qrbox">
+        <div class="qr" id="mineQr" style="width:150px;height:150px"></div>
+        <div>
+          <div class="big" id="mineAmount"></div>
+          <div class="kv"><span class="muted">Účet</span><br><b>1518140045/3030</b></div>
+          <div class="kv"><span class="muted">Zpráva</span><br><b id="mineMsg"></b></div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:13px;margin:12px 0 0">Naskenuj QR kód v bankovnictví (QR Platba).</p>
+    </div>
+    <div class="row2" id="mineActions">
+      <button class="btn sec" id="btnEdit">Upravit</button>
+      <button class="btn sec" id="btnDelete">Zrušit objednávku</button>
+    </div>
+    <p class="msg" id="mineMsgBox"></p>
+  </section>
+
+  <!-- Soupis pro organizátora -->
+  <section id="vList" class="hidden">
+    <button class="back" id="btnBack">← Zpět na objednávku</button>
+    <div class="card">
+      <table class="tot" id="totTab"></table>
+    </div>
+    <div class="card">
+      <div class="pad" style="padding-bottom:6px;display:flex;justify-content:space-between;align-items:baseline">
+        <b>Soupis po porcích</b><span class="muted" id="ptInfo" style="font-size:13px"></span>
+      </div>
+      <table class="pt" id="ptTab"></table>
+    </div>
+    <div class="row2">
+      <button class="btn" id="btnCopy">Kopírovat pro restauraci</button>
+      <button class="btn sec" id="btnCsv">Stáhnout CSV</button>
+    </div>
+    <button class="btn sec" id="btnPdf">Vytvořit PDF objednávku</button>
+    <p class="msg" id="listMsg"></p>
+    <div class="card" id="people"></div>
+  </section>
+
+  <p class="muted hidden" id="loading" style="text-align:center">Načítám…</p>
+</main>
+
+<script type="module">
+/* ====== NASTAVENÍ ====== */
+const firebaseConfig = {
+  apiKey: "AIzaSyC8h4BZJKz-SpX3Gl2kJgLIuhYFbp0EXjg",
+  authDomain: "obed-mikulas.firebaseapp.com",
+  projectId: "obed-mikulas",
+  storageBucket: "obed-mikulas.firebasestorage.app",
+  messagingSenderId: "793493488011",
+  appId: "1:793493488011:web:a94cf032afd83042946f8e"
+};
+const CENA = 170;
+const IBAN = "CZ7930300000001518140045";   // = 1518140045/3030
+const UZAVERKA = new Date("2026-11-27T00:00:00+01:00"); // objednávky do 26. 11. 2026 včetně
+const KOLEKCE = "objednavky";
+const MAX_PORCI = 20;
+const TERMIN = "v sobotu 5. 12. 2026 ve 12:30 hodin"; // zobrazí se v PDF pod nadpisem
+
+/* [klíč, celý název, krátký název na tlačítko, zkratka do tabulky] */
+const JIDLA   = [["vepr","Řízek vepřový","Vepřový","Vepř."],["kure","Řízek kuřecí","Kuřecí","Kuř."],["syr","Smažený sýr","Sýr","Sýr"]];
+const PRILOHY = [["salat","Bramborový salát","Salát","Salát"],["brambory","Brambory","Brambory","Bramb."],["hranolky","Hranolky","Hranolky","Hran."]];
+const VSE = [...JIDLA, ...PRILOHY];
+const NAZEV = Object.fromEntries(VSE.map(([k, n]) => [k, n]));
+
+/* ====== Pomocné funkce ====== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const bezDiakritiky = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+const kc = n => n.toLocaleString("cs-CZ") + " Kč";
+const slovoPorce = n => n === 1 ? "porce" : (n >= 2 && n <= 4 ? "porce" : "porcí");
+const poUzaverce = () => new Date() >= UZAVERKA;
+
+function zprava(jmeno, porce) {
+  const t = bezDiakritiky(`${jmeno} ${porce} ${slovoPorce(porce)}`).replace(/[*]/g, " ").replace(/\s+/g, " ").trim();
+  return t.slice(0, 60);
+}
+function spayd(castka, msg) {
+  return `SPD*1.0*ACC:${IBAN}*AM:${castka.toFixed(2)}*CC:CZK*MSG:${msg}`;
+}
+function vykresliQr(el, text) {
+  try {
+    const q = qrcode(0, "M");
+    q.addData(text);
+    q.make();
+    el.innerHTML = q.createSvgTag(4, 0);
+    const svg = el.querySelector("svg");
+    svg.removeAttribute("width"); svg.removeAttribute("height");
+    svg.setAttribute("viewBox", `0 0 ${q.getModuleCount() * 4} ${q.getModuleCount() * 4}`);
+  } catch (e) { el.textContent = "QR nelze vytvořit"; }
+}
+
+/* Položky se ukládají jako mapa kombinací, např. { "vepr+salat": 2, "syr+hranolky": 1 }.
+   Starší objednávky mají jen počty kusů ({ vepr: 1, salat: 1 }) – ty se spárují podle pořadí. */
+function rozbal(polozky = {}) {
+  const klice = Object.keys(polozky);
+  if (klice.some(k => k.includes("+"))) {
+    const out = [];
+    klice.forEach(k => { const [j, p] = k.split("+"); for (let i = 0; i < (polozky[k] || 0); i++) out.push({ j, p }); });
+    const poradi = k => VSE.findIndex(([x]) => x === k);
+    return out.sort((a, b) => poradi(a.j) - poradi(b.j) || poradi(a.p) - poradi(b.p));
+  }
+  const j = [], p = [];
+  JIDLA.forEach(([k]) => { for (let i = 0; i < (polozky[k] || 0); i++) j.push(k); });
+  PRILOHY.forEach(([k]) => { for (let i = 0; i < (polozky[k] || 0); i++) p.push(k); });
+  return j.map((x, i) => ({ j: x, p: p[i] || "" }));
+}
+function zabal(seznam) {
+  const m = {};
+  seznam.forEach(({ j, p }) => { const k = `${j}+${p}`; m[k] = (m[k] || 0) + 1; });
+  return m;
+}
+function textPolozek(polozky) {
+  const m = zabal(rozbal(polozky));
+  return Object.entries(m).map(([k, n]) => { const [j, p] = k.split("+"); return `${n}× ${NAZEV[j]}${p ? " + " + NAZEV[p] : ""}`; });
+}
+
+/* ====== Telegram ====== */
+const tg = window.Telegram?.WebApp;
+const tgUser = tg?.initDataUnsafe?.user;
+if (tg && tg.initData) { tg.ready(); tg.expand(); }
+
+/* ====== Úložiště (Firebase nebo zkušební režim) ====== */
+let api;
+async function initBackend() {
+  if (!firebaseConfig.apiKey) {
+    $("demo").classList.remove("hidden");
+    const KEY = "obed-demo-data", UK = "obed-demo-uid";
+    let uid = localStorage.getItem(UK);
+    if (!uid) { uid = "demo-" + Math.random().toString(36).slice(2, 10); localStorage.setItem(UK, uid); }
+    const all = () => JSON.parse(localStorage.getItem(KEY) || "{}");
+    const put = o => localStorage.setItem(KEY, JSON.stringify(o));
+    const subs = [];
+    const notify = () => { const a = all(); subs.forEach(cb => cb(Object.entries(a).map(([id, d]) => ({ id, ...d })))); };
+    window.addEventListener("storage", e => { if (e.key === KEY) notify(); });
+    api = {
+      uid,
+      load: async () => all()[uid] || null,
+      save: async d => { const a = all(); a[uid] = d; put(a); notify(); },
+      remove: async () => { const a = all(); delete a[uid]; put(a); notify(); },
+      watchAll: cb => { subs.push(cb); notify(); }
+    };
+    return;
+  }
+  const base = "https://www.gstatic.com/firebasejs/10.12.2";
+  const [{ initializeApp }, { getAuth, signInAnonymously, onAuthStateChanged },
+         { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, onSnapshot, serverTimestamp }] =
+    await Promise.all([import(`${base}/firebase-app.js`), import(`${base}/firebase-auth.js`), import(`${base}/firebase-firestore.js`)]);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const user = await new Promise((res, rej) => {
+    const off = onAuthStateChanged(auth, u => { if (u) { off(); res(u); } });
+    signInAnonymously(auth).catch(rej);
+  });
+  await user.getIdToken();
+  const ref = doc(db, KOLEKCE, user.uid);
+  /* U čerstvě přihlášeného uživatele první zápis občas neprojde (permission-denied),
+     protože databáze ještě nemá jeho token – obnovíme token a zkusíme to znovu. */
+  const sOpakovanim = async fn => {
+    for (let pokus = 0; ; pokus++) {
+      try { return await fn(); }
+      catch (e) {
+        if (e.code !== "permission-denied" || pokus >= 2) throw e;
+        await user.getIdToken(true);
+        await new Promise(r => setTimeout(r, 1000 * (pokus + 1)));
+      }
+    }
+  };
+  api = {
+    uid: user.uid,
+    load: async () => { const s = await getDoc(ref); return s.exists() ? s.data() : null; },
+    save: d => sOpakovanim(() => setDoc(ref, { ...d, upraveno: serverTimestamp() })),
+    remove: () => sOpakovanim(() => deleteDoc(ref)),
+    watchAll: cb => onSnapshot(collection(db, KOLEKCE), s => cb(s.docs.map(x => ({ id: x.id, ...x.data() }))),
+                                e => { $("listMsg").className = "msg err"; $("listMsg").textContent = "Soupis nelze načíst: " + e.message; })
+  };
+}
+
+/* ====== Formulář – porce ====== */
+let porce = [{ j: "", p: "" }];
+let moje = null;
+
+function vykresliPorce() {
+  const chips = (i, typ, seznam, vybrano) => `<div class="chips">` + seznam.map(([k, , kratky]) =>
+    `<button type="button" class="chip${vybrano === k ? " on" : ""}" data-i="${i}" data-t="${typ}" data-v="${k}">${kratky}</button>`).join("") + `</div>`;
+  $("porceBox").innerHTML = porce.map((x, i) => `
+    <div class="por">
+      <div class="porHead"><b>Porce ${i + 1}</b>${porce.length > 1 ? `<button type="button" class="del" data-del="${i}">Odebrat</button>` : ""}</div>
+      <div class="lbl">Jídlo</div>${chips(i, "j", JIDLA, x.j)}
+      <div class="lbl">Příloha</div>${chips(i, "p", PRILOHY, x.p)}
+    </div>`).join("");
+  $("btnAdd").classList.toggle("hidden", porce.length >= MAX_PORCI);
+  const n = porce.length;
+  $("sumInfo").textContent = `${n} ${slovoPorce(n)}`;
+  $("sumKc").textContent = kc(n * CENA);
+  $("btnSend").textContent = `Odeslat objednávku · ${kc(n * CENA)}`;
+}
+$("porceBox").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]");
+  if (del) { porce.splice(Number(del.dataset.del), 1); vykresliPorce(); return; }
+  const b = e.target.closest(".chip"); if (!b) return;
+  porce[Number(b.dataset.i)][b.dataset.t] = b.dataset.v;
+  tg?.HapticFeedback?.selectionChanged?.();
+  $("formMsg").textContent = "";
+  vykresliPorce();
+});
+$("btnAdd").onclick = () => { porce.push({ j: "", p: "" }); vykresliPorce(); };
+
+function chyba(t) { $("formMsg").className = "msg err"; $("formMsg").textContent = t; }
+
+async function odeslat() {
+  if (poUzaverce()) return chyba("Objednávky jsou už uzavřené.");
+  const jmeno = $("jmeno").value.trim().replace(/\s+/g, " ");
+  if (jmeno.length < 2) { $("jmeno").focus(); return chyba("Vyplň jméno."); }
+  const chybi = porce.findIndex(x => !x.j || !x.p);
+  if (chybi >= 0) return chyba(`U porce ${chybi + 1} vyber ${!porce[chybi].j ? "jídlo" : "přílohu"}.`);
+  $("btnSend").disabled = true;
+  try {
+    const n = porce.length;
+    const d = { jmeno, polozky: zabal(porce), porce: n, castka: n * CENA };
+    await api.save(d);
+    try { localStorage.setItem("obed-jmeno", jmeno); } catch (e) {}
+    moje = d;
+    tg?.HapticFeedback?.notificationOccurred?.("success");
+    ukaz("mine");
+  } catch (e) {
+    chyba("Odeslání se nepovedlo. Obnov stránku a zkus to znovu. (" + (e.code || e.message) + ")");
+  } finally { $("btnSend").disabled = false; }
+}
+
+/* ====== Moje objednávka ====== */
+function vykresliMoji() {
+  $("mineName").textContent = moje.jmeno;
+  $("mineItems").innerHTML = textPolozek(moje.polozky).map(esc).join("<br>");
+  moje.castka = moje.porce * CENA;
+  $("mineAmount").textContent = kc(moje.castka);
+  const msg = zprava(moje.jmeno, moje.porce);
+  $("mineMsg").textContent = msg;
+  vykresliQr($("mineQr"), spayd(moje.castka, msg));
+  $("mineActions").classList.toggle("hidden", poUzaverce());
+}
+
+/* ====== Soupis ====== */
+let soupisText = "", radkyCsv = [], pdfData = null, pdfSoubor = null;
+function vykresliSoupis(list) {
+  list.sort((a, b) => a.jmeno.localeCompare(b.jmeno, "cs"));
+  const tot = Object.fromEntries(VSE.map(([k]) => [k, 0]));
+  let nPorci = 0, castka = 0;
+  const radky = [];
+  list.forEach(o => {
+    rozbal(o.polozky).forEach((x, i) => {
+      if (x.j) tot[x.j]++;
+      if (x.p) tot[x.p]++;
+      radky.push({ jmeno: o.jmeno, ...x, prvni: i === 0 });
+    });
+    nPorci += o.porce; castka += o.porce * CENA;
+  });
+
+  /* Pro restauraci: konkrétní porce (jídlo + příloha) a jejich počty */
+  const kombinace = rozbal(zabal(radky.map(({ j, p }) => ({ j, p }))));
+  const kombiMapa = zabal(kombinace);
+  const kombiText = Object.entries(kombiMapa).map(([k, n]) => { const [j, p] = k.split("+"); return [`${NAZEV[j]}${p ? " + " + NAZEV[p] : ""}`, n]; });
+
+  $("totTab").innerHTML =
+    `<tr><th colspan="2">Pro restauraci – porce</th></tr>` +
+    (kombiText.length ? kombiText.map(([t, n]) => `<tr><td>${esc(t)}</td><td>${n}×</td></tr>`).join("")
+                      : `<tr><td class="muted" colspan="2">Zatím nic</td></tr>`) +
+    `<tr><td><b>Porcí celkem</b></td><td>${nPorci}</td></tr>` +
+    `<tr><td>Lidí / k vybrání</td><td>${list.length} / ${kc(castka)}</td></tr>`;
+
+  $("ptInfo").textContent = `${nPorci} ${slovoPorce(nPorci)} · ${kc(castka)}`;
+  const ma = (r, k) => r.j === k || r.p === k;
+  const bunka = (r, k, i) => `<td class="${ma(r, k) ? "x" : ""}${i === 3 ? " sep" : ""}">${ma(r, k) ? "1" : ""}</td>`;
+  $("ptTab").innerHTML =
+    `<tr><th class="n">Jméno</th>${VSE.map(([, , , z], i) => `<th${i === 3 ? ' class="sep"' : ""}>${z}</th>`).join("")}</tr>` +
+    radky.map((r, idx) => `<tr${r.prvni && idx > 0 ? ' class="g"' : ""}><td class="n">${esc(r.jmeno)}</td>${VSE.map(([k], i) => bunka(r, k, i)).join("")}</tr>`).join("") +
+    `<tr class="s"><td class="n">Celkem</td>${VSE.map(([k], i) => `<td${i === 3 ? ' class="sep"' : ""}>${tot[k]}</td>`).join("")}</tr>`;
+
+  radkyCsv = [["Jméno", ...VSE.map(([, n]) => n)],
+              ...radky.map(r => [r.jmeno, ...VSE.map(([k]) => ma(r, k) ? 1 : "")]),
+              ["Celkem", ...VSE.map(([k]) => tot[k])]];
+
+  pdfData = { kombiText, nPorci, castka, lide: list.map(o => [o.jmeno, textPolozek(o.polozky).join("\n")]) };
+  pdfSoubor = null;
+  $("btnPdf").textContent = "Vytvořit PDF objednávku";
+
+  soupisText = "Objednávka oběda\n" + kombiText.map(([t, n]) => `${n}× ${t}`).join("\n") +
+    `\nPorcí celkem: ${nPorci}`;
+
+  const box = $("people");
+  if (!list.length) { box.innerHTML = `<div class="person muted">Zatím nikdo neobjednal.</div>`; return; }
+  box.innerHTML = list.map((o, i) => `
+    <div class="person"><div class="qrbox">
+      <div class="qr" id="q${i}" style="width:120px;height:120px"></div>
+      <div>
+        <div style="font-weight:600">${esc(o.jmeno)}</div>
+        <div class="kv muted">${textPolozek(o.polozky).map(esc).join("<br>")}</div>
+        <div class="kv"><b>${kc(o.porce * CENA)}</b></div>
+        <div class="kv muted" style="font-size:12px">${esc(zprava(o.jmeno, o.porce))}</div>
+      </div></div></div>`).join("");
+  list.forEach((o, i) => vykresliQr($("q" + i), spayd(o.porce * CENA, zprava(o.jmeno, o.porce))));
+}
+function stahniCsv() {
+  const pole = v => { const s = String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csv = "﻿" + radkyCsv.map(r => r.map(pole).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = "objednavka-obeda.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+let soupisBezi = false;
+
+/* ====== Přepínání pohledů ====== */
+function ukaz(v) {
+  ["vForm", "vMine", "vList"].forEach(id => $(id).classList.add("hidden"));
+  if (v === "form") {
+    $("vForm").classList.remove("hidden");
+    $("btnCancelEdit").classList.toggle("hidden", !moje);
+    vykresliPorce();
+    if (poUzaverce()) { $("btnSend").disabled = true; chyba("Objednávky byly uzavřeny 26. 11. 2026."); }
+  }
+  if (v === "mine") { vykresliMoji(); $("vMine").classList.remove("hidden"); }
+  if (v === "list") {
+    $("vList").classList.remove("hidden");
+    if (!soupisBezi) { soupisBezi = true; api.watchAll(vykresliSoupis); nactiPdfmake().catch(() => {}); }
+  }
+}
+const vychozi = () => (location.hash === "#soupis" ? "list" : moje ? "mine" : "form");
+
+/* Skrytý vstup do soupisu: podržet nadpis 1 s (nebo adresa #soupis) */
+let tmr;
+const title = $("title");
+title.addEventListener("pointerdown", () => { tmr = setTimeout(() => { location.hash = "soupis"; }, 1000); });
+["pointerup", "pointerleave", "pointercancel"].forEach(e => title.addEventListener(e, () => clearTimeout(tmr)));
+window.addEventListener("hashchange", () => ukaz(vychozi()));
+
+$("btnSend").onclick = odeslat;
+$("btnEdit").onclick = () => {
+  porce = rozbal(moje.polozky).map(x => ({ ...x }));
+  if (!porce.length) porce = [{ j: "", p: "" }];
+  $("jmeno").value = moje.jmeno;
+  $("formMsg").textContent = "";
+  ukaz("form");
+};
+$("btnCancelEdit").onclick = () => ukaz("mine");
+$("btnDelete").onclick = async () => {
+  if (!confirm("Opravdu zrušit objednávku?")) return;
+  try { await api.remove(); moje = null; porce = [{ j: "", p: "" }]; ukaz("form"); }
+  catch (e) { $("mineMsgBox").className = "msg err"; $("mineMsgBox").textContent = "Zrušení se nepovedlo."; }
+};
+$("btnBack").onclick = () => { history.replaceState(null, "", location.pathname + location.search); ukaz(vychozi()); };
+$("btnCopy").onclick = async () => {
+  try { await navigator.clipboard.writeText(soupisText); $("listMsg").className = "msg ok"; $("listMsg").textContent = "Souhrn zkopírován."; }
+  catch (e) { $("listMsg").className = "msg err"; $("listMsg").textContent = "Kopírování se nepovedlo."; }
+};
+$("btnCsv").onclick = stahniCsv;
+/* ====== PDF (pdfmake – obsahuje písmo s češtinou) ====== */
+let pdfLib = null;
+function nactiSkript(src) {
+  return new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+}
+function nactiPdfmake() {
+  if (!pdfLib) {
+    const b = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/";
+    pdfLib = nactiSkript(b + "pdfmake.min.js").then(() => nactiSkript(b + "vfs_fonts.js"));
+    pdfLib.catch(() => { pdfLib = null; });
+  }
+  return pdfLib;
+}
+function pdfDefinice(d) {
+  const dnes = new Date().toLocaleDateString("cs-CZ");
+  const hl = t => ({ text: t, bold: true, fillColor: "#eeeeee" });
+  return {
+    pageSize: "A4", pageMargins: [40, 40, 40, 40],
+    defaultStyle: { fontSize: 12 },
+    content: [
+      { text: "Objednávka obědů", fontSize: 20, bold: true },
+      { text: TERMIN, fontSize: 14, margin: [0, 4, 0, 0] },
+      { text: `Vystaveno ${dnes} · ${d.nPorci} ${slovoPorce(d.nPorci)}`, fontSize: 10, color: "#555555", margin: [0, 4, 0, 16] },
+      { table: { headerRows: 1, widths: ["*", 90], body: [
+          [hl("Porce (jídlo + příloha)"), { ...hl("Počet"), alignment: "center" }],
+          ...d.kombiText.map(([t, n]) => [t, { text: String(n), alignment: "center" }]),
+          [{ text: "Celkem porcí", bold: true }, { text: String(d.nPorci), bold: true, alignment: "center" }],
+          [{ text: `Cena celkem (${CENA} Kč / porce)`, bold: true }, { text: kc(d.castka), bold: true, alignment: "center" }]
+      ] } },
+      { text: "Rozpis podle jmen", fontSize: 14, bold: true, margin: [0, 22, 0, 6] },
+      { table: { headerRows: 1, widths: [150, "*"], body: [[hl("Jméno"), hl("Porce")], ...d.lide] } }
+    ]
+  };
+}
+function pdfZprava(t, err) { $("listMsg").className = "msg" + (err ? " err" : " ok"); $("listMsg").textContent = t; }
+$("btnPdf").onclick = async () => {
+  if (!pdfData || !pdfData.nPorci) return pdfZprava("Zatím nejsou žádné objednávky.", true);
+  /* 2. klepnutí: PDF je připravené → sdílet / uložit (musí proběhnout hned v rámci klepnutí) */
+  if (pdfSoubor) {
+    if (navigator.canShare && navigator.canShare({ files: [pdfSoubor] })) {
+      try { await navigator.share({ files: [pdfSoubor], title: "Objednávka obědů" }); return; }
+      catch (e) { if (e.name === "AbortError") return; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(pdfSoubor); a.download = pdfSoubor.name; a.target = "_blank";
+    document.body.appendChild(a); a.click(); a.remove();
+    return;
+  }
+  /* 1. klepnutí: vygenerovat PDF */
+  const btn = $("btnPdf");
+  btn.disabled = true; btn.textContent = "Připravuji PDF…";
+  try {
+    await nactiPdfmake();
+    const blob = await new Promise(res => window.pdfMake.createPdf(pdfDefinice(pdfData)).getBlob(res));
+    pdfSoubor = new File([blob], `objednavka-obedu-${new Date().toISOString().slice(0, 10)}.pdf`, { type: "application/pdf" });
+    btn.textContent = "Uložit / sdílet PDF";
+    pdfZprava("PDF je připravené – klepni na „Uložit / sdílet PDF“.");
+  } catch (e) {
+    btn.textContent = "Vytvořit PDF objednávku";
+    pdfZprava("PDF se nepodařilo vytvořit. Zkontroluj připojení a zkus to znovu.", true);
+  } finally { btn.disabled = false; }
+};
+
+/* ====== Start ====== */
+(async () => {
+  $("loading").classList.remove("hidden");
+  const tgJmeno = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ") : "";
+  let ulozene = ""; try { ulozene = localStorage.getItem("obed-jmeno") || ""; } catch (e) {}
+  $("jmeno").value = tgJmeno || ulozene;
+  try {
+    await initBackend();
+    moje = await api.load();
+  } catch (e) {
+    $("loading").textContent = "Nepodařilo se připojit k databázi. Zkontroluj připojení a obnov stránku.";
+    return;
+  }
+  $("loading").classList.add("hidden");
+  ukaz(vychozi());
+})();
+</script>
+</body>
+</html>

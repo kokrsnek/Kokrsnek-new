@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.58',
+    date: '24. 11. 2026',
+    items: [
+      'Světlý režim pro Původní vzhled: Parta → Vzhled → Tmavý / Světlý / Podle telefonu. Volba se pamatuje i po zavření aplikace.'
+    ]
+  },
+  {
     version: '1.57',
     date: '24. 11. 2026',
     items: [

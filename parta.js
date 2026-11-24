@@ -8,7 +8,7 @@ import { db, doc, updateDoc } from './firebase.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
 import { isPushOn, pushToggle } from './pushui.js';
-import { THEMES, currentTheme, applyTheme, preloadAllFonts } from './theme.js';
+import { THEMES, currentTheme, applyTheme, preloadAllFonts, currentMode, setMode, MODES } from './theme.js';
 
 export function render(root) {
   const admin = isAdmin();
@@ -29,6 +29,7 @@ export function render(root) {
       <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, hry, nová alba… Když máš zapnuté obě aplikace, chodí upozornění jen do nové.</div>
 
       <div class="section-h">Vzhled</div>
+      <div class="modeseg" role="radiogroup" aria-label="Tmavý nebo světlý režim" data-modes></div>
       <div class="themes" role="radiogroup" aria-label="Styl vzhledu" data-themes></div>
       <div class="note" style="margin-top:8px">Volba platí v tomhle zařízení.</div>
 
@@ -73,6 +74,12 @@ export function render(root) {
         <span>${esc(t.name)} <small>· ${esc(t.note)}</small></span>
       </button>`).join('');
     themesEl.querySelectorAll('[data-theme-id]').forEach((b) => { b.onclick = () => { applyTheme(b.dataset.themeId); drawThemes(); }; });
+    // Tmavý / Světlý / Podle telefonu — jen u Původního vzhledu.
+    const modesEl = root.querySelector('[data-modes]');
+    const m = currentMode();
+    modesEl.hidden = cur !== 'puvodni';
+    modesEl.innerHTML = MODES.map(([k, l]) => `<button role="radio" aria-checked="${k === m}" class="${k === m ? 'on' : ''}" data-mode-id="${k}">${l}</button>`).join('');
+    modesEl.querySelectorAll('[data-mode-id]').forEach((b) => { b.onclick = () => { setMode(b.dataset.modeId); drawThemes(); }; });
   };
   drawThemes();
 

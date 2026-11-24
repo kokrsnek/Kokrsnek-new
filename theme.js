@@ -40,6 +40,32 @@ function loadFonts(t) {
   document.head.appendChild(l);
 }
 
+// Původní vzhled umí i světlý režim: tmavý / světlý / podle telefonu.
+const MODE_KEY = 'kokrsnek2Mode';
+export const MODES = [['dark', 'Tmavý'], ['light', 'Světlý'], ['auto', 'Podle telefonu']];
+export function currentMode() {
+  let m = null;
+  try { m = localStorage.getItem(MODE_KEY); } catch (e) { /* nic */ }
+  return MODES.some(([k]) => k === m) ? m : 'dark';
+}
+const prefersLight = () => window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches;
+let modeWatch = false;
+function applyMode(t) {
+  const m = currentMode();
+  const light = t.id === 'puvodni' && (m === 'light' || (m === 'auto' && prefersLight()));
+  if (light) document.documentElement.setAttribute('data-mode', 'light');
+  else document.documentElement.removeAttribute('data-mode');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#2F7A56' : t.status);
+  if (!modeWatch && window.matchMedia) {
+    modeWatch = true;
+    matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => applyMode(currentTheme()));
+  }
+}
+export function setMode(m) {
+  try { localStorage.setItem(MODE_KEY, m); } catch (e) { /* nevadí */ }
+  applyMode(currentTheme());
+}
+
 export function applyTheme(id, save = true) {
   const t = THEMES.find((x) => x.id === id) || THEMES[0];
   loadFonts(t);
@@ -47,6 +73,7 @@ export function applyTheme(id, save = true) {
   else document.documentElement.setAttribute('data-theme', t.id);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.status);
   if (save) { try { localStorage.setItem(KEY, t.id); } catch (e) { /* nevadí */ } }
+  applyMode(t);
   return t;
 }
 

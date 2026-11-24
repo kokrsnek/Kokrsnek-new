@@ -715,3 +715,25 @@ html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,
 .moneyrow .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .moneyrow .btn svg{color:var(--accent-text);flex:0 0 auto}
 button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px;font-weight:700;color:var(--accent-text);cursor:pointer}
+
+/* 1.58 — světlý režim Původního vzhledu (Parta → Vzhled → Tmavý / Světlý / Podle telefonu) */
+:root[data-mode="light"]{
+  color-scheme:light;
+  --bg:#F6F4EF; --card:#FFFFFF; --surface:#EEEBE4; --bar:#FFFFFF; --line:#E3DFD6; --line2:#D2CDC2;
+  --ink:#1C1B20; --ink2:#3A3840; --muted:#75717B;
+  --accent:#2F7A56; --accent-hi:#2F7A56; --accent-text:#24704C; --accent-soft:rgba(47,122,86,.12);
+  --coral:#D9583F; --coral-text:#C24A33; --danger:#C24A33;
+  --on-accent:#fff; --no-soft:rgba(217,88,63,.10); --shadow:rgba(40,35,25,.14); --scrim:rgba(20,18,15,.38);
+  --cover:#DDE9E1; --cover-ink:#2F7A56; --cover-btn:rgba(255,255,255,.88);
+  --warn-bg:#FBF1D9; --warn-line:#E2C67E; --warn-ink:#7A5A12;
+  --day-out:#B8B3AA; --check:#2F7A56; --toast-bg:#1C1B20; --toast-ink:#F6F4EF;
+  --gbtn-bg:#fff; --gbtn-ink:#1F1F1F; --gbtn-line:#D2CDC2; --statusbar:#2F7A56;
+}
+:root[data-mode="light"] .card,:root[data-mode="light"] .row,:root[data-mode="light"] .hero,:root[data-mode="light"] .fttile .ftpic{box-shadow:0 1px 2px rgba(40,35,25,.06),0 4px 14px rgba(40,35,25,.05)}
+:root[data-mode="light"] .tabbar{box-shadow:0 -1px 0 var(--line),0 -6px 18px rgba(40,35,25,.05)}
+:root[data-mode="light"] .wxfx .snow{background:#fff;box-shadow:0 0 0 1px rgba(90,110,140,.35),0 1px 4px rgba(60,80,110,.35)}
+:root[data-mode="light"] .likebtn.on{color:#E0344A}
+.modeseg{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+.modeseg[hidden]{display:none}
+.modeseg button{flex:1;height:38px;border:0;border-radius:10px;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.modeseg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px var(--shadow)}
