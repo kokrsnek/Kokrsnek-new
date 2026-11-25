@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.69',
+    date: '25. 11. 2026',
+    items: [
+      'Úvodní animace: vlevo nahoře je po celou dobu logo party.'
+    ]
+  },
+  {
     version: '1.68',
     date: '25. 11. 2026',
     items: [
