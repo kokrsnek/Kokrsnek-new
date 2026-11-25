@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.71',
+    date: '25. 11. 2026',
+    items: [
+      'Oprava: po otevření kalendáře tlačítkem už nezůstává dole bílý pruh pod spodní lištou.'
+    ]
+  },
+  {
     version: '1.70',
     date: '25. 11. 2026',
     items: [

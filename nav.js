@@ -50,7 +50,22 @@ export function navOut(root, path) {
 export function navIn(root, ctx) { if (ctx) animateNav(root, ctx.kind, ctx.old, ctx.oldCal); }
 
 function animateNav(root, kind, old, oldCal) {
-  const done = () => { old.remove(); root.style.cssText = ''; };
+  // Lišty s position:fixed (spodní menu) uvnitř posouvané/zvětšované obrazovky
+  // Safari na iPhonu po animaci nechá na špatném místě (bílý pruh dole) —
+  // během animace jsou schované a po ní se znovu vykreslí.
+  const bars = kind.k === 'tab' ? [] : [...root.querySelectorAll('.tabbar')];
+  bars.forEach((t) => { t.style.visibility = 'hidden'; });
+  let finished = false;
+  const done = () => {
+    if (finished) return; finished = true;
+    old.remove(); root.style.cssText = '';
+    bars.forEach((t) => {
+      t.style.display = 'none'; void t.offsetHeight; t.style.display = '';
+      t.style.visibility = '';
+      t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
+    });
+    requestAnimationFrame(() => window.scrollTo(window.scrollX, window.scrollY));
+  };
   const A = (el, kf, ms, ease = 'cubic-bezier(.25,.8,.25,1)') => el.animate(kf, { duration: ms, easing: ease });
   try {
     if (kind.k === 'tab') {
