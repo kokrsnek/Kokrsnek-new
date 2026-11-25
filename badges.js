@@ -33,6 +33,16 @@ const openThread = () => { const m = here().match(/^#\/chat\/(.+)$/); return m ?
 
 export function setFotky(n) { st.fotky = n; paint(); }
 
+// Ukázka pro správce (tlačítko zkušebních notifikací): odznaky naoko rozsvítit jen v tomhle
+// telefonu, po uplynutí se vrátí skutečný stav. Nic se nikam neukládá.
+let demoUntil = 0, demoTimer = null;
+export function demoBadges(ms = 60000) {
+  demoUntil = Date.now() + ms;
+  clearTimeout(demoTimer);
+  demoTimer = setTimeout(() => { demoUntil = 0; recompute(); }, ms + 50);
+  paint();
+}
+
 function mark(k) { seen[k] = new Date().toISOString(); saveSeen(); }
 
 function computeKde() {
@@ -70,10 +80,11 @@ function paint() {
     if (on) { el.dataset[k] = '1'; if (txt != null) el.style.setProperty(`--${k}-n`, `"${txt}"`); }
     else { delete el.dataset[k]; el.style.removeProperty(`--${k}-n`); }
   };
-  set('bchat', st.chat > 0, st.chat > 99 ? '99+' : st.chat);
-  set('bkde', st.kde);
-  set('bakce', st.akce);
-  const total = st.chat + st.fotky + (st.kde ? 1 : 0) + (st.akce ? 1 : 0);
+  const v = Date.now() < demoUntil ? { chat: Math.max(st.chat, 3), kde: true, akce: true, fotky: st.fotky } : st;
+  set('bchat', v.chat > 0, v.chat > 99 ? '99+' : v.chat);
+  set('bkde', v.kde);
+  set('bakce', v.akce);
+  const total = v.chat + v.fotky + (v.kde ? 1 : 0) + (v.akce ? 1 : 0);
   try {
     if (total && navigator.setAppBadge) navigator.setAppBadge(total).catch(() => {});
     else if (!total && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});

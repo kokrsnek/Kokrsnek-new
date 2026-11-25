@@ -5,6 +5,7 @@ import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeM
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE, PARTY_NAMES, LIVE, nameLabel } from './config.js';
 import { db, doc, updateDoc, callFunction } from './firebase.js';
+import { demoBadges } from './badges.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
 import { isPushOn, pushToggle } from './pushui.js';
@@ -140,11 +141,13 @@ export function render(root) {
   root.querySelector('[data-intro]').onclick = () => showIntro(true);
   const tp = root.querySelector('[data-testpush]');
   if (tp) tp.onclick = async () => {
-    const delay = await choose({ title: 'Zkušební notifikace', text: 'Přijdou 3 ukázky (chat, check-in, nová akce) jen na tvoje zařízení. Se zpožděním stihneš zavřít aplikaci a uvidíš i číslo na ikoně.', buttons: [
+    const delay = await choose({ title: 'Zkušební notifikace', text: 'Přijdou 3 ukázky (chat, check-in, nová akce) jen na tvoje zařízení a na minutu se rozsvítí odznaky v dolní liště (jen u tebe). Se zpožděním stihneš zavřít aplikaci a uvidíš i číslo na ikoně.', buttons: [
       { label: 'Poslat za 15 s', value: 15, kind: 'primary' }, { label: 'Poslat hned', value: 0 }, { label: 'Zrušit', value: null }] });
     if (delay == null) return;
     tp.disabled = true;
     toast(delay ? 'Za 15 s přijdou zkušební notifikace — můžeš zavřít aplikaci.' : 'Posílám zkušební notifikace…');
+    // Odznaky v dolní liště naoko na minutu (jen v tomhle telefonu) — spolu s notifikacemi.
+    setTimeout(() => demoBadges(60000), delay * 1000);
     try { const r = await callFunction('sendTestNotifications', { kind: 'all', delay }); toast(`Odesláno ${r.sent} notifikace na ${r.devices} zař. ✅`); }
     catch (x) { console.error(x); toast(x && x.message && !/internal/i.test(x.message) ? x.message : 'Nepodařilo se poslat — je nasazená funkce ve Firebase?'); }
     finally { tp.disabled = false; }
