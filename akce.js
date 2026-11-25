@@ -32,7 +32,7 @@ export function render(root, { tab }) {
       </div>
     </div>
     <div class="pullind" data-pull aria-hidden="true"><div class="pullpill">${icon('search', 18)}<span>Hledat akci nebo místo</span></div><div class="pulltxt" data-pulltxt>↓ Táhni dál</div></div>
-    <div data-sbox class="sboxrow" style="display:none"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"><button class="ibtn" data-sclose aria-label="Zavřít hledání">${icon('close', 20)}</button></div>
+    <div data-sbox class="sboxrow" style="display:none"><input class="input" type="search" placeholder="Hledat akci nebo místo" aria-label="Hledat"></div>
     <div class="scroll" data-body>${spinner()}</div>
     ${tabbar('akce')}
   </div>`;
@@ -40,8 +40,9 @@ export function render(root, { tab }) {
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 
-  // Hledání: otevře se potažením obsahu dolů (když je stránka nahoře), zavře křížkem
-  // nebo potažením zpět nahoru (když se zatím nic nehledá). Karta zůstane na akci,
+  // Hledání: otevře se potažením obsahu dolů (když je stránka nahoře), zavře se
+  // potažením karty zpět nahoru. Když je něco napsané a výsledků je víc než
+  // na obrazovku, tah po výsledcích je posouvá a zavírá se tahem po řádku hledání. Karta zůstane na akci,
   // na které byla — bez hledaného textu se nic nepřekresluje.
   const setSearch = (open) => {
     searchOpen = open;
@@ -51,18 +52,20 @@ export function render(root, { tab }) {
     q = ''; sinput.value = ''; sinput.blur();
     if (had) draw();
   };
-  root.querySelector('[data-sclose]').onclick = () => setSearch(false);
   const pull = root.querySelector('[data-pull]'), pullTxt = root.querySelector('[data-pulltxt]');
   const PULL = 70;
   let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false, closing = false;
   const atTop = () => (body.scrollTop || 0) <= 2 && (window.scrollY || 0) <= 2;   // 1 px posun = obejití chyby iOS (nav.js)
   body.addEventListener('touchstart', (e) => {
     pulling = false; closing = false; pAxis = null; pd = 0;
-    if (e.touches.length !== 1 || !atTop()) return;
+    if (e.touches.length !== 1) return;
     if (searchOpen) {
-      if (q.trim()) return;
+      // s klávesnicí iOS posouvá okno, proto se tady hlídá jen posun obsahu
+      const scrollable = body.scrollHeight > body.clientHeight + 4;
+      if ((body.scrollTop || 0) > 2 || (q.trim() && scrollable)) return;
       py0 = e.touches[0].clientY; px0 = e.touches[0].clientX; closing = true; return;
     }
+    if (!atTop()) return;
     py0 = e.touches[0].clientY; px0 = e.touches[0].clientX; pulling = true;
   }, { passive: true });
   body.addEventListener('touchmove', (e) => {
@@ -97,6 +100,15 @@ export function render(root, { tab }) {
     if (pAxis === 'down' && pd >= PULL) setSearch(true);
   };
   body.addEventListener('touchend', pullEnd);
+  // Tah nahoru přímo po řádku hledání zavře vždycky (i s textem a dlouhými výsledky).
+  let sy0 = null;
+  sbox.addEventListener('touchstart', (e) => { sy0 = e.touches.length === 1 ? e.touches[0].clientY : null; }, { passive: true });
+  sbox.addEventListener('touchmove', (e) => {
+    if (sy0 == null) return;
+    const dy = e.touches[0].clientY - sy0;
+    if (dy < -8 && e.cancelable) e.preventDefault();
+    if (dy < -30) { sy0 = null; setSearch(false); }
+  }, { passive: false });
   body.addEventListener('touchcancel', pullEnd);
   // Počítač: kolečkem myši nahoru na začátku stránky, nebo klávesou „/“.
   let wheelAcc = 0, wheelT = 0;
