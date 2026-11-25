@@ -25,7 +25,7 @@ export function render(root, { tab }) {
   const nd = namedayFor(today);
   root.innerHTML = `<div class="screen">
     <div class="top">
-      <div><div class="brand">KoKrŠNeK</div><div class="sub">${esc(fmtLongDate(today))}${nd ? ' · svátek má ' + esc(nd) : ''}</div></div>
+      <div><div class="brand">KoKrŠNeK</div><div class="sub">${esc(DAYS_SHORT[today.getDay()] + ' ' + fmtLongDate(today).replace(/^\S+ /, ''))}${nd ? ' – ' + esc(nd) : ''}</div></div>
       <div class="icons">
         <a class="ibtn" href="#/kalendar" aria-label="Kalendář">${icon('calendarGrid')}</a>
         <a class="ibtn gearbtn" href="#/parta" aria-label="Parta a nastavení">${icon('gear')}</a>
