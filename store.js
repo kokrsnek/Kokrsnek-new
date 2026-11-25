@@ -30,7 +30,8 @@ function fromDoc(d) {
     id: d.id, title: x.title || '(bez názvu)', place: x.place || '', description: x.description || '',
     start, end, allDay: !!x.allDay, photoAlbum: x.photoAlbumApp || x.photoAlbum || '', driveFiles: x.driveFiles || [],
     isTest: !!x.isTest, source: x.source || 'app', createdBy: x.createdBy || '',
-    createdAt: toDate(x.createdAt), albumBy: x.albumBy || '', albumAt: toDate(x.albumAt)
+    createdAt: toDate(x.createdAt), albumBy: x.albumBy || '', albumAt: toDate(x.albumAt),
+    photoGroup: x.photoGroup || '', keepLocal: !!x.keepLocal
   };
 }
 
@@ -462,10 +463,13 @@ export async function fetchCalendar(onProgress = () => {}) {
 export async function importCalendar(onProgress = () => {}) {
   const items = await fetchCalendar(onProgress);
   const existing = new Set(events.list.map((e) => e.id));
+  // Akce upravené přímo v aplikaci (keepLocal) import z kalendáře nepřepisuje.
+  const keep = new Set(events.list.filter((e) => e.keepLocal).map((e) => e.id));
   let added = 0, updated = 0;
   for (let i = 0; i < items.length; i += 400) {
     const batch = writeBatch(db);
     for (const e of items.slice(i, i + 400)) {
+      if (keep.has(e.id)) continue;
       existing.has(e.id) ? updated++ : added++;
       batch.set(doc(db, 'v2_akce', e.id), {
         title: e.title, place: e.place, description: e.description,

@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.75',
+    date: '25. 11. 2026',
+    items: [
+      'Fotky podle akcí: akce může mít vlastní skupinu – „Osada 33. výročí“ je mezi výročními ohni.',
+      'Import z Google Kalendáře nepřepíše akce, které se upravily přímo v aplikaci.'
+    ]
+  },
+  {
     version: '1.74',
     date: '25. 11. 2026',
     items: [

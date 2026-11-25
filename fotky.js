@@ -13,6 +13,8 @@ const SEEN = 'kokrsnek2AlbumsSeen';
 const PRIORITY = ['Rolf', 'Velkopáteční pochod', 'Pálení čarodějnic', 'Výroční oheň', 'Zakončení léta', 'Mikuláš u Hastrmana', 'Vánoční pochod', 'Silvestrovský výšlap'];
 
 export const groupTitle = (t) => { const s = String(t || '').replace(/^\d+\.\s*/, '').trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
+// Skupina ve Fotkách: vlastní (photoGroup, např. „Osada 33. výročí“ → Výroční oheň), jinak podle názvu.
+const groupOf = (ev) => (ev.photoGroup ? ev.photoGroup : groupTitle(ev.title));
 const fmt = (d) => `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
 
 // ---------- seznam alb (sdílený, načte se jednou) ----------
@@ -94,7 +96,7 @@ export function render(root, { group = null } = {}) {
 
   const draw = () => {
     list = albumList();
-    if (group) list = list.filter((a) => groupTitle(a.ev.title) === group);
+    if (group) list = list.filter((a) => groupOf(a.ev) === group);
     if (!events.loaded || !oldAlbums) { body.innerHTML = spinner(); return; }
     const nw = newIds(albumList());
     refreshBadge();
@@ -109,7 +111,7 @@ export function render(root, { group = null } = {}) {
     }
     if (filter === 'akce' && !group) {
       const by = new Map();
-      list.forEach((a) => { const k = groupTitle(a.ev.title); if (!by.has(k)) by.set(k, []); by.get(k).push(a); });
+      list.forEach((a) => { const k = groupOf(a.ev); if (!by.has(k)) by.set(k, []); by.get(k).push(a); });
       const keys = [...by.keys()].sort((a, b) => {
         const ia = PRIORITY.indexOf(a), ib = PRIORITY.indexOf(b);
         if (ia !== -1 && ib !== -1) return ia - ib;
