@@ -9,11 +9,14 @@ import { watchEvents, events, nextEvent, isLive, isPast, watchAttendance, loadAt
 import { changeAttendance, attendButtons } from './attend.js';
 
 const PAGE = 60;
+// Akce na velké kartě (když není nejbližší) — přežije otevření detailu a návrat zpět.
+let keepHeroId = null;
 
 export function render(root, { tab }) {
   let searchOpen = false, q = '', shown = PAGE;
   let heroAtt = null, heroUnsub = null, heroId = null, likeUnsub = null;
   let shift = 0;            // posun velké karty: 0 = nejbližší akce, -1 = předchozí, +1 = další
+  let restoreId = keepHeroId; // po návratu z detailu: na kterou akci kartu vrátit
   let enterDir = '';         // směr animace po swipu
   let animating = false;     // přechod mezi kartami právě běží        // právě probíhá návrat na nejbližší (karta po kartě)
   const loading = new Set();
@@ -216,8 +219,14 @@ export function render(root, { tab }) {
     if (!list.length) return null;
     const next = nextEvent(now);
     let base = next ? list.indexOf(next) : list.length - 1;
+    if (restoreId && events.loaded) {
+      const i = list.findIndex((e) => e.id === restoreId);
+      if (i >= 0) shift = i - base;
+      restoreId = null;
+    }
     const idx = Math.max(0, Math.min(list.length - 1, base + shift));
     shift = idx - base;
+    keepHeroId = shift === 0 ? null : list[idx].id;
     return list[idx];
   }
 
