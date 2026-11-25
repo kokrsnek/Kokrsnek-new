@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.91',
+    date: '25. 11. 2026',
+    items: [
+      'Nastavení party: správce si může poslat zkušební notifikace (chat, check-in, nová akce) – přijdou jen jemu, hned nebo za 15 s.'
+    ]
+  },
+  {
     version: '1.90',
     date: '25. 11. 2026',
     items: [

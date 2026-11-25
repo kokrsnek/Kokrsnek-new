@@ -4,7 +4,7 @@ import { tabbar, avatar, toast, choose, confirmDanger, spinner, avatarImage } fr
 import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeMember, changeMyName } from './auth.js';
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE, PARTY_NAMES, LIVE, nameLabel } from './config.js';
-import { db, doc, updateDoc } from './firebase.js';
+import { db, doc, updateDoc, callFunction } from './firebase.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
 import { isPushOn, pushToggle } from './pushui.js';
@@ -27,6 +27,8 @@ export function render(root) {
       <div class="section-h">Notifikace</div>
       <button class="btn block" data-push style="justify-content:space-between"><span style="display:inline-flex;gap:8px;align-items:center">${icon('bell', 18)}Notifikace v tomhle telefonu</span><b data-pushstate>${isPushOn() ? 'zapnuté' : 'vypnuté'}</b></button>
       <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, hry, nová alba… Když máš zapnuté obě aplikace, chodí upozornění jen do nové.</div>
+      ${admin ? `<button class="btn block" data-testpush style="margin-top:10px;justify-content:flex-start;gap:8px">🧪 Poslat si zkušební notifikace</button>
+      <div class="note" style="margin-top:6px">Jen pro správce: přijdou jen na tvoje zařízení (chat, check-in, nová akce).</div>` : ''}
 
       <div class="section-h">Vzhled</div>
       <button class="themerow" data-themerow aria-label="Změnit vzhled"></button>
@@ -136,6 +138,17 @@ export function render(root) {
   };
 
   root.querySelector('[data-intro]').onclick = () => showIntro(true);
+  const tp = root.querySelector('[data-testpush]');
+  if (tp) tp.onclick = async () => {
+    const delay = await choose({ title: 'Zkušební notifikace', text: 'Přijdou 3 ukázky (chat, check-in, nová akce) jen na tvoje zařízení. Se zpožděním stihneš zavřít aplikaci a uvidíš i číslo na ikoně.', buttons: [
+      { label: 'Poslat za 15 s', value: 15, kind: 'primary' }, { label: 'Poslat hned', value: 0 }, { label: 'Zrušit', value: null }] });
+    if (delay == null) return;
+    tp.disabled = true;
+    toast(delay ? 'Za 15 s přijdou zkušební notifikace — můžeš zavřít aplikaci.' : 'Posílám zkušební notifikace…');
+    try { const r = await callFunction('sendTestNotifications', { kind: 'all', delay }); toast(`Odesláno ${r.sent} notifikace na ${r.devices} zař. ✅`); }
+    catch (x) { console.error(x); toast(x && x.message && !/internal/i.test(x.message) ? x.message : 'Nepodařilo se poslat — je nasazená funkce ve Firebase?'); }
+    finally { tp.disabled = false; }
+  };
   root.querySelector('[data-push]').onclick = async () => { await pushToggle(null); root.querySelector('[data-pushstate]').textContent = isPushOn() ? 'zapnuté' : 'vypnuté'; };
 
   root.querySelector('[data-rename]').onclick = async () => {
