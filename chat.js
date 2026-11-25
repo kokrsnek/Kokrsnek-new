@@ -94,9 +94,13 @@ export function renderPhotos(root) {
     list.forEach((m, i) => {
       const d = toDate(m.at) || new Date(0), key = keyOf(m);
       if (key !== lastKey) { html += (lastKey ? '</div>' : '') + `<button class="section-h chmh" data-sec="${key}" data-y="${d.getFullYear()}" data-m="${d.getMonth()}" data-n="${counts[key]}">${MONTHS[d.getMonth()]} ${d.getFullYear()} <i>▾</i></button><div class="chph">`; lastKey = key; }
-      html += `<button data-i="${i}"><img src="${esc(m.image)}" alt="" loading="lazy"></button>`;
+      html += `<button data-i="${i}"><img src="${esc(m.image)}" alt="" loading="lazy" decoding="async"></button>`;
     });
     body.innerHTML = html + '</div>';
+    // Mřížky mimo obrazovku se nevykreslují (plynulé posouvání), jejich výšku známe dopředu:
+    // dlaždice jsou čtvercové, 3 v řadě.
+    const w = body.clientWidth || (innerWidth - 40), tile = (w - 8) / 3;
+    body.querySelectorAll('.chph').forEach((g) => { const rows = Math.ceil(g.children.length / 3); g.style.containIntrinsicSize = `auto ${Math.round(rows * tile + (rows - 1) * 4)}px`; });
     buildRail();
   }).catch(() => { body.innerHTML = '<div class="empty">Fotky se nepodařilo načíst.</div>'; });
 
@@ -113,13 +117,17 @@ export function renderPhotos(root) {
     const lbls = rail.querySelector('[data-lbls]'), knob = rail.querySelector('.chrknob'), bub = rail.querySelector('.chrbub');
     const secs = () => [...body.querySelectorAll('[data-sec]')];
     const maxY = () => Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    let tops = [];   // [sekce, absolutní pozice] — počítá se v layout(), ne při každém pohybu
     const absTop = (el) => el.getBoundingClientRect().top + scrollY;
     const head = () => 110;   // nadpis měsíce „nahoře“ = asi pod horním okrajem displeje
+    let mY = 1;
     function layout() {
       const H = rail.clientHeight - 30;
+      tops = secs().map((s) => [s, absTop(s)]);
+      mY = maxY();
       let last = -99, lastY = null, out = '';
-      secs().forEach((s) => {
-        const y = Math.min(1, Math.max(0, (absTop(s) - head()) / maxY())) * H;
+      tops.forEach(([s, top]) => {
+        const y = Math.min(1, Math.max(0, (top - head()) / mY)) * H;
         if (s.dataset.y !== lastY) { out += `<span class="yr" style="top:${y}px">${s.dataset.y}</span>`; lastY = s.dataset.y; last = y + 6; return; }
         if (y - last < 15) return;
         out += `<span style="top:${y}px">${SHORT[+s.dataset.m]}</span>`; last = y;
@@ -127,25 +135,33 @@ export function renderPhotos(root) {
       lbls.innerHTML = out;
       place();
     }
-    const cur = () => { let c = null; const lim = scrollY + head() + 4; for (const s of secs()) { if (absTop(s) <= lim) c = s; else break; } return c || secs()[0]; };
+    const cur = () => { let c = null; const lim = scrollY + head() + 4; for (const [s, top] of tops) { if (top <= lim) c = s; else break; } return c || (tops[0] && tops[0][0]); };
+    let railH = 0, lastC = null;
     function place() {
-      const H = rail.clientHeight - 30, y = Math.min(1, scrollY / maxY()) * H;
-      knob.style.top = y + 'px'; bub.style.top = y + 'px';
+      if (!railH) railH = rail.clientHeight - 30;
+      const y = Math.min(1, scrollY / mY) * railH;
+      knob.style.transform = `translateY(${y}px)`; bub.style.transform = `translateY(${y}px)`;
       const c = cur();
-      if (c) { bub.querySelector('b').textContent = `${MONTHS[+c.dataset.m]} ${c.dataset.y}`; bub.querySelector('small').textContent = plural(+c.dataset.n); }
+      if (c && c !== lastC) { lastC = c; bub.querySelector('b').textContent = `${MONTHS[+c.dataset.m]} ${c.dataset.y}`; bub.querySelector('small').textContent = plural(+c.dataset.n); }
     }
     let hideT = 0;
     const showBub = (ms) => { bub.hidden = false; rail.classList.add('act'); clearTimeout(hideT); if (ms) hideT = setTimeout(() => { bub.hidden = true; rail.classList.remove('act'); }, ms); };
-    const onScroll = () => { if (alive && rail.isConnected) place(); };
+    let raf = 0;
+    const onScroll = () => { if (!alive || !rail.isConnected || raf) return; raf = requestAnimationFrame(() => { raf = 0; place(); }); };
     window.addEventListener('scroll', onScroll, { passive: true });
     cleanups.push(() => window.removeEventListener('scroll', onScroll));
-    let drag = false;
+    let drag = false, want = null, dRaf = 0, rTop = 0;
+    // Tažení: cíl si jen zapamatovat, posunout jednou za snímek (jinak se stránka trhá).
     const go = (cy) => {
-      const r = rail.getBoundingClientRect(), H = r.height - 30;
-      const f = Math.min(1, Math.max(0, (cy - r.top - 15) / H));
-      window.scrollTo(0, f * maxY()); place();
+      want = cy;
+      if (dRaf) return;
+      dRaf = requestAnimationFrame(() => {
+        dRaf = 0;
+        const f = Math.min(1, Math.max(0, (want - rTop - 15) / railH));
+        window.scrollTo(0, Math.round(f * mY)); place();
+      });
     };
-    rail.addEventListener('pointerdown', (e) => { drag = true; rail.setPointerCapture(e.pointerId); showBub(0); go(e.clientY); e.preventDefault(); });
+    rail.addEventListener('pointerdown', (e) => { rTop = rail.getBoundingClientRect().top; railH = rail.clientHeight - 30; drag = true; rail.setPointerCapture(e.pointerId); showBub(0); go(e.clientY); e.preventDefault(); });
     rail.addEventListener('pointermove', (e) => { if (drag) go(e.clientY); });
     const up = () => { if (!drag) return; drag = false; showBub(900); };
     rail.addEventListener('pointerup', up); rail.addEventListener('pointercancel', up);
@@ -153,7 +169,7 @@ export function renderPhotos(root) {
     // Obrázky se načítají postupně → výška stránky se mění; rozložení párkrát přepočítat.
     layout();
     [300, 1000, 2500].forEach((ms) => setTimeout(() => { if (alive) layout(); }, ms));
-    const onRes = () => { clearTimeout(layoutT); layoutT = setTimeout(layout, 150); };
+    const onRes = () => { railH = 0; clearTimeout(layoutT); layoutT = setTimeout(layout, 150); };
     window.addEventListener('resize', onRes);
     cleanups.push(() => window.removeEventListener('resize', onRes));
   }
