@@ -1,5 +1,5 @@
 // Detail akce: informace, docházka, co přinést, album, soubory, komentáře.
-import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
+import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp, placeCoords } from './util.js';
 import { avatar, toast, confirmDanger, spinner, choose, faces } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
@@ -300,10 +300,15 @@ function mountDetail(host, ev, live) {
     }
     const parts = ev.place.split(',').map((x) => x.trim()).filter(Boolean);
     const where = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
-    box.innerHTML = `<div class="wxcard">
-      <div class="hd"><div style="min-width:0"><div class="lbl">POČASÍ NA AKCI${where ? ' · ' + esc(where.toUpperCase()) : ''}</div><div class="desc">${esc(w.desc)}</div></div><div class="big">${w.startIcon} ${w.now < 0 ? '−' + Math.abs(w.now) : w.now}°</div></div>
-      <div class="wxhours" style="grid-template-columns:repeat(${hourColumns(w, 8).length},1fr)">${hourColumns(w, 8).map((h) => `<div><span>${h.h}</span><span class="e">${h.code != null ? wxIconOf(h.code) : ''}</span><b>${h.t < 0 ? '−' + Math.abs(h.t) : h.t}°</b><span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span></div>`).join('')}</div>
-    </div>`;
+    // Klepnutí otevře podrobnou předpověď (meteoblue) pro místo akce.
+    const co = w.lat != null ? { lat: w.lat, lng: w.lng } : placeCoords(ev.place);
+    const url = co ? `https://www.meteoblue.com/cs/weather/week/${(+co.lat).toFixed(3)}N${(+co.lng).toFixed(3)}E` : '';
+    const cols = hourColumns(w, 8), anyP = cols.some((h) => h.p != null && h.p >= 10);
+    const f = (n) => (n < 0 ? '−' + Math.abs(n) : n);
+    box.innerHTML = `<${url ? `a href="${esc(url)}" target="_blank" rel="noopener"` : 'div'} class="wxcard">
+      <div class="hd"><span class="lbl">Počasí${where ? ' · ' + esc(where) : ''}</span><span class="desc">${esc(w.desc)}</span><span class="big">${w.startIcon} ${f(w.now)}°</span>${url ? `<span class="go">${icon('next', 14, 2.4)}</span>` : ''}</div>
+      <div class="wxhours" style="grid-template-columns:repeat(${cols.length},1fr)">${cols.map((h) => `<div><span>${h.h}</span><b><i>${h.code != null ? wxIconOf(h.code) : ''}</i>${f(h.t)}°</b>${anyP ? `<span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span>` : ''}</div>`).join('')}</div>
+    </${url ? 'a' : 'div'}>`;
   }
 
   function drawLikes(list) {

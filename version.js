@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.92',
+    date: '25. 11. 2026',
+    items: [
+      'Detail akce: počasí je v poloviční kartě ve stejných barvách jako ostatní karty.',
+      'Klepnutím na počasí se otevře podrobná předpověď pro místo akce (meteoblue).'
+    ]
+  },
+  {
     version: '1.91',
     date: '25. 11. 2026',
     items: [

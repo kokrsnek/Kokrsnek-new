@@ -115,7 +115,7 @@ async function load(ev) {
     past, hours, min: Math.min(...temps), max: Math.max(...temps),
     now: hours[0].t, icon: wmo(firstWet && hours.filter((x) => wet(x.code)).length * 3 >= hours.length ? worst : common).icon,
     startIcon: wmo(hours[0].code).icon,
-    prob: probs.length ? Math.max(...probs) : null, mm, desc
+    prob: probs.length ? Math.max(...probs) : null, mm, desc, lat: c.lat, lng: c.lng
   };
 }
 

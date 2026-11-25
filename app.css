@@ -443,16 +443,17 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 :root:not([data-theme="chata"]):not([data-theme="hlidka"]) .likebtn.on{color:#FF7A84}
 .rowlike{display:block;font-size:11.5px;font-weight:700;color:#E0505C;margin-top:3px;text-align:right}
 .rowlike:empty{display:none}
-.wxcard{margin-top:12px;padding:14px;border-radius:18px;background:linear-gradient(160deg,#2B3A55,#1F2A3D);border:1px solid #34445f;color:#EAF0FA}
-.wxcard .hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.wxcard .big{font-size:28px;font-weight:800;letter-spacing:-.5px;white-space:nowrap}
-.wxcard .lbl{font-size:11.5px;opacity:.75;font-weight:700;letter-spacing:.3px}
-.wxcard .desc{font-size:14px;font-weight:600;opacity:.92;margin-top:3px}
-.wxhours{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px;text-align:center}
-.wxhours div{display:flex;flex-direction:column;gap:3px;font-size:11.5px;opacity:.92}
-.wxhours b{font-size:14px}
-.wxhours .e{font-size:20px;line-height:1.2}
-.wxhours .p{color:#8EC5FF;font-weight:700;font-size:10.5px}
+.wxcard{display:block;margin-top:12px;padding:8px 14px 7px;border-radius:var(--r-xl,20px);background:var(--card);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.wxcard .hd{display:flex;align-items:center;gap:8px}
+.wxcard .lbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.wxcard .desc{font-size:13px;font-weight:600;color:var(--ink2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wxcard .big{font-size:17px;font-weight:800;white-space:nowrap}
+.wxcard .go{color:var(--muted);display:flex;margin-right:-4px}
+.wxhours{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:3px;text-align:center}
+.wxhours div{display:flex;flex-direction:column;font-size:10.5px;line-height:1.25;color:var(--muted)}
+.wxhours b{font-size:13px;color:var(--ink);white-space:nowrap}
+.wxhours b i{font-style:normal;font-size:14px;margin-right:1px}
+.wxhours .p{color:var(--accent-text);font-weight:700;font-size:10px;line-height:1.2}
 .wxic{width:24px;flex:0 0 auto;text-align:center;font-size:19px}
 .likesec{margin-top:12px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
 .likesec .lbig{flex:0 0 auto;font-size:24px;line-height:1;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line)}
