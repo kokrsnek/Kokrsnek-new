@@ -79,6 +79,18 @@ service cloud.firestore {
         allow read, write: if isV2Approved();
       }
     }
+    // Zvoneček check-inů (settings/placeCheckins → enabled{jméno: true/false}) —
+    // nová aplikace smí měnit jen tohle pole (stará zapisuje přes heslo party).
+    match /settings/placeCheckins {
+      allow read: if isV2Approved();
+      allow create: if isV2Approved() && request.resource.data.keys().hasOnly(['enabled']);
+      // každý mění jen svůj vlastní zvoneček
+      allow update: if isV2Approved()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enabled'])
+        && request.resource.data.enabled.diff(resource.data.get('enabled', {})).affectedKeys()
+             .hasOnly([get(memberPath()).data.name]);
+    }
+
     match /placeCheckins/{id} {
       allow read, write: if isV2Approved();
       match /comments/{c} {

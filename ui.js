@@ -152,9 +152,9 @@ export function installSheetGestures() {
 // goFocus uloží, co se má po otevření obrazovky najít; runFocus (volá app.js
 // po každém přepnutí obrazovky) počká, až se prvek vykreslí, posune k němu a krátce ho zvýrazní.
 const FOCUS_KEY = 'kokrsnek2Focus';
-export function goFocus(hash, sel = '', click = '') {
+export function goFocus(hash, sel = '', click = '', replace = false) {
   try { sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ sel, click, at: Date.now() })); } catch (e) { /* nic */ }
-  location.hash = hash;
+  if (replace) location.replace(hash); else location.hash = hash;
 }
 export function runFocus() {
   let f = null;

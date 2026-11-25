@@ -3,6 +3,17 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.80',
+    date: '25. 11. 2026',
+    items: [
+      'Kde jsi?: zvoneček nahoře zapíná upozornění na nové check-iny a reakce na ty tvoje (stejné nastavení jako ve staré aplikaci).',
+      'Klepnutí na notifikaci o check-inu otevře přímo ten check-in.',
+      'Feed ukazuje všechny check-iny (starší se načítají při posunu dolů), mapa jen check-iny za posledních 7 dní.',
+      'Aktuální check-in má štítek „právě tady“. Skončí, když autor udělá nový check-in nebo otevře aplikaci dál než 1 km od místa (nejpozději po 24 h). „Přijdu taky“ a „Jsem poblíž“ jdou jen u aktuálního check-inu.',
+      'Vlastní check-in jde upravit (místo, poznámka, fotka).'
+    ]
+  },
+  {
     version: '1.79',
     date: '25. 11. 2026',
     items: [

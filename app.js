@@ -25,7 +25,7 @@ import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
 import { startWeatherEffect } from './weather.js';
 import { watchAvatars } from './store.js';
-import { setAvatarImages, runFocus } from './ui.js';
+import { setAvatarImages, runFocus, goFocus } from './ui.js';
 import { refreshPush, consumePendingNav } from './push.js';
 import { checkCelebrations } from './celebrate.js';
 import { myName, isAdmin } from './auth.js';
@@ -87,6 +87,8 @@ const ROUTES = [
   [/^\/kde\/mapa$/, () => kde.render(root, { tab: 'mapa' })],
   [/^\/kde\/mista$/, () => kde.render(root, { tab: 'mista' })],
   [/^\/kde\/novy$/, () => kde.render(root, { tab: 'feed', openNew: true })],
+  // z notifikace: otevřít Feed a sjet na konkrétní check-in
+  [/^\/kde\/c\/([^/]+)$/, (m) => { const id = decodeURIComponent(m[1]); goFocus('#/kde', `[data-ci="${id.replace(/["\\]/g, '')}"]`, '', true); }],
   [/^\/chat$/, () => chat.renderList(root)],
   [/^\/chat\/([^/]+)$/, (m) => chat.renderThread(root, { id: decodeURIComponent(m[1]) })],
   // Cíle z notifikací (chatWith = jméno nebo celá parta)
@@ -136,6 +138,9 @@ function route(force = false) {
     watchPendingMembers();
     fotky.watchNewAlbums();
     askPushOnInstall();
+    // Aktuálnost vlastního check-inu: kdo je dál než 1 km od místa, už tam není.
+    kde.checkMyCheckin();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) kde.checkMyCheckin(); });
     consumePendingNav((h) => { if (location.hash !== h) location.hash = h; });
   }
 
