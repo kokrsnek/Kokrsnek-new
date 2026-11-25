@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.74',
+    date: '25. 11. 2026',
+    items: [
+      'iPhone (iOS 26): nový pokus o odstranění bílého pruhu pod spodní lištou – když Safari stránku zkrátí, aplikace ji posune o pixel dolů, stejně jako když ji lehce potáhneš prstem.'
+    ]
+  },
+  {
     version: '1.73',
     date: '25. 11. 2026',
     items: [

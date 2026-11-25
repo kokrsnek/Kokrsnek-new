@@ -113,7 +113,7 @@ function mount(key, fn, path = null) {
   if (path) window.scrollTo(0, 0);
   cleanup = fn() || null;
   navIn(root, nav);
-  if (path) setTimeout(fixIosViewport, 420);
+  if (path) { setTimeout(fixIosViewport, 60); setTimeout(fixIosViewport, 450); }
   runFocus();
 }
 

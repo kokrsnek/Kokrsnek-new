@@ -124,24 +124,21 @@ function animateNav(root, kind, old, oldCal) {
   }, { passive: true });
 })();
 // ---------- obejití chyby Safari v iOS 26 ----------
-// Po zavření klávesnice nechá Safari posunutý viditelný výřez (visualViewport.offsetTop)
-// a lišty přichycené k dolnímu okraji (spodní menu, úvodní animace) skončí výš, pod nimi bílý
-// pruh. Spraví se to až posunem stránky — proto ji nenápadně posuneme o pixel tam a zpět
-// (u krátké stránky na chvilku přidáme výšku, aby šla posunout).
+// Po posunu stránky nahoru (přechod na jinou obrazovku, zavření klávesnice) si Safari
+// v aplikaci na ploše „představí“ svou spodní lištu jako v prohlížeči: stránka je o kus
+// kratší než displej a dole zůstane bílý pruh. Srovná to až posun směrem dolů — stejně
+// jako když stránku lehce potáhneš prstem. Proto ji posuneme o pixel dolů a necháme tam
+// (krátké stránce, třeba kalendáři, přidáme 2 px výšky, aby se vůbec dala posunout).
+const standalone = () => (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 export function fixIosViewport() {
-  const vv = window.visualViewport;
   const a = document.activeElement;
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // klávesnice je otevřená
-  const y = window.scrollY;
-  const b = document.body;
-  const prev = b.style.minHeight;
-  b.style.minHeight = (window.innerHeight + 2) + 'px';
-  window.scrollTo(window.scrollX, y + 1);
-  requestAnimationFrame(() => {
-    window.scrollTo(window.scrollX, y);
-    b.style.minHeight = prev;
-    if (vv && vv.offsetTop > 0) window.scrollTo(window.scrollX, y);
-  });
+  if (!standalone()) return;
+  const full = Math.max(window.screen.height, window.screen.width > window.screen.height ? 0 : window.screen.height);
+  if (window.innerHeight >= full - 4) return;                       // výška sedí, není co opravovat
+  document.body.style.minHeight = (full + 2) + 'px';
+  if (window.scrollY < 1) window.scrollTo(window.scrollX, 1);
+  else window.scrollTo(window.scrollX, window.scrollY + 1);
 }
 if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
   let lastH = window.visualViewport ? window.visualViewport.height : 0;
@@ -156,4 +153,5 @@ if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIn
     if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) setTimeout(fixIosViewport, 300);
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(fixIosViewport, 100); });
+  window.addEventListener('resize', () => setTimeout(fixIosViewport, 80));
 }

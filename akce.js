@@ -52,7 +52,7 @@ export function render(root, { tab }) {
   const pull = root.querySelector('[data-pull]'), pullTxt = root.querySelector('[data-pulltxt]');
   const PULL = 70;
   let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false, closing = false;
-  const atTop = () => (body.scrollTop || 0) <= 0 && (window.scrollY || 0) <= 0;
+  const atTop = () => (body.scrollTop || 0) <= 2 && (window.scrollY || 0) <= 2;   // 1 px posun = obejití chyby iOS (nav.js)
   body.addEventListener('touchstart', (e) => {
     pulling = false; closing = false; pAxis = null; pd = 0;
     if (e.touches.length !== 1 || !atTop()) return;
