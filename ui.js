@@ -180,9 +180,16 @@ export function runFocus() {
     const go = () => { const n = document.querySelector(f.sel); const t = n ? (n.closest('.msg') || n) : target; t.scrollIntoView({ block: 'center', behavior: 'smooth' }); return t; };
     setTimeout(() => {
       const t = go();
-      t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
-      setTimeout(go, 900);
-      setTimeout(() => t.classList.remove('flash'), 2600);
+      // Zpráva v chatu se „nafoukne“ (až o 50 %, ale nevyleze z obrazovky); ostatní dostanou rámeček.
+      const fx = t.classList.contains('msg') ? 'pop' : 'flash';
+      if (fx === 'pop') {
+        const bub = t.querySelector('.bubble') || t;
+        const room = (t.parentElement || document.body).getBoundingClientRect().width - 16;
+        t.style.setProperty('--pop', Math.max(1.08, Math.min(1.5, room / Math.max(1, bub.getBoundingClientRect().width))).toFixed(3));
+      }
+      t.classList.remove(fx); void t.offsetWidth; t.classList.add(fx);
+      if (fx === 'flash') setTimeout(go, 900);
+      setTimeout(() => t.classList.remove(fx), 2600);
     }, 450);
   }, 150);
 }
