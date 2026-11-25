@@ -1,5 +1,5 @@
 // Kalendář: měsíční mřížka (dny s akcí vybarvené a větší), pod ní akce celého měsíce.
-// Po dvou sekundách akce „vypadnou“ ze svých dnů dolů do seznamu. Klepnutí na den zúží seznam na ten den.
+// Po sekundě akce „vypadnou“ ze svých dnů dolů do seznamu. Klepnutí na den zúží seznam na ten den.
 import { esc, icon, MONTHS_NOM, fmtWhen, fmtLongDate, sameDay, startOfDay } from './util.js';
 
 const MONTHS_LOC = ['lednu', 'únoru', 'březnu', 'dubnu', 'květnu', 'červnu', 'červenci', 'srpnu', 'září', 'říjnu', 'listopadu', 'prosinci'];
@@ -130,7 +130,7 @@ export function render(root, { year, month }) {
     }).join('') + '</div>' : (sel ? '<div class="empty" style="padding:20px">Tenhle den nic.</div>' : ''));
     const all = root.querySelector('[data-all]');
     if (all) all.onclick = () => { sel = null; draw(); };
-    if (!sel && pending && list.length && !dropT) dropT = setTimeout(drop, 2000);
+    if (!sel && pending && list.length && !dropT) dropT = setTimeout(drop, 1000);
   }
 
   // Pád akcí: z každého vybarveného dne vyletí kopie a dopadne na datum karty v seznamu.
