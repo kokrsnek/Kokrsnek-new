@@ -19,6 +19,9 @@ function navKind(path) {
     return quick ? null : kind;
   }
   if (isCal(path) && isCal(prev)) { navStack[navStack.length - 1] = path; return null; }
+  // Swipe mezi akcemi (detail → sousední detail): vlastní animace karty, žádný přechod navíc.
+  const isDet = (p) => /^\/akce\/[^/]+$/.test(p || '');
+  if (isDet(path) && isDet(prev)) { navStack[navStack.length - 1] = path; return null; }
   if (quick) { navStack[navStack.length - 1] = path; return null; }
   if (navStack.length >= 2 && navStack[navStack.length - 2] === path) { navStack.pop(); return { k: 'pop', cal: isCal(prev) }; }
   navStack.push(path);
