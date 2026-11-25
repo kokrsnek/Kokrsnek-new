@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.90',
+    date: '25. 11. 2026',
+    items: [
+      'Odznaky v dolní liště: u Chatu počet nepřečtených zpráv (ztlumené chaty se nepočítají), u Kde jsi? tečka za nový check-in, u Akcí tečka za novou akci nebo změnu akce, kam jdeš.',
+      'Číslo na ikoně na ploše: součet nepřečtených. Při notifikaci se zvýší, po otevření se srovná.'
+    ]
+  },
+  {
     version: '1.89',
     date: '25. 11. 2026',
     items: [

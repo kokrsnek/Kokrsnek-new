@@ -15,6 +15,7 @@ import * as editor from './editor.js';
 import * as parta from './parta.js';
 import * as chat from './chat.js';
 import * as kde from './kde.js';
+import { startBadges } from './badges.js';
 import { renderPoll } from './polls.js';
 import { renderHub, renderGame } from './games.js';
 import { renderSudoku } from './sudoku.js';
@@ -137,6 +138,7 @@ function route(force = false) {
     refreshPush();
     watchPendingMembers();
     fotky.watchNewAlbums();
+    startBadges();
     askPushOnInstall();
     // Aktuálnost vlastního check-inu: kdo je dál než 1 km od místa, už tam není.
     kde.checkMyCheckin();

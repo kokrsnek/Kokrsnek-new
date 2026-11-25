@@ -31,7 +31,8 @@ function fromDoc(d) {
     start, end, allDay: !!x.allDay, photoAlbum: x.photoAlbumApp || x.photoAlbum || '', driveFiles: x.driveFiles || [],
     isTest: !!x.isTest, source: x.source || 'app', createdBy: x.createdBy || '',
     createdAt: toDate(x.createdAt), albumBy: x.albumBy || '', albumAt: toDate(x.albumAt),
-    photoGroup: x.photoGroup || '', keepLocal: !!x.keepLocal
+    photoGroup: x.photoGroup || '', keepLocal: !!x.keepLocal,
+    updatedAt: toDate(x.updatedAt), updatedBy: x.updatedBy || ''
   };
 }
 

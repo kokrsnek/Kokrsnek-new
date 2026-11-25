@@ -666,7 +666,7 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 .gearbtn{position:relative}
 html[data-pending] .gearbtn::after{content:var(--pending-n,"!");position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg,#1c1c21)}
 .tabbar a[href="#/fotky"]{position:relative}
-html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,"!");position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg,#1c1c21)}
+html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,"!");position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bar,#1c1c21)}
 
 /* 1.50 — Fotky (galerie alb) */
 .ftchips{display:flex;gap:8px;overflow-x:auto;margin:0 -20px 14px;padding:2px 20px;scrollbar-width:none}
@@ -906,3 +906,8 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .cidin .input{flex:1;border-radius:999px}
 .cidzoom{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px}
 .cidzoom img{max-width:100%;max-height:100%;border-radius:12px}
+
+/* 1.90 — odznaky v dolní liště (badges.js) */
+.tabbar a[href="#/chat"],.tabbar a[href="#/kde"],.tabbar a[href="#/akce"]{position:relative}
+html[data-bchat] .tabbar a[href="#/chat"]::after{content:var(--bchat-n,"!");position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bar,#1c1c21)}
+html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="#/akce"]::after{content:'';position:absolute;top:5px;left:calc(50% + 8px);width:10px;height:10px;border-radius:50%;background:var(--coral,#e5484d);box-shadow:0 0 0 2px var(--bar,#1c1c21)}

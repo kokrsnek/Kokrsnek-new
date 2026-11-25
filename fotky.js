@@ -8,6 +8,7 @@ import { esc, icon } from './util.js';
 import { tabbar, spinner } from './ui.js';
 import { watchEvents, events, isPast, loadCover, cachedCover } from './store.js';
 import { coverArt } from './coverart.js';
+import { setFotky } from './badges.js';
 
 const SEEN = 'kokrsnek2AlbumsSeen';
 const PRIORITY = ['Rolf', 'Velkopáteční pochod', 'Pálení čarodějnic', 'Výroční oheň', 'Zakončení léta', 'Mikuláš u Hastrmana', 'Vánoční pochod', 'Silvestrovský výšlap'];
@@ -59,6 +60,7 @@ function refreshBadge() {
   const el = document.documentElement;
   if (n) { el.dataset.newalbums = '1'; el.style.setProperty('--newalbums-n', `"${n}"`); }
   else { delete el.dataset.newalbums; el.style.removeProperty('--newalbums-n'); }
+  setFotky(n);
 }
 export function watchNewAlbums() {
   loadOld().then(refreshBadge);

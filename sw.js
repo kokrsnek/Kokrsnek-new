@@ -1,13 +1,13 @@
 // Service worker nové aplikace: soubory aplikace se berou ze sítě a při
 // výpadku z mezipaměti, takže se aplikace otevře i offline. Data řeší
 // Firestore sám (offline mezipaměť v prohlížeči).
-const CACHE = 'kokrsnek-1.89';
+const CACHE = 'kokrsnek-1.90';
 const SHELL = [
   './', 'index.html', 'manifest.json', 'app.css', 'themes.css',
   'app.js', 'config.js', 'firebase.js', 'util.js', 'ui.js', 'namedays.js',
   'auth.js', 'store.js', 'attend.js', 'theme.js', 'version.js', 'plus.js', 'map.js', 'coverart.js',
   'login.js', 'akce.js', 'kalendar.js', 'detail.js',
-  'editor.js', 'parta.js', 'chat.js', 'fotky.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'sudoku.js', 'profil.js', 'nav.js', 'people.js', 'celebrate.js', 'qr-platba.png',
+  'editor.js', 'parta.js', 'chat.js', 'fotky.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'sudoku.js', 'profil.js', 'nav.js', 'badges.js', 'people.js', 'celebrate.js', 'qr-platba.png',
   'logo-badge.png', 'icon-192.png', 'icon-512.png', 'badge-96.png'
 ];
 
@@ -41,10 +41,33 @@ self.addEventListener('push', (e) => {
   let raw = {};
   try { raw = e.data ? e.data.json() : {}; } catch (x) { /* nic */ }
   const d = raw && typeof raw.data === 'object' ? raw.data : raw;
-  e.waitUntil(self.registration.showNotification(d.title || 'KoKrŠNeK', {
-    body: d.body || '', icon: 'icon-192.png', badge: 'badge-96.png', data: d
-  }));
+  e.waitUntil(Promise.all([
+    self.registration.showNotification(d.title || 'KoKrŠNeK', {
+      body: d.body || '', icon: 'icon-192.png', badge: 'badge-96.png', data: d
+    }),
+    bumpBadge()
+  ]));
 });
+
+// Číslo na ikoně na ploše: k poslednímu počtu z aplikace přičíst jedničku.
+function bumpBadge() {
+  if (!self.navigator || !self.navigator.setAppBadge) return Promise.resolve();
+  return new Promise((res) => {
+    try {
+      const r = indexedDB.open('kokrsnek2Badge', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('b');
+      r.onerror = () => res();
+      r.onsuccess = () => {
+        try {
+          const os = r.result.transaction('b', 'readwrite').objectStore('b');
+          const g = os.get('n');
+          g.onsuccess = () => { const n = (+g.result || 0) + 1; os.put(n, 'n'); self.navigator.setAppBadge(n).catch(() => {}).then(res); };
+          g.onerror = () => res();
+        } catch (x) { res(); }
+      };
+    } catch (x) { res(); }
+  });
+}
 
 function targetHash(d) {
   if (!d) return '';
