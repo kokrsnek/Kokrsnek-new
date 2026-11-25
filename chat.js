@@ -15,6 +15,7 @@ import { startRecording } from './voice.js';
 import { watchPolls, pollRows, newPollSheet } from './polls.js';
 import { gameCardHtml } from './games.js';
 import { where } from './firebase.js';
+import { pullSearch, nq } from './pullsearch.js';
 
 export const PARTY_THREAD = 'parta-vsichni';
 const TEST_THREAD = 'test';
@@ -58,10 +59,12 @@ export function renderList(root) {
     ${tabbar('chat')}
   </div>`;
   const box = root.querySelector('[data-list]');
+  // Hledání konverzace (jméno, poslední zpráva): potažením seznamu dolů.
+  pullSearch({ scroll: box, placeholder: 'Hledat v chatech', skip: '.swrow.open', onQuery: (v) => { q = v; draw(); } });
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
   const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
-  let alive = true, pres = {}, polls = [], metas = {}, openId = null, dragging = false, pending = false;
+  let alive = true, pres = {}, polls = [], metas = {}, openId = null, dragging = false, pending = false, q = '';
   const unsubPolls = watchPolls((l) => { polls = l; if (alive) draw(); });
   const M = (id) => metas[id] || {};
   const isPinned = (id) => !!(M(id).pinnedBy || {})[me];
@@ -78,6 +81,7 @@ export function renderList(root) {
     if (dragging) { pending = true; return; }
     const rows = threads
       .filter((id) => (id === PARTY_THREAD || id === TEST_THREAD || last.get(id)) && !isHidden(id))
+      .filter((id) => !q || nq(`${threadTitle(id)} ${last.get(id) ? snippet(last.get(id)) + ' ' + (last.get(id).from || '') : ''}`).includes(nq(q)))
       .sort((a, b) => {
         const pa = isPinned(a), pb = isPinned(b);
         if (pa !== pb) return pa ? -1 : 1;
@@ -85,7 +89,7 @@ export function renderList(root) {
         if (b === PARTY_THREAD) return 1;
         return (toDate(last.get(b)?.at)?.getTime() || 0) - (toDate(last.get(a)?.at)?.getTime() || 0);
       });
-    const noDm = others.filter((n) => !last.get(dmThreadId(me, n)) || isHidden(dmThreadId(me, n)));
+    const noDm = others.filter((n) => (!last.get(dmThreadId(me, n)) || isHidden(dmThreadId(me, n))) && (!q || nq(n).includes(nq(q))));
     box.innerHTML = rows.map((id) => {
       const m = last.get(id);
       const title = threadTitle(id);
@@ -107,7 +111,7 @@ export function renderList(root) {
           <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc(id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snipIcon(m) + esc(snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
         <div class="r">${m ? esc(stamp(m.at)) : ''}<span class="swicons">${mute ? icon('bellOff', 14) : ''}${pin ? `<i class="pinic">${icon('thumbtack', 14)}</i>` : ''}</span></div>
       </a></div>`;
-    }).join('') + pollRows(polls) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
+    }).join('') + (q && !rows.length && !noDm.length ? '<div class="empty">Nic nenalezeno.</div>' : '') + (q ? '' : pollRows(polls)) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
 
   // Nastavení vláken (ztlumení, připnutí, smazání) — chats/{id}.

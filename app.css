@@ -911,3 +911,14 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .tabbar a[href="#/chat"],.tabbar a[href="#/kde"],.tabbar a[href="#/akce"]{position:relative}
 html[data-bchat] .tabbar a[href="#/chat"]::after{content:var(--bchat-n,"!");position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bar,#1c1c21)}
 html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="#/akce"]::after{content:'';position:absolute;top:5px;left:calc(50% + 8px);width:10px;height:10px;border-radius:50%;background:var(--coral,#e5484d);box-shadow:0 0 0 2px var(--bar,#1c1c21)}
+
+/* 1.96 — vícedenní akce v kalendáři jako jeden blok */
+.day.ev:not(.out).jl,.day.ev:not(.out).jr{transform:scaleY(1.1);box-shadow:none}
+.day.ev:not(.out).cl{border-top-left-radius:3px;border-bottom-left-radius:3px}
+.day.ev:not(.out).cr{border-top-right-radius:3px;border-bottom-right-radius:3px}
+.day.ev:not(.out).jl{margin-left:-4px;border-top-left-radius:0;border-bottom-left-radius:0;border-left-color:transparent}
+.day.ev:not(.out).jr{margin-right:-4px;border-top-right-radius:0;border-bottom-right-radius:0;border-right-color:transparent}
+.day.ev:not(.out).going.jl,.day.ev:not(.out).going.jr{border-top-color:var(--accent-hi);border-bottom-color:var(--accent-hi);border-width:2.5px 1.5px}
+.day.ev:not(.out).going:not(.jl).jr{border-left:2.5px solid var(--accent-hi)}
+.day.ev:not(.out).going.jl:not(.jr){border-right:2.5px solid var(--accent-hi)}
+.day.ev:not(.out).sel.jl,.day.ev:not(.out).sel.jr{transform:scaleY(1.16);filter:brightness(1.12)}

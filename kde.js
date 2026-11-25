@@ -10,6 +10,7 @@ import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onS
 import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
 import { loadLeaflet, geocode } from './map.js';
 import { placeCoords } from './util.js';
+import { pullSearch } from './pullsearch.js';
 import { PARTY_NAMES } from './config.js';
 
 const isTestDoc = (c) => c._col === 'v2_checkins';
@@ -134,11 +135,10 @@ export function render(root, { tab = 'feed', openNew = false }) {
     const tl = trs.size === 1 ? trIcon([...trs][0], 15) + esc((TRANSPORT.find((t) => t[0] === [...trs][0]) || [])[1] || '') : trs.size ? `${trIcon('kolo', 15)}${trs.size}×` : `${trIcon('kolo', 15)}Doprava ▾`;
     const html = FCH.map(([k, t]) => `<button class="${fk === k ? 'on' : ''}" data-fk="${k}">${t}</button>`).join('') + `<button class="${who.size ? 'on' : ''}" data-who>${esc(wl)}</button><button class="${trs.size ? 'on' : ''}" data-trf>${tl}</button>`;
     if (chips) { chips.innerHTML = html; return; }
-    filtEl.innerHTML = `<div class="cisrch">${icon('search', 16)}<input data-q placeholder="Hledat místo nebo akci" autocomplete="off" enterkeyhint="search"><button data-qx aria-label="Smazat hledání" hidden>×</button></div><div class="cichips" data-chips>${html}</div>`;
-    const qi = filtEl.querySelector('[data-q]'), qx = filtEl.querySelector('[data-qx]');
-    qi.oninput = () => { q = qi.value.trim(); qx.hidden = !qi.value; draw(); };
-    qx.onclick = () => { qi.value = ''; q = ''; qx.hidden = true; draw(); };
+    filtEl.innerHTML = `<div class="cichips" data-chips>${html}</div>`;
   }
+  // Hledání místa nebo akce: potažením Feedu/Mapy dolů (jako na Akcích).
+  const ps = tab === 'mista' ? null : pullSearch({ scroll: body, before: filtEl, placeholder: 'Hledat místo nebo akci', skip: '.cimap, .leaflet-container', onQuery: (v) => { q = v; draw(); } });
   filtEl.addEventListener('click', (e) => {
     const k = e.target.closest('[data-fk]');
     if (k) { fk = k.dataset.fk; drawFilters(); draw(); return; }
@@ -267,7 +267,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
   }
 
   body.addEventListener('click', async (e) => {
-    if (e.target.closest('[data-clear]')) { fk = 'all'; who.clear(); trs.clear(); q = ''; const qi = filtEl.querySelector('[data-q]'); if (qi) { qi.value = ''; filtEl.querySelector('[data-qx]').hidden = true; } drawFilters(); draw(); return; }
+    if (e.target.closest('[data-clear]')) { fk = 'all'; who.clear(); trs.clear(); q = ''; if (ps) ps.close(); drawFilters(); draw(); return; }
     const j = e.target.closest('[data-jump]');
     if (j) {
       const t = body.querySelector(`[data-ci="${CSS.escape(j.dataset.jump)}"]`);

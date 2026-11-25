@@ -9,6 +9,7 @@ import { tabbar, spinner } from './ui.js';
 import { watchEvents, events, isPast, loadCover, cachedCover } from './store.js';
 import { coverArt } from './coverart.js';
 import { setFotky } from './badges.js';
+import { pullSearch, nq } from './pullsearch.js';
 
 const SEEN = 'kokrsnek2AlbumsSeen';
 const PRIORITY = ['Rolf', 'Velkopáteční pochod', 'Pálení čarodějnic', 'Výroční oheň', 'Zakončení léta', 'Mikuláš u Hastrmana', 'Vánoční pochod', 'Silvestrovský výšlap'];
@@ -76,7 +77,7 @@ function openAlbum(a) {
 
 // ---------- obrazovka ----------
 export function render(root, { group = null } = {}) {
-  let filter = 'all'; // 'all' | rok | 'akce'
+  let filter = 'all', q = ''; // filter: 'all' | rok | 'akce'
   root.innerHTML = `<div class="screen fotky">
     <div class="top">${group ? `<a class="ibtn" href="#/fotky" aria-label="Zpět">${icon('back')}</a>` : ''}<div style="flex:1;min-width:0"><div class="h1">${group ? esc(group) : 'Fotky'}</div><div class="sub" data-sub></div></div></div>
     <div class="scroll" data-body>${spinner()}</div>
@@ -84,6 +85,8 @@ export function render(root, { group = null } = {}) {
   </div>`;
   const body = root.querySelector('[data-body]');
   const sub = root.querySelector('[data-sub]');
+  // Hledání alba (název, místo, rok): potažením dolů.
+  pullSearch({ scroll: body, placeholder: 'Hledat album', onQuery: (v) => { q = v; draw(); body.scrollTop = 0; } });
   let list = [];
 
   const art = (a) => {
@@ -99,10 +102,11 @@ export function render(root, { group = null } = {}) {
   const draw = () => {
     list = albumList();
     if (group) list = list.filter((a) => groupOf(a.ev) === group);
+    if (q) list = list.filter((a) => nq(`${a.ev.title} ${a.ev.place || ''} ${groupOf(a.ev)} ${a.ev.start.getFullYear()}`).includes(nq(q)));
     if (!events.loaded || !oldAlbums) { body.innerHTML = spinner(); return; }
     const nw = newIds(albumList());
     refreshBadge();
-    if (!list.length) { sub.textContent = ''; body.innerHTML = '<div class="empty">Zatím žádná fotoalba.</div>'; return; }
+    if (!list.length) { sub.textContent = ''; body.innerHTML = `<div class="empty">${q ? 'Žádné album neodpovídá hledání.' : 'Zatím žádná fotoalba.'}</div>`; return; }
     const n = list.length;
     sub.textContent = group ? `${n}× v historii` : `${n} ${n === 1 ? 'album' : n >= 2 && n <= 4 ? 'alba' : 'alb'} z akcí party`;
     const years = [...new Set(list.map((a) => a.ev.start.getFullYear()))];

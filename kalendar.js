@@ -98,7 +98,11 @@ export function render(root, { year, month }) {
       ${days.map((d) => {
         const evs = evOn(d);
         const going = evs.some((e) => cachedAttendance(e.id)?.going.includes(me));
-        const cls = ['day', d.getMonth() !== m ? 'out' : '', sameDay(d, now) ? 'today' : '', sel && sameDay(d, sel) ? 'sel' : '', evs.length ? 'ev' : '', going ? 'going' : ''].join(' ');
+        // Vícedenní akce: sousední dny v týdnu se spojí do jednoho bloku.
+        const span = (o) => { if (d.getMonth() !== m) return false; const n = new Date(d.getFullYear(), d.getMonth(), d.getDate() + o); if (n.getMonth() !== m) return false; const ids = new Set(evOn(n).map((e) => e.id)); return evs.some((e) => ids.has(e.id)); };
+        const dow = (d.getDay() + 6) % 7;
+        const jl = dow > 0 && span(-1), jr = dow < 6 && span(1);
+        const cls = ['day', d.getMonth() !== m ? 'out' : '', sameDay(d, now) ? 'today' : '', sel && sameDay(d, sel) ? 'sel' : '', evs.length ? 'ev' : '', going ? 'going' : '', jl ? 'jl' : '', jr ? 'jr' : '', dow === 0 && span(-1) ? 'cl' : '', dow === 6 && span(1) ? 'cr' : ''].join(' ');
         return `<button class="${cls}" data-d="${d.getTime()}" aria-label="${esc(fmtLongDate(d))}${evs.length ? ', ' + evs.length + ' akce' : ''}">${d.getDate()}<i>${evs.length > 1 ? evs.length : ''}</i></button>`;
       }).join('')}</div>`;
     grid.querySelectorAll('[data-d]').forEach((b) => { b.onclick = () => { stopDrop(); const d = new Date(+b.dataset.d); sel = sel && sameDay(sel, d) ? null : d; draw(); }; });
