@@ -110,7 +110,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
   };
 
   // ---------- filtry ----------
-  let fk = 'all', who = new Set(), q = '';
+  let fk = 'all', who = new Set(), q = '', trs = new Set();
   const FCH = [['all', 'Vše'], ['now', '🟢 Teď'], ['today', 'Dnes'], ['week', 'Týden'], ['ev', '🎉 Na akcích'], ['ph', '📷 S fotkou'], ['me', 'Já']];
   const nq = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const pass = (c, list) => {
@@ -122,6 +122,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     if (fk === 'ph' && !c.photo) return false;
     if (fk === 'me' && c.user !== me) return false;
     if (who.size && !who.has(c.user)) return false;
+    if (trs.size && !trs.has(c.transport)) return false;
     if (q && !nq(`${c.place || ''} ${c.eventTitle || ''} ${c.note || ''}`).includes(nq(q))) return false;
     return true;
   };
@@ -130,7 +131,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
   function drawFilters() {
     const wl = who.size ? (who.size === 1 ? '👤 ' + [...who][0] : `👤 ${who.size} lidi`) : '👤 Kdo ▾';
     const chips = filtEl.querySelector('[data-chips]');
-    const html = FCH.map(([k, t]) => `<button class="${fk === k ? 'on' : ''}" data-fk="${k}">${t}</button>`).join('') + `<button class="${who.size ? 'on' : ''}" data-who>${esc(wl)}</button>`;
+    const tl = trs.size === 1 ? trIcon([...trs][0], 15) + esc((TRANSPORT.find((t) => t[0] === [...trs][0]) || [])[1] || '') : trs.size ? `${trIcon('kolo', 15)}${trs.size}×` : `${trIcon('kolo', 15)}Doprava ▾`;
+    const html = FCH.map(([k, t]) => `<button class="${fk === k ? 'on' : ''}" data-fk="${k}">${t}</button>`).join('') + `<button class="${who.size ? 'on' : ''}" data-who>${esc(wl)}</button><button class="${trs.size ? 'on' : ''}" data-trf>${tl}</button>`;
     if (chips) { chips.innerHTML = html; return; }
     filtEl.innerHTML = `<div class="cisrch">${icon('search', 16)}<input data-q placeholder="Hledat místo nebo akci" autocomplete="off" enterkeyhint="search"><button data-qx aria-label="Smazat hledání" hidden>×</button></div><div class="cichips" data-chips>${html}</div>`;
     const qi = filtEl.querySelector('[data-q]'), qx = filtEl.querySelector('[data-qx]');
@@ -141,7 +143,25 @@ export function render(root, { tab = 'feed', openNew = false }) {
     const k = e.target.closest('[data-fk]');
     if (k) { fk = k.dataset.fk; drawFilters(); draw(); return; }
     if (e.target.closest('[data-who]')) whoSheet();
+    if (e.target.closest('[data-trf]')) trSheet();
   });
+  function trSheet() {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    const drawS = () => { bd.querySelector('[data-tl]').innerHTML = TRANSPORT.map(([k, l]) => `<button class="${trs.has(k) ? 'on' : ''}" data-t="${k}">${trIcon(k, 22)}<span>${l}</span></button>`).join(''); };
+    bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Doprava"><div class="grab"></div><h3>Jak se tam dostali</h3><p>Vyber jeden nebo víc způsobů.</p>
+      <div class="trlist" data-tl></div>
+      <div style="display:flex;gap:10px;margin-top:12px"><button class="btn block" data-none>Jakkoli</button><button class="btn primary block" data-ok>Hotovo</button></div></div>`;
+    drawS();
+    const close = () => { bd.remove(); drawFilters(); draw(); };
+    bd.addEventListener('click', (e) => {
+      if (e.target === bd || e.target.closest('[data-ok]')) return close();
+      if (e.target.closest('[data-none]')) { trs.clear(); return close(); }
+      const t = e.target.closest('[data-t]');
+      if (t) { trs.has(t.dataset.t) ? trs.delete(t.dataset.t) : trs.add(t.dataset.t); drawS(); }
+    });
+    document.body.appendChild(bd);
+  }
   function whoSheet() {
     const bd = document.createElement('div');
     bd.className = 'backdrop';
@@ -173,8 +193,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
     em.forEach(([, e]) => { emCount[e] = (emCount[e] || 0) + 1; });
     const cs = comments[c.id];
     return `<div class="ci" data-ci="${esc(c.id)}">
-      <div class="cihead"><span data-profile="${esc(c.user || '')}">${avatar(c.user || '?', 36)}</span>
-        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · odešel(a) ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+      <div class="cihead"><span data-profile="${esc(c.user || '')}">${avTr(c, 36)}</span>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · odešel(a) ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
         ${c.lat != null && c.lng != null
           ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
           : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
@@ -221,15 +241,15 @@ export function render(root, { tab = 'feed', openNew = false }) {
     if (!act.length) return '';
     return `<div class="section-h">Teď</div><div class="cistrip">${act.map((c) => {
       const onEv = c._kind === 'ev' || c.eventId;
-      return `<button data-jump="${esc(c.id)}"><span class="cring${onEv ? ' ev' : ''}">${avatar(c.user, 38)}</span><b>${esc(c.user)}</b><small>${onEv ? '🎉 ' + esc(c.eventTitle || '') : esc((c.place || '').split(',')[0])}</small></button>`;
+      return `<button data-jump="${esc(c.id)}"><span class="cring${onEv ? ' ev' : ''}">${avTr(c, 38)}</span><b>${esc(c.user)}</b><small>${onEv ? '🎉 ' + esc(c.eventTitle || '') : esc((c.place || '').split(',')[0])}</small></button>`;
     }).join('')}</div>`;
   }
 
   function drawFeed() {
     const everything = all();
     const list = everything.filter((c) => pass(c, everything));
-    const strip = fk === 'all' && !who.size && !q ? nowStrip(everything) : '';
-    const fcount = fk !== 'all' || who.size || q ? `<div class="cicnt"><span>${list.length} ${list.length === 1 ? 'check-in' : list.length >= 2 && list.length <= 4 ? 'check-iny' : 'check-inů'}</span><button data-clear>Zrušit filtry</button></div>` : '';
+    const strip = fk === 'all' && !who.size && !trs.size && !q ? nowStrip(everything) : '';
+    const fcount = fk !== 'all' || who.size || trs.size || q ? `<div class="cicnt"><span>${list.length} ${list.length === 1 ? 'check-in' : list.length >= 2 && list.length <= 4 ? 'check-iny' : 'check-inů'}</span><button data-clear>Zrušit filtry</button></div>` : '';
     if (!list.length) { body.innerHTML = fcount + `<div class="empty">${everything.length ? 'Nic neodpovídá filtrům.' : 'Zatím žádné check-iny.'}</div>`; return; }
     if (!list.length) { body.innerHTML = '<div class="empty">Zatím žádné check-iny.</div>'; return; }
     const tail = more ? '<div class="sub" style="text-align:center;padding:14px">Starší se načtou při posunu dolů…</div>' : '<div class="sub" style="text-align:center;padding:14px">To je všechno 🐌</div>';
@@ -247,7 +267,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
   }
 
   body.addEventListener('click', async (e) => {
-    if (e.target.closest('[data-clear]')) { fk = 'all'; who.clear(); q = ''; const qi = filtEl.querySelector('[data-q]'); if (qi) { qi.value = ''; filtEl.querySelector('[data-qx]').hidden = true; } drawFilters(); draw(); return; }
+    if (e.target.closest('[data-clear]')) { fk = 'all'; who.clear(); trs.clear(); q = ''; const qi = filtEl.querySelector('[data-q]'); if (qi) { qi.value = ''; filtEl.querySelector('[data-qx]').hidden = true; } drawFilters(); draw(); return; }
     const j = e.target.closest('[data-jump]');
     if (j) {
       const t = body.querySelector(`[data-ci="${CSS.escape(j.dataset.jump)}"]`);
@@ -527,6 +547,31 @@ async function eventHere(coords) {
   }
   return best;
 }
+// Jak se člověk na místo dostal (pole transport u check-inu).
+const TR_PATH = {
+  pesky: '<circle cx="13" cy="4.5" r="2"/><path d="M10 21l2.5-6.5L15 17v4M8.5 11.5L10.5 8h4l2 4 3 1M10.5 8l-1 5.5 3 1"/>',
+  kolo: '<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5L9 9h6.5l3 7.5M9 9l3.5 7.5h-7M14 6h2.5l-1 3"/>',
+  auto: '<path d="M3 16v-3.5l2-5A2 2 0 0 1 6.9 6h10.2a2 2 0 0 1 1.9 1.5l2 5V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3.5 12.5h17"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/>',
+  moto: '<circle cx="5" cy="16.5" r="3.3"/><circle cx="19" cy="16.5" r="3.3"/><path d="M5 16.5h6l3-5h3.5L19 16.5M14 11.5l-2-3H9M16 8h2.5M8 12.5h4"/>',
+  mhd: '<rect x="4.5" y="3.5" width="15" height="14" rx="3"/><path d="M4.5 11h15M8 3.5v7.5M16 3.5v7.5M7 17.5l-1 3M17 17.5l1 3"/><circle cx="8.5" cy="14.5" r="1"/><circle cx="15.5" cy="14.5" r="1"/>',
+  snek: '<path d="M3 18h14.5a3.5 3.5 0 0 0 3.5-3.5V10"/><circle cx="11" cy="12" r="5"/><path d="M11 12a2 2 0 1 1 2-2M19.5 10l-1-4M21.5 10l1.5-3.5"/>'
+};
+export const TRANSPORT = [['pesky', 'Pěšky', 'pěšky'], ['kolo', 'Kolo', 'na kole'], ['auto', 'Auto', 'autem'], ['moto', 'Motorka', 'na motorce'], ['mhd', 'MHD', 'MHD'], ['snek', 'Šnečím tempem', 'šnečím tempem']];
+const trIcon = (k, size = 18) => TR_PATH[k] ? `<svg class="tric" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TR_PATH[k]}</svg>` : '';
+const trText = (k) => (TRANSPORT.find((t) => t[0] === k) || [])[2] || '';
+const trChips = (cur) => `<div class="cilbl">Jak ses sem dostal</div><div class="trchips" data-tr>${TRANSPORT.map(([k, l]) => `<button type="button" class="${cur === k ? 'on' : ''}" data-trk="${k}">${trIcon(k)}${l}</button>`).join('')}</div>`;
+// Výběr dopravy v kontejneru: druhé klepnutí zruší. Vrací funkci, která vrátí aktuální volbu.
+function bindTr(box, cur = '') {
+  let v = cur;
+  box.querySelector('[data-tr]').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-trk]'); if (!b) return;
+    v = v === b.dataset.trk ? '' : b.dataset.trk;
+    box.querySelectorAll('[data-trk]').forEach((x) => x.classList.toggle('on', x.dataset.trk === v));
+  });
+  return () => v;
+}
+const avTr = (c, size) => c.transport && TR_PATH[c.transport] ? `<span class="avtr">${avatar(c.user || '?', size)}<i class="trbadge">${trIcon(c.transport, 12)}</i></span>` : avatar(c.user || '?', size);
+
 const shortPlace = (p) => String(p || '').split(',')[0].trim().slice(0, 80);
 
 function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
@@ -549,6 +594,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
       ${more.length ? `<div class="cisugs" data-more hidden>${more.map((s, i) => sugRow(s, i + 3)).join('')}</div>
         <button type="button" class="cimore" data-morebtn>Další místa v okolí (${more.length})</button>` : ''}` : ''}
     ${!coords ? '<div class="note" style="text-align:left;margin-bottom:12px">Polohu se nepodařilo zjistit — místo napiš ručně.</div>' : ''}
+    ${trChips('')}
     <label class="cilbl" for="ci-note">Poznámka (nepovinné)</label>
     <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
     <input type="file" accept="image/*" data-file hidden>
@@ -579,6 +625,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   };
   const close = () => scr.remove();
   $('[data-x]').onclick = close;
+  const getTr = bindTr(scr);
   const no = $('[data-no]');
   if (no) no.onclick = () => $('[data-here]').remove();
   const yes = $('[data-yes]');
@@ -587,7 +634,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     const ev = here.ev;
     try {
       const ref = await addDoc(collection(db, 'placeCheckins'), { user: me, place: shortPlace(ev.place) || ev.title, note: $('[data-note]').value.trim(),
-        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '' });
+        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '', transport: getTr() });
       endMyOthers(me, ref.id).catch(() => {});
       await toggleEventCheckin(ev, false, here.co);
       let att = cachedAttendance(ev.id);
@@ -605,7 +652,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     const gp = picked && picked.name === place ? picked : null;
     const data = { user: me, place, note: $('[data-note]').value.trim(),
       lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, gPlaceId: gp ? gp.id || '' : '',
-      at: new Date().toISOString(), photo, photoPath: '', via: 'v2' };
+      at: new Date().toISOString(), photo, photoPath: '', via: 'v2', transport: getTr() };
     try {
       const ref = await addDoc(collection(db, LIVE ? 'placeCheckins' : 'v2_checkins'), data);
       endMyOthers(me, ref.id).catch(() => {});
@@ -654,6 +701,7 @@ function editCheckin(c) {
     <input id="ce-place" class="input" data-place maxlength="80" value="${esc(c.place || '')}">
     <label class="cilbl" for="ce-note">Poznámka</label>
     <textarea id="ce-note" class="input" data-note rows="2" maxlength="120">${esc(c.note || '')}</textarea>
+    ${trChips(c.transport || '')}
     <input type="file" accept="image/*" data-file hidden>
     <div class="ciphrow" data-phrow></div>
     <div class="cibtns" style="position:static;padding:14px 0 0"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Uložit</button></div>
@@ -674,6 +722,7 @@ function editCheckin(c) {
     try { photo = await shrinkPhoto(f, 1024, 300000); drawPh(); } catch (e) { toast('Fotku se nepodařilo načíst.'); }
   };
   const close = () => bd.remove();
+  const getTr = bindTr(bd, c.transport || '');
   bd.addEventListener('click', (e) => { if (e.target === bd) close(); });
   $('[data-x]').onclick = close;
   $('[data-go]').onclick = async (e) => {
@@ -681,7 +730,7 @@ function editCheckin(c) {
     if (!place) { $('[data-place]').focus(); return; }
     e.target.disabled = true;
     try {
-      await updateDoc(doc(db, c._col, c.id), { place, note: $('[data-note]').value.trim(), photo, editedAt: new Date().toISOString() });
+      await updateDoc(doc(db, c._col, c.id), { place, note: $('[data-note]').value.trim(), photo, transport: getTr(), editedAt: new Date().toISOString() });
       close(); toast('Check-in upraven');
     } catch (x) { console.error(x); e.target.disabled = false; toast('Úpravu se nepodařilo uložit.'); }
   };

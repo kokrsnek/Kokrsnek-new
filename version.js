@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.82',
+    date: '25. 11. 2026',
+    items: [
+      'Kde jsi?: u check-inu jde vybrat, jak ses na místo dostal – pěšky, kolo, auto, motorka, MHD nebo šnečím tempem. Nic není předvybrané.',
+      'Ikona dopravy se ukáže u avataru ve Feedu i v pruhu „Teď“, text u času check-inu. Jde změnit i v úpravě check-inu.',
+      'Nový filtr Doprava – vybereš jeden nebo víc způsobů.'
+    ]
+  },
+  {
     version: '1.81',
     date: '25. 11. 2026',
     items: [
