@@ -942,6 +942,6 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 
 /* 1.98 — přechod na zprávu v chatu: bublina se „nafoukne“ místo rámečku */
 .msg.pop{position:relative;z-index:5}
-.msg.pop .bubble{animation:msgPop .9s cubic-bezier(.3,.7,.4,1) both;transform-origin:left center}
+.msg.pop .bubble{animation:msgPop 2s cubic-bezier(.3,.7,.4,1) both;transform-origin:left center}
 .msg.mine.pop .bubble{transform-origin:right center}
-@keyframes msgPop{0%{transform:scale(1)}28%{transform:scale(var(--pop,1.5));filter:brightness(1.12)}52%{transform:scale(.95)}74%{transform:scale(calc(1 + (var(--pop,1.5) - 1) * .25))}100%{transform:scale(1);filter:none}}
+@keyframes msgPop{0%{transform:scale(1)}28%{transform:scale(var(--pop,2));filter:brightness(1.12)}52%{transform:scale(.93)}74%{transform:scale(calc(1 + (var(--pop,2) - 1) * .2))}100%{transform:scale(1);filter:none}}

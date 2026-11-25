@@ -6,7 +6,7 @@ export const CHANGELOG = [
     version: '1.98',
     date: '25. 11. 2026',
     items: [
-      'Chat: po přechodu na konkrétní zprávu (z hledání, fotek nebo profilu) se zpráva místo rámečku „nafoukne“ – zvětší se až o polovinu a pružně vrátí.'
+      'Chat: po přechodu na konkrétní zprávu (z hledání, fotek nebo profilu) se zpráva místo rámečku „nafoukne“ – zvětší se až na dvojnásobek (nikdy nevyleze z displeje) a během 2 s se pružně vrátí.'
     ]
   },
   {

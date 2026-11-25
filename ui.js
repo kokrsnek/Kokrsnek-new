@@ -180,12 +180,16 @@ export function runFocus() {
     const go = () => { const n = document.querySelector(f.sel); const t = n ? (n.closest('.msg') || n) : target; t.scrollIntoView({ block: 'center', behavior: 'smooth' }); return t; };
     setTimeout(() => {
       const t = go();
-      // Zpráva v chatu se „nafoukne“ (až o 50 %, ale nevyleze z obrazovky); ostatní dostanou rámeček.
+      // Zpráva v chatu se „nafoukne“ (až o 100 %, ale nikdy nevyleze z displeje); ostatní dostanou rámeček.
       const fx = t.classList.contains('msg') ? 'pop' : 'flash';
       if (fx === 'pop') {
         const bub = t.querySelector('.bubble') || t;
-        const room = (t.parentElement || document.body).getBoundingClientRect().width - 16;
-        t.style.setProperty('--pop', Math.max(1.08, Math.min(1.5, room / Math.max(1, bub.getBoundingClientRect().width))).toFixed(3));
+        const r = bub.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight, m = 8;
+        // Roste od svého okraje: moje zprávy od pravého, ostatní od levého; svisle od středu.
+        const roomX = t.classList.contains('mine') ? r.right - m : W - m - r.left;
+        const roomY = Math.min(r.top + r.height / 2 - m, H - m - (r.top + r.height / 2)) * 2;
+        const k = Math.min(2, roomX / Math.max(1, r.width), roomY / Math.max(1, r.height));
+        t.style.setProperty('--pop', Math.max(1.05, k).toFixed(3));
       }
       t.classList.remove(fx); void t.offsetWidth; t.classList.add(fx);
       if (fx === 'flash') setTimeout(go, 900);
