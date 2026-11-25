@@ -205,17 +205,18 @@ export async function toggleEventCheckin(ev, mine, coords) {
   const me = myName();
   const ref = doc(db, ...paths(ev).checkins, me);
   if (mine) { await deleteDoc(ref); return; }
-  let verified = false;
+  let verified = false, here = null;
   if (coords && navigator.geolocation) {
     try {
       const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000, maximumAge: 60000 }));
+      here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       const R = 6371000, toR = (x) => x * Math.PI / 180;
       const dLat = toR(coords.lat - pos.coords.latitude), dLng = toR(coords.lng - pos.coords.longitude);
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(toR(pos.coords.latitude)) * Math.cos(toR(coords.lat)) * Math.sin(dLng / 2) ** 2;
       verified = 2 * R * Math.asin(Math.sqrt(a)) <= 250;
     } catch (e) { /* bez polohy se zapíše bez ověření */ }
   }
-  await setDoc(ref, { at: new Date().toISOString(), verified, user: me, eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', via: 'v2' });
+  await setDoc(ref, { at: new Date().toISOString(), verified, user: me, eventTitle: ev.title || '', eventStart: ev.start ? ev.start.toISOString() : '', via: 'v2', ...(here ? { lat: here.lat, lng: here.lng } : {}) });
 }
 
 // ---------- komentáře ----------

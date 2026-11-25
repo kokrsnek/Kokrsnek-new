@@ -3,6 +3,16 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.81',
+    date: '25. 11. 2026',
+    items: [
+      'Kde jsi?: nahoře pruh „Teď“ – kdo má právě aktuální check-in (oranžový kroužek = je na akci). Klepnutím sjedeš na jeho check-in.',
+      'Ve Feedu i na mapě jsou i „Jsem na místě“ u akcí, s oranžovým štítkem akce (klepnutím do detailu).',
+      'Nový check-in pozná dnešní akci do 1 km a nabídne „Jsi na akci?“ – jedním klepnutím check-in, „Jsem na místě“ i „Jdu“.',
+      'Filtry: hledání místa nebo akce, Teď, Dnes, Týden, Na akcích, S fotkou, Já a výběr lidí. Platí pro Feed i Mapu.'
+    ]
+  },
+  {
     version: '1.80',
     date: '25. 11. 2026',
     items: [

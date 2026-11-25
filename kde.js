@@ -6,9 +6,11 @@ import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.
 import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
-import { db, collection, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, writeBatch, callFunction } from './firebase.js';
-import { shrinkPhoto } from './store.js';
-import { loadLeaflet } from './map.js';
+import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, writeBatch, callFunction } from './firebase.js';
+import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
+import { loadLeaflet, geocode } from './map.js';
+import { placeCoords } from './util.js';
+import { PARTY_NAMES } from './config.js';
 
 const isTestDoc = (c) => c._col === 'v2_checkins';
 const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE || CHAT_LIVE;
@@ -37,6 +39,8 @@ function isActive(c, list) {
   if (c.endedAt) return false;
   const t = toDate(c.at);
   if (!t || Date.now() - t.getTime() > MAX_ACTIVE) return false;
+  // „Jsem na místě“ u akce platí jen v den check-inu a dokud akce neskončila
+  if (c._kind === 'ev') { const ev = c.ev; if (!sameDay(t, new Date()) || (ev && ev.end <= new Date())) return false; }
   return !list.some((x) => x !== c && x.user === c.user && (toDate(x.at)?.getTime() || 0) > t.getTime());
 }
 // Malý výřez mapy (dlaždice OpenStreetMap) se špendlíkem uprostřed.
@@ -59,6 +63,7 @@ const gmaps = (c) => c.lat != null ? `https://www.google.com/maps/dir/?api=1&des
 export function render(root, { tab = 'feed', openNew = false }) {
   const me = myName();
   let real = [], test = [], week = [], comments = {}, open = new Set(), map = null, markers = null, alive = true;
+  let lim = 60, feedUnsub = null, more = true;
   const unsubs = [];
 
   root.innerHTML = `<div class="screen">
@@ -70,6 +75,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
       <button role="tab" class="${tab === 'mapa' ? 'on' : ''}" data-tab="#/kde/mapa">Mapa</button>
       <button role="tab" class="${tab === 'mista' ? 'on' : ''}" data-tab="#/kde/mista">Místa</button>
     </div>
+    <div class="cifilt" data-filt ${tab === 'mista' ? 'hidden' : ''}></div>
     <div class="scroll" data-body>${spinner()}</div>
     ${tabbar('kde')}
   </div>`;
@@ -91,10 +97,73 @@ export function render(root, { tab = 'feed', openNew = false }) {
     } catch (x) { console.error(x); toast('Nastavení se nepodařilo uložit.'); }
   };
 
-  const all = () => [...real, ...test].sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
+  // Sloučený seznam: volné check-iny + „Jsem na místě“ u akcí (events/{id}/checkins).
+  // Volný check-in spojený s akcí (eventId) nahradí odpovídající check-in u akce, ať není dvakrát.
+  let evCis = [];
+  const byTime = (a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0);
+  const all = () => {
+    const free = [...real, ...test];
+    const linked = new Set(free.filter((c) => c.eventId).map((c) => c.eventId + '|' + c.user));
+    const oldest = more && free.length ? Math.min(...free.map((c) => toDate(c.at)?.getTime() || 0)) : 0;
+    const ev = evCis.filter((c) => !linked.has(c.eventId + '|' + c.user) && (toDate(c.at)?.getTime() || 0) >= oldest);
+    return [...free, ...ev].sort(byTime);
+  };
+
+  // ---------- filtry ----------
+  let fk = 'all', who = new Set(), q = '';
+  const FCH = [['all', 'Vše'], ['now', '🟢 Teď'], ['today', 'Dnes'], ['week', 'Týden'], ['ev', '🎉 Na akcích'], ['ph', '📷 S fotkou'], ['me', 'Já']];
+  const nq = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const pass = (c, list) => {
+    const t = toDate(c.at), dd = t ? dayDiff(t, new Date()) : 99;
+    if (fk === 'now' && !isActive(c, list)) return false;
+    if (fk === 'today' && dd !== 0) return false;
+    if (fk === 'week' && dd > 6) return false;
+    if (fk === 'ev' && !(c._kind === 'ev' || c.eventId)) return false;
+    if (fk === 'ph' && !c.photo) return false;
+    if (fk === 'me' && c.user !== me) return false;
+    if (who.size && !who.has(c.user)) return false;
+    if (q && !nq(`${c.place || ''} ${c.eventTitle || ''} ${c.note || ''}`).includes(nq(q))) return false;
+    return true;
+  };
+  const filtered = () => { const l = all(); return l.filter((c) => pass(c, l)); };
+  const filtEl = root.querySelector('[data-filt]');
+  function drawFilters() {
+    const wl = who.size ? (who.size === 1 ? '👤 ' + [...who][0] : `👤 ${who.size} lidi`) : '👤 Kdo ▾';
+    const chips = filtEl.querySelector('[data-chips]');
+    const html = FCH.map(([k, t]) => `<button class="${fk === k ? 'on' : ''}" data-fk="${k}">${t}</button>`).join('') + `<button class="${who.size ? 'on' : ''}" data-who>${esc(wl)}</button>`;
+    if (chips) { chips.innerHTML = html; return; }
+    filtEl.innerHTML = `<div class="cisrch">${icon('search', 16)}<input data-q placeholder="Hledat místo nebo akci" autocomplete="off" enterkeyhint="search"><button data-qx aria-label="Smazat hledání" hidden>×</button></div><div class="cichips" data-chips>${html}</div>`;
+    const qi = filtEl.querySelector('[data-q]'), qx = filtEl.querySelector('[data-qx]');
+    qi.oninput = () => { q = qi.value.trim(); qx.hidden = !qi.value; draw(); };
+    qx.onclick = () => { qi.value = ''; q = ''; qx.hidden = true; draw(); };
+  }
+  filtEl.addEventListener('click', (e) => {
+    const k = e.target.closest('[data-fk]');
+    if (k) { fk = k.dataset.fk; drawFilters(); draw(); return; }
+    if (e.target.closest('[data-who]')) whoSheet();
+  });
+  function whoSheet() {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    const names = [...new Set([...PARTY_NAMES, ...all().map((c) => c.user).filter(Boolean)])];
+    const drawS = () => { bd.querySelector('[data-pp]').innerHTML = names.map((n) => `<button class="${who.has(n) ? 'on' : ''}" data-p="${esc(n)}">${avatar(n, 40)}<span>${esc(n)}</span></button>`).join(''); };
+    bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Kdo"><div class="grab"></div><h3>Kdo</h3><p>Vyber jednoho nebo víc lidí.</p>
+      <div class="cipp" data-pp></div>
+      <div style="display:flex;gap:10px;margin-top:12px"><button class="btn block" data-none>Všichni</button><button class="btn primary block" data-ok>Hotovo</button></div></div>`;
+    drawS();
+    const close = () => { bd.remove(); drawFilters(); draw(); };
+    bd.addEventListener('click', (e) => {
+      if (e.target === bd || e.target.closest('[data-ok]')) return close();
+      if (e.target.closest('[data-none]')) { who.clear(); return close(); }
+      const p = e.target.closest('[data-p]');
+      if (p) { who.has(p.dataset.p) ? who.delete(p.dataset.p) : who.add(p.dataset.p); drawS(); }
+    });
+    document.body.appendChild(bd);
+  }
 
   // ---------- Feed ----------
   function card(c) {
+    if (c._kind === 'ev') return evCard(c);
     const mine = c.user === me;
     const w = canWriteCi(c);
     const active = isActive(c, all());
@@ -110,6 +179,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
           ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
           : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
       </div>
+      ${c.eventId ? `<a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>` : ''}
       <div class="ciplace">${esc(c.place || '')}</div>
       ${c.note ? `<div class="cinote">${esc(c.note)}</div>` : ''}
       ${c.photo ? `<img class="ciphoto" src="${esc(c.photo)}" alt="" loading="lazy">` : ''}
@@ -129,11 +199,41 @@ export function render(root, { tab = 'feed', openNew = false }) {
     </div>`;
   }
 
+  // „Jsem na místě“ u akce bez volného check-inu: jednodušší karta s odkazem na akci.
+  function evCard(c) {
+    const active = isActive(c, all());
+    const co = c.lat != null ? c : placeCoords(c.place);
+    return `<div class="ci" data-ci="${esc(c.id)}">
+      <div class="cihead"><span data-profile="${esc(c.user || '')}">${avatar(c.user || '?', 36)}</span>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}</div></div>
+        ${co ? `<a class="cimaplink" href="${esc(gplace(co))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+co.lat, +co.lng)}</a>` : ''}
+      </div>
+      <a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>
+      ${c.place ? `<div class="ciplace">${esc(c.place.split(',')[0])}</div>` : ''}
+      <div class="cinote" style="color:var(--muted)">Jsem na místě${c.verified ? ' · 📍 ověřeno polohou' : ''}</div>
+    </div>`;
+  }
+
+  // Pruh „Teď“: kdo má právě aktuální check-in (volný i na akci), každý jednou.
+  function nowStrip(list) {
+    const seen = new Set(), act = [];
+    list.forEach((c) => { if (!seen.has(c.user) && isActive(c, list)) { seen.add(c.user); act.push(c); } });
+    if (!act.length) return '';
+    return `<div class="section-h">Teď</div><div class="cistrip">${act.map((c) => {
+      const onEv = c._kind === 'ev' || c.eventId;
+      return `<button data-jump="${esc(c.id)}"><span class="cring${onEv ? ' ev' : ''}">${avatar(c.user, 38)}</span><b>${esc(c.user)}</b><small>${onEv ? '🎉 ' + esc(c.eventTitle || '') : esc((c.place || '').split(',')[0])}</small></button>`;
+    }).join('')}</div>`;
+  }
+
   function drawFeed() {
-    const list = all();
+    const everything = all();
+    const list = everything.filter((c) => pass(c, everything));
+    const strip = fk === 'all' && !who.size && !q ? nowStrip(everything) : '';
+    const fcount = fk !== 'all' || who.size || q ? `<div class="cicnt"><span>${list.length} ${list.length === 1 ? 'check-in' : list.length >= 2 && list.length <= 4 ? 'check-iny' : 'check-inů'}</span><button data-clear>Zrušit filtry</button></div>` : '';
+    if (!list.length) { body.innerHTML = fcount + `<div class="empty">${everything.length ? 'Nic neodpovídá filtrům.' : 'Zatím žádné check-iny.'}</div>`; return; }
     if (!list.length) { body.innerHTML = '<div class="empty">Zatím žádné check-iny.</div>'; return; }
     const tail = more ? '<div class="sub" style="text-align:center;padding:14px">Starší se načtou při posunu dolů…</div>' : '<div class="sub" style="text-align:center;padding:14px">To je všechno 🐌</div>';
-    let html = '', lastDay = null;
+    let html = fcount + strip, lastDay = null;
     for (const c of list) {
       const d = toDate(c.at) || new Date(0);
       if (!lastDay || !sameDay(d, lastDay)) {
@@ -147,10 +247,17 @@ export function render(root, { tab = 'feed', openNew = false }) {
   }
 
   body.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-clear]')) { fk = 'all'; who.clear(); q = ''; const qi = filtEl.querySelector('[data-q]'); if (qi) { qi.value = ''; filtEl.querySelector('[data-qx]').hidden = true; } drawFilters(); draw(); return; }
+    const j = e.target.closest('[data-jump]');
+    if (j) {
+      const t = body.querySelector(`[data-ci="${CSS.escape(j.dataset.jump)}"]`);
+      if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash'); }
+      return;
+    }
     const el = e.target.closest('[data-ci]');
     if (!el) return;
     const c = all().find((x) => x.id === el.dataset.ci);
-    if (!c) return;
+    if (!c || c._kind === 'ev') return;
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'com') {
       open.has(c.id) ? open.delete(c.id) : open.add(c.id);
@@ -232,14 +339,17 @@ export function render(root, { tab = 'feed', openNew = false }) {
     if (!map || !window.L) return;
     const L = window.L;
     markers.clearLayers();
-    const pts = week.filter((c) => c.lat != null && c.lng != null);
+    const wk = Date.now() - 7 * 86400000;
+    const evWeek = evCis.filter((c) => (toDate(c.at)?.getTime() || 0) >= wk).map((c) => { const co = c.lat != null ? c : placeCoords(c.place); return co ? { ...c, lat: +co.lat, lng: +co.lng } : null; }).filter(Boolean);
+    const both = [...week, ...evWeek].sort(byTime);
+    const pts = both.filter((c) => c.lat != null && c.lng != null && pass(c, both));
     const seen = new Set();
     pts.forEach((c) => {
       const key = c.user + '|' + c.lat.toFixed(4) + '|' + c.lng.toFixed(4);
       if (seen.has(key)) return;
       seen.add(key);
       const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: 'cipin', html: `${avatar(c.user || '?', 30)}`, iconSize: [30, 30], iconAnchor: [15, 15] }) });
-      m.bindPopup(`<b>${esc(c.user)}</b><br>${esc(c.place || '')}<br><small>${esc(when(c.at))}</small>`);
+      m.bindPopup(`<b>${esc(c.user)}</b><br>${c._kind === 'ev' || c.eventId ? '🎉 ' + esc(c.eventTitle || '') + '<br>' : ''}${esc((c.place || '').split(',')[0])}<br><small>${esc(when(c.at))}</small>`);
       m.addTo(markers);
     });
     if (!pts.length && !map._fitted) { map.setView([49.43, 16.62], 11); }
@@ -297,7 +407,6 @@ export function render(root, { tab = 'feed', openNew = false }) {
   const draw = () => { if (!alive) return; if (tab === 'mista') { if (!placesStarted) { placesStarted = true; drawPlaces(); } return; } tab === 'mapa' ? drawMap() : drawFeed(); };
 
   // Feed: všechny check-iny — načítají se po 60, další při posunu dolů.
-  let lim = 60, feedUnsub = null, more = true;
   const subFeed = () => {
     if (feedUnsub) feedUnsub();
     feedUnsub = onSnapshot(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(lim)), (s) => {
@@ -314,6 +423,20 @@ export function render(root, { tab = 'feed', openNew = false }) {
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   unsubs.push(() => window.removeEventListener('scroll', onScroll));
+  // „Jsem na místě“ u všech akcí (malá sbírka — jeden záznam na člověka a akci).
+  let evList = events.list;
+  const mapEv = (d) => {
+    const path = d.ref.path.split('/');
+    if (path[0] !== 'events') return null;
+    const x = d.data(), ev = evList.find((e) => e.id === path[1]);
+    return { id: 'ev:' + path[1] + ':' + d.id, _kind: 'ev', eventId: path[1], ev, user: x.user || d.id, at: x.at, verified: !!x.verified,
+      eventTitle: x.eventTitle || (ev && ev.title) || 'akce', place: (ev && ev.place) || '', lat: x.lat ?? null, lng: x.lng ?? null };
+  };
+  let evDocs = [];
+  const remapEv = () => { evCis = evDocs.map(mapEv).filter(Boolean); };
+  unsubs.push(onSnapshot(collectionGroup(db, 'checkins'), (s) => { evDocs = s.docs; remapEv(); draw(); }, () => {}));
+  unsubs.push(watchEvents((e) => { evList = e.list; remapEv(); }));
+
   // Mapa: check-iny za posledních 7 dní.
   unsubs.push(onSnapshot(query(collection(db, 'placeCheckins'), where('at', '>=', new Date(Date.now() - 7 * 86400000).toISOString()), orderBy('at', 'desc')), (s) => {
     week = s.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() }));
@@ -323,6 +446,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     test = s.docs.map((d) => ({ id: d.id, _col: 'v2_checkins', ...d.data() })); draw();
   }, () => {}));
 
+  if (tab !== 'mista') drawFilters();
   if (openNew) setTimeout(newCheckin, 50);
   return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); };
 }
@@ -383,18 +507,40 @@ export function newCheckin() {
   });
   (async () => {
     const coords = await getPos();
-    const nb = coords ? await nearby(coords) : { list: [], guess: '' };
+    const [nb, here] = await Promise.all([coords ? nearby(coords) : { list: [], guess: '' }, coords ? eventHere(coords) : null]);
     const favs = await favP;
     if (cancelled) return;
-    renderForm(scr, me, coords, nb.list, nb.guess, favs);
+    renderForm(scr, me, coords, nb.list, nb.guess, favs, here);
   })();
 }
 
-function renderForm(scr, me, coords, sugs, guess, favs) {
+// Dnešní (nebo právě probíhající) akce do 1 km od tebe — nabídne se „Jsi na akci?“.
+async function eventHere(coords) {
+  const now = new Date();
+  const today = events.list.filter((e) => !e.isTest && e.place && (sameDay(e.start, now) || (e.start <= now && now < e.end)));
+  let best = null;
+  for (const ev of today) {
+    const co = placeCoords(ev.place) || await geocode(ev.place).catch(() => null);
+    if (!co) continue;
+    const d = distM(coords, co);
+    if (d <= 1000 && (!best || d < best.d)) best = { ev, co, d };
+  }
+  return best;
+}
+const shortPlace = (p) => String(p || '').split(',')[0].trim().slice(0, 80);
+
+function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   let photo = '', picked = null;
   const sugRow = (s, i) => `<button type="button" class="cisug" data-i="${i}"><b>${esc(s.name)}</b>${s.vicinity ? `<span>${esc(s.vicinity)}</span>` : ''}</button>`;
   const first = sugs.slice(0, 3), more = sugs.slice(3);
+  const fmtD = (m) => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
+  const going = here ? (cachedAttendance(here.ev.id)?.going || []).length : 0;
   scr.innerHTML = `<div class="ciformin">
+    ${here && LIVE ? `<div class="cihere" data-here>
+      <div class="r"><span class="cihere-i">🎉</span><div><b>Jsi na akci ${esc(here.ev.title)}?</b><small>${esc(shortPlace(here.ev.place))} · ${fmtD(here.d)} od tebe${going ? ` · jde ${going}` : ''}</small></div></div>
+      <div class="cihere-b"><button type="button" class="btn primary" data-yes>Ano, jsem tady</button><button type="button" class="btn" data-no>Ne, jinde</button></div>
+      <small>Udělá check-in i „Jsem na místě“ u akce. Když nemáš „Jdu“, přidá ho.</small>
+    </div>` : ''}
     <label class="cilbl" for="ci-place">Kde jsi</label>
     <input id="ci-place" class="input" data-place placeholder="Napiš, kde jsi…" maxlength="80" value="${esc(guess)}">
     ${favs.length ? `<div class="cilbl">Tvoje místa</div><div class="chips cifav">${favs.map((n) => `<button type="button" class="chip" data-fav="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
@@ -433,6 +579,25 @@ function renderForm(scr, me, coords, sugs, guess, favs) {
   };
   const close = () => scr.remove();
   $('[data-x]').onclick = close;
+  const no = $('[data-no]');
+  if (no) no.onclick = () => $('[data-here]').remove();
+  const yes = $('[data-yes]');
+  if (yes) yes.onclick = async () => {
+    yes.disabled = true; yes.textContent = 'Ukládám…';
+    const ev = here.ev;
+    try {
+      const ref = await addDoc(collection(db, 'placeCheckins'), { user: me, place: shortPlace(ev.place) || ev.title, note: $('[data-note]').value.trim(),
+        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '' });
+      endMyOthers(me, ref.id).catch(() => {});
+      await toggleEventCheckin(ev, false, here.co);
+      let att = cachedAttendance(ev.id);
+      if (!att) { await loadAttendance(ev).catch(() => {}); att = cachedAttendance(ev.id); }
+      if (!att || !att.going.includes(me)) await setAttendance(ev, 'attend').catch(() => {});
+      close();
+      toast('Check-in odeslán · jsi na místě 📍');
+      if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
+    } catch (x) { console.error(x); yes.disabled = false; yes.textContent = 'Ano, jsem tady'; toast('Check-in se nepodařilo uložit.'); }
+  };
   $('[data-go]').onclick = async (e) => {
     const place = input.value.trim();
     if (!place) { input.focus(); return; }
