@@ -889,3 +889,20 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .trlist{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .trlist button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:10px 4px;font:inherit;font-size:12.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:5px}
 .trlist button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* 1.87 — detail check-inu */
+.cid .scroll{padding-bottom:96px}
+.cidcard{padding:16px;border-radius:22px;box-shadow:0 6px 20px var(--shadow);border:none}
+.cidplace{font-size:28px;line-height:1.1;margin:12px 0 4px}
+.cidmedia{display:flex;gap:8px;margin-top:12px}
+.cidphoto{flex:1;min-width:0;height:170px;object-fit:cover;border-radius:16px;display:block;cursor:zoom-in}
+.cidmap{position:relative;flex:0 0 auto}
+.cidmap .cimap{border-radius:16px}
+.cidnav{position:absolute;right:8px;bottom:8px;width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.3);z-index:2}
+.cidmap .cimap small{left:4px;right:auto}
+.cidppl{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:var(--muted)}
+.cidcoms{padding:0 2px}
+.cidin{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bar);border-top:1px solid var(--line);z-index:30}
+.cidin .input{flex:1;border-radius:999px}
+.cidzoom{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px}
+.cidzoom img{max-width:100%;max-height:100%;border-radius:12px}

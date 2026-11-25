@@ -88,7 +88,7 @@ const ROUTES = [
   [/^\/kde\/mista$/, () => kde.render(root, { tab: 'mista' })],
   [/^\/kde\/novy$/, () => kde.render(root, { tab: 'feed', openNew: true })],
   // z notifikace: otevřít Feed a sjet na konkrétní check-in
-  [/^\/kde\/c\/([^/]+)$/, (m) => { const id = decodeURIComponent(m[1]); goFocus('#/kde', `[data-ci="${id.replace(/["\\]/g, '')}"]`, '', true); }],
+  [/^\/kde\/c\/([^/]+)$/, (m) => kde.renderDetail(root, { id: decodeURIComponent(m[1]) })],
   [/^\/chat$/, () => chat.renderList(root)],
   [/^\/chat\/([^/]+)$/, (m) => chat.renderThread(root, { id: decodeURIComponent(m[1]) })],
   // Cíle z notifikací (chatWith = jméno nebo celá parta)

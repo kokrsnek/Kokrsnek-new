@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.87',
+    date: '25. 11. 2026',
+    items: [
+      'Kde jsi?: klepnutím na check-in se otevře jeho detail – velký název místa, poznámka, fotka (klepnutím zvětšíš), mapa, kdo přijde nebo je poblíž, reakce a komentáře s polem dole.',
+      'Na mapě v detailu je vpravo dole šipka, která spustí navigaci na místo.',
+      'Odkazy z oznámení a z profilu teď otevírají rovnou detail check-inu.'
+    ]
+  },
+  {
     version: '1.86',
     date: '25. 11. 2026',
     items: [

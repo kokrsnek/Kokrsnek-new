@@ -156,6 +156,11 @@ export function goFocus(hash, sel = '', click = '', replace = false) {
   try { sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ sel, click, at: Date.now() })); } catch (e) { /* nic */ }
   if (replace) location.replace(hash); else location.hash = hash;
 }
+// Bez přesměrování (např. před history.back): obrazovka, která se otevře, najde prvek.
+// quiet = nehlásit, když se nenajde (starší check-in nemusí být ve Feedu načtený).
+export function setFocus(sel, quiet = false) {
+  try { sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ sel, click: '', quiet, at: Date.now() })); } catch (e) { /* nic */ }
+}
 export function runFocus() {
   let f = null;
   try { f = JSON.parse(sessionStorage.getItem(FOCUS_KEY) || 'null'); sessionStorage.removeItem(FOCUS_KEY); } catch (e) { /* nic */ }
@@ -166,7 +171,7 @@ export function runFocus() {
   const timer = setInterval(() => {
     const el = document.querySelector(f.sel);
     if (!el || !el.offsetParent) {
-      if (Date.now() - t0 > 8000) { clearInterval(timer); toast('Tohle místo se nepodařilo najít — možná je moc staré nebo smazané.'); }
+      if (Date.now() - t0 > 8000) { clearInterval(timer); if (!f.quiet) toast('Tohle místo se nepodařilo najít — možná je moc staré nebo smazané.'); }
       return;
     }
     clearInterval(timer);

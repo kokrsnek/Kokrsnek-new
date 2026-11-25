@@ -3,7 +3,7 @@
 // check-iny, reakce a komentáře zapisují jen do v2_checkins (test).
 import { emo, emojiSheet } from './emoji.js';
 import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
-import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
+import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
 import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, writeBatch, callFunction } from './firebase.js';
@@ -289,40 +289,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
       drawFeed();
       return;
     }
-    if (!act || !canWriteCi(c)) return;
-    const ref = doc(db, colOf(c), c.id);
-    try {
-      if (act === 'coming' || act === 'near') {
-        const arr = new Set(c[act] || []);
-        const adding = !arr.has(me);
-        adding ? arr.add(me) : arr.delete(me);
-        const upd = { [act]: [...arr] };
-        // „Jsem poblíž“ pošle autorovi i polohu (jako stará aplikace); při zrušení se smaže.
-        if (act === 'near') {
-          const nl = { ...(c.nearLoc || {}) };
-          if (adding) {
-            const pos = await new Promise((res) => navigator.geolocation
-              ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { timeout: 8000, maximumAge: 60000 })
-              : res(null));
-            if (pos) nl[me] = pos;
-          } else delete nl[me];
-          upd.nearLoc = nl;
-        }
-        await updateDoc(ref, upd);
-      } else if (act === 'emoji') {
-        const cur = (c.emojis || {})[me];
-        const r = await emojiSheet({ selected: cur ? [cur] : [], title: 'Reakce na check-in' });
-        if (r && r.emoji) {
-          const e2 = { ...(c.emojis || {}) };
-          if (e2[me] === r.emoji) delete e2[me]; else e2[me] = r.emoji;
-          await updateDoc(ref, { emojis: e2 });
-        }
-      } else if (act === 'edit') {
-        editCheckin(c);
-      } else if (act === 'del') {
-        if (await confirmDanger('Smazat check-in?', c.place || '')) await deleteDoc(ref);
-      }
-    } catch (x) { console.error(x); toast('Nepovedlo se.'); }
+    if (!act) { if (!e.target.closest('a,button,form,input,.cicoms,[data-profile]')) location.hash = '#/kde/c/' + encodeURIComponent(c.id); return; }
+    await ciAction(c, act, me);
   });
   body.addEventListener('submit', async (e) => {
     const f = e.target.closest('[data-cform]');
@@ -332,12 +300,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     const text = f.t.value.trim();
     if (!c || !text) return;
     f.t.value = '';
-    try {
-      const b = writeBatch(db);
-      b.set(doc(collection(db, colOf(c), c.id, 'comments')), { user: me, text, at: new Date().toISOString() });
-      b.update(doc(db, colOf(c), c.id), { commentCount: (c.commentCount || 0) + 1 });
-      await b.commit();
-    } catch (x) { f.t.value = text; toast('Komentář se nepodařilo odeslat.'); }
+    if (!await sendComment(c, me, text)) f.t.value = text;
   });
 
   // ---------- Mapa ----------
@@ -473,6 +436,159 @@ export function render(root, { tab = 'feed', openNew = false }) {
 
 // ---------- nový check-in (stejně jako ve staré aplikaci) ----------
 // Tvoje místa: nejčastější a nejnovější z vlastních check-inů (do 6).
+// Akce na check-inu (Feed i detail): Přijdu taky, Jsem poblíž, reakce, úprava, smazání.
+// Vrací true, když byl check-in smazán.
+async function sendComment(c, me, text) {
+  try {
+    const b = writeBatch(db);
+    b.set(doc(collection(db, colOf(c), c.id, 'comments')), { user: me, text, at: new Date().toISOString() });
+    b.update(doc(db, colOf(c), c.id), { commentCount: (c.commentCount || 0) + 1 });
+    await b.commit();
+    return true;
+  } catch (x) { console.error(x); toast('Komentář se nepodařilo odeslat.'); return false; }
+}
+async function ciAction(c, act, me) {
+  if (!canWriteCi(c)) return false;
+  const ref = doc(db, colOf(c), c.id);
+  try {
+    if (act === 'coming' || act === 'near') {
+      const arr = new Set(c[act] || []);
+      const adding = !arr.has(me);
+      adding ? arr.add(me) : arr.delete(me);
+      const upd = { [act]: [...arr] };
+      // „Jsem poblíž“ pošle autorovi i polohu (jako stará aplikace); při zrušení se smaže.
+      if (act === 'near') {
+        const nl = { ...(c.nearLoc || {}) };
+        if (adding) {
+          const pos = await new Promise((res) => navigator.geolocation
+            ? navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { timeout: 8000, maximumAge: 60000 })
+            : res(null));
+          if (pos) nl[me] = pos;
+        } else delete nl[me];
+        upd.nearLoc = nl;
+      }
+      await updateDoc(ref, upd);
+    } else if (act === 'emoji') {
+      const cur = (c.emojis || {})[me];
+      const r = await emojiSheet({ selected: cur ? [cur] : [], title: 'Reakce na check-in' });
+      if (r && r.emoji) {
+        const e2 = { ...(c.emojis || {}) };
+        if (e2[me] === r.emoji) delete e2[me]; else e2[me] = r.emoji;
+        await updateDoc(ref, { emojis: e2 });
+      }
+    } else if (act === 'edit') {
+      editCheckin(c);
+    } else if (act === 'del') {
+      if (await confirmDanger('Smazat check-in?', c.place || '')) { await deleteDoc(ref); return true; }
+    }
+  } catch (x) { console.error(x); toast('Nepovedlo se.'); }
+  return false;
+}
+
+// ---------- Detail jednoho check-inu (#/kde/c/:id) ----------
+const NAV_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.6 3.4a1 1 0 0 0-1.1-.2L3.6 10.1a1 1 0 0 0 .1 1.9l6.8 1.5 1.5 6.8a1 1 0 0 0 1.9.1l6.9-15.9a1 1 0 0 0-.2-1.1z"/></svg>';
+const joinNames = (a) => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' a ' + a[a.length - 1];
+export function renderDetail(root, { id }) {
+  const me = myName();
+  let c = null, coms = null, later = false, alive = true, sending = false;
+  const unsubs = [];
+  root.innerHTML = `<div class="screen cid">
+    <div class="top"><button class="ibtn" data-back aria-label="Zpět">${icon('back')}</button><div class="h1" style="flex:1">Check-in</div><div data-own style="display:flex;gap:8px"></div></div>
+    <div class="scroll" data-body>${spinner()}</div>
+    <form class="cidin" data-cform hidden><input class="input" name="t" placeholder="Napiš komentář…" maxlength="300" autocomplete="off"><button class="ibtn on" aria-label="Odeslat">${icon('next', 20, 2.4)}</button></form>
+  </div>`;
+  const body = root.querySelector('[data-body]'), own = root.querySelector('[data-own]'), form = root.querySelector('[data-cform]');
+  root.querySelector('[data-back]').onclick = () => {
+    if (history.length > 1) { setFocus(`[data-ci="${String(id).replace(/["\\]/g, '')}"]`, true); history.back(); } else location.replace('#/kde');
+  };
+
+  function draw() {
+    if (!alive) return;
+    if (!c) return;
+    const mine = c.user === me, w = canWriteCi(c);
+    const active = !c.endedAt && Date.now() - (toDate(c.at)?.getTime() || 0) < MAX_ACTIVE && !later;
+    const ended = toDate(c.endedAt);
+    const emCount = {};
+    Object.values(c.emojis || {}).forEach((e) => { emCount[e] = (emCount[e] || 0) + 1; });
+    const co = c.lat != null && c.lng != null ? { lat: +c.lat, lng: +c.lng } : placeCoords(c.place);
+    const mw = Math.max(120, Math.min(innerWidth, 520) - 64);
+    const mapW = c.photo ? Math.round((mw - 8) * 0.42) : mw, mapH = c.photo ? 170 : 180;
+    const coming = c.coming || [], near = c.near || [];
+    own.innerHTML = mine && w ? `<button class="ibtn" data-act="edit" aria-label="Upravit">${icon('edit', 20)}</button><button class="ibtn" data-act="del" aria-label="Smazat">${icon('trash', 20)}</button>` : '';
+    body.innerHTML = `<div class="ci cidcard">
+      <div class="cihead" style="align-items:center"><span data-profile="${esc(c.user || '')}">${avTr(c, 48)}</span>
+        <div style="min-width:0;flex:1"><div class="t" style="font-size:18px"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span></div>
+          <div class="s" style="font-size:13px">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · odešel(a) ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+        ${active ? '<span class="cinow">právě tady</span>' : ''}</div>
+      ${c.eventId ? `<a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>` : ''}
+      <div class="ciplace cidplace">${esc(c.place || '')}</div>
+      ${c.note ? `<div class="cinote" style="font-size:16px">${esc(c.note)}</div>` : ''}
+      ${c.photo || co ? `<div class="cidmedia">
+        ${c.photo ? `<img class="cidphoto" src="${esc(c.photo)}" alt="" data-zoom>` : ''}
+        ${co ? `<div class="cidmap"><a href="${esc(gplace(co))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(co.lat, co.lng, mapW, mapH, 16)}</a>
+          <a class="cidnav" href="${esc(gmaps(co))}" target="_blank" rel="noopener" aria-label="Navigovat">${NAV_ICON}</a></div>` : ''}
+      </div>` : `<a class="pill" style="margin-top:10px" href="${esc(gmaps(c))}" target="_blank" rel="noopener">${NAV_ICON} Navigovat</a>`}
+      <div class="ciact" style="margin-top:12px">
+        ${!mine && active ? `<button class="pill ${coming.includes(me) ? 'go' : ''}" data-act="coming" ${w ? '' : 'disabled'}>${coming.includes(me) ? '✓ ' : ''}Přijdu taky</button>
+          <button class="pill ${near.includes(me) ? 'go' : ''}" data-act="near" ${w ? '' : 'disabled'}>📍 Jsem poblíž</button>` : ''}
+        <span class="ciem">${Object.entries(emCount).sort((a, b) => b[1] - a[1]).map(([e, n]) => `<span>${emo(e, 18)}${n > 1 ? `<small>${n}</small>` : ''}</span>`).join('')}</span>
+        ${w ? `<button class="pill" data-act="emoji" aria-label="Reakce">${(c.emojis || {})[me] ? emo(c.emojis[me], 16) : '🙂'}</button>` : ''}
+      </div>
+      ${coming.length ? `<div class="cidppl">${faces(coming)}<span>${esc(joinNames(coming))} ${coming.length === 1 ? 'přijde' : 'přijdou'}</span></div>` : ''}
+      ${near.length ? `<div class="cidppl">${faces(near)}<span>${esc(joinNames(near))} ${near.length === 1 ? 'je' : 'jsou'} poblíž</span></div>` : ''}
+    </div>
+    <div class="section-h">Komentáře${coms && coms.length ? ' · ' + coms.length : ''}</div>
+    <div class="cidcoms">${coms ? (coms.length ? coms.map((m) => `<div class="com"><span data-profile="${esc(m.user || '')}">${avatar(m.user || '?', 32)}</span><div class="bub"><b style="font-size:12px" data-profile="${esc(m.user || '')}">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub" style="padding:4px 2px 14px">Zatím bez komentářů.</div>') : spinner()}</div>`;
+    form.hidden = !w;
+  }
+
+  // Najít check-in (ostrá kolekce, v testovacím režimu i testovací).
+  const cols = LIVE ? ['placeCheckins'] : ['placeCheckins', 'v2_checkins'];
+  let found = false, missing = 0;
+  cols.forEach((col) => {
+    unsubs.push(onSnapshot(doc(db, col, id), (d) => {
+      if (!d.exists()) {
+        if (c && c._col === col) { c = null; body.innerHTML = '<div class="empty">Check-in byl smazán.</div>'; own.innerHTML = ''; form.hidden = true; return; }
+        if (!found && ++missing === cols.length) body.innerHTML = '<div class="empty">Tenhle check-in už neexistuje.</div>';
+        return;
+      }
+      const first = !found;
+      found = true;
+      c = { id: d.id, _col: col, ...d.data() };
+      if (first) {
+        // Aktuálnost: novější check-in stejného člověka ho ukončil (stačí zjistit jednou).
+        const t = toDate(c.at);
+        if (t && Date.now() - t.getTime() < MAX_ACTIVE && !c.endedAt) {
+          getDocs(query(collection(db, col), where('at', '>=', t.toISOString()))).then((s) => {
+            later = s.docs.some((x) => x.id !== c.id && x.data().user === c.user && x.data().at > c.at); draw();
+          }).catch(() => {});
+        }
+        unsubs.push(onSnapshot(query(collection(db, col, id, 'comments'), orderBy('at', 'asc')), (s) => {
+          coms = s.docs.map((x) => ({ id: x.id, ...x.data() })); draw();
+        }, () => { coms = []; draw(); }));
+      }
+      draw();
+    }, () => { if (++missing === cols.length && !found) body.innerHTML = '<div class="empty">Check-in se nepodařilo načíst.</div>'; }));
+  });
+
+  root.querySelector('.screen').addEventListener('click', async (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act && c) { if (await ciAction(c, act, me)) location.replace('#/kde'); return; }
+    const z = e.target.closest('[data-zoom]');
+    if (z) { const bd = document.createElement('div'); bd.className = 'cidzoom'; bd.innerHTML = `<img src="${esc(z.src)}" alt="">`; bd.onclick = () => bd.remove(); document.body.appendChild(bd); }
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = form.t.value.trim();
+    if (!c || !text || sending) return;
+    sending = true; form.t.value = '';
+    if (!await sendComment(c, me, text)) form.t.value = text;
+    else setTimeout(() => body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }), 300);
+    sending = false;
+  });
+  return () => { alive = false; unsubs.forEach((u) => { try { u(); } catch (x) { /* nic */ } }); };
+}
+
 async function favoritePlaces(me) {
   const map = new Map();
   for (const col of LIVE ? ['placeCheckins'] : ['placeCheckins', 'v2_checkins']) {

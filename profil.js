@@ -65,7 +65,7 @@ async function collect(name) {
   sh.comments.filter((d) => same(d.user, name)).forEach((d) => {
     const q = d.text ? `<q>${esc(String(d.text).slice(0, 140))}</q>` : '';
     if (isEv(d.path)) { const e = evOf(d.path, d); add(d.at, ['kom', 'akce'], '💬', `${d.parentId ? 'Odpověď' : 'Komentář'} u ${evB(e)}${q}`, { com: true, ...toEv(e, `[data-cid="${sq(d.id)}"]`) }); }
-    else if (d.path[0] === 'placeCheckins' || d.path[0] === 'v2_checkins') add(d.at, ['kom', 'kde'], '💬', `Komentář u check-inu${q}`, { com: true, go: ['#/kde', `[data-ci="${sq(d.path[1])}"]`, '[data-act="com"]'] });
+    else if (d.path[0] === 'placeCheckins' || d.path[0] === 'v2_checkins') add(d.at, ['kom', 'kde'], '💬', `Komentář u check-inu${q}`, { com: true, go: ['#/kde/c/' + encodeURIComponent(d.path[1])] });
   });
   sh.items.filter((d) => d.path[0] === 'bringLists' || d.path[0] === 'v2_akce').forEach((d) => {
     const e = evOf(d.path, d);
@@ -74,7 +74,7 @@ async function collect(name) {
   });
   events.list.filter((e) => !e.isTest && e.source !== 'gcal' && same(e.createdBy, name)).forEach((e) => add(e.createdAt, ['akce'], '🗓️', `Založil(a) akci ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), ''] }));
   place.forEach((d) => {
-    add(d.at, ['kde'].concat(d.photo ? ['foto'] : []), '📍', `Check-in <b>${esc(d.place || 'místo')}</b>${d.note ? `<q>${esc(d.note)}</q>` : ''}${d.photo ? `<img class="pfimg" src="${esc(d.photo)}" alt="" loading="lazy">` : ''}`, { ci: true, go: ['#/kde', `[data-ci="${sq(d.id)}"]`] });
+    add(d.at, ['kde'].concat(d.photo ? ['foto'] : []), '📍', `Check-in <b>${esc(d.place || 'místo')}</b>${d.note ? `<q>${esc(d.note)}</q>` : ''}${d.photo ? `<img class="pfimg" src="${esc(d.photo)}" alt="" loading="lazy">` : ''}`, { ci: true, go: ['#/kde/c/' + encodeURIComponent(d.id)] });
   });
   // Zprávy v chatu party; více fotek poslaných najednou = jeden záznam.
   const batches = new Map();

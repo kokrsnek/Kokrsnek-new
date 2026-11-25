@@ -78,7 +78,7 @@ Cloud Functions na cesty `v2_…` nereagují. Testování proto nepošle nikomu 
 
 ## Verze
 
-Aktuální verze je 1.86. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
+Aktuální verze je 1.87. Číslo verze a seznam změn jsou ve `version.js` a v aplikaci se zobrazují dole v záložce Parta. Ke každé nové verzi patří záznam v seznamu změn a nový název mezipaměti ve `sw.js`.
 
 
 Všechny soubory leží v jedné složce, aby šly nahrát na GitHub i z iPhonu.
