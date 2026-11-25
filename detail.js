@@ -1,5 +1,5 @@
 // Detail akce: informace, docházka, co přinést, album, soubory, komentáře.
-import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp, placeCoords } from './util.js';
+import { esc, icon, mapUrl, fmtWhen, fmtLongDate, fmtTime, sameDay, relDays, fmtStamp } from './util.js';
 import { avatar, toast, confirmDanger, spinner, choose, faces } from './ui.js';
 import { myName, isAdmin } from './auth.js';
 import {
@@ -300,15 +300,12 @@ function mountDetail(host, ev, live) {
     }
     const parts = ev.place.split(',').map((x) => x.trim()).filter(Boolean);
     const where = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
-    // Klepnutí otevře podrobnou předpověď (meteoblue) pro místo akce.
-    const co = w.lat != null ? { lat: w.lat, lng: w.lng } : placeCoords(ev.place);
-    const url = co ? `https://www.meteoblue.com/cs/weather/week/${(+co.lat).toFixed(3)}N${(+co.lng).toFixed(3)}E` : '';
     const cols = hourColumns(w, 8), anyP = cols.some((h) => h.p != null && h.p >= 10);
     const f = (n) => (n < 0 ? '−' + Math.abs(n) : n);
-    box.innerHTML = `<${url ? `a href="${esc(url)}" target="_blank" rel="noopener"` : 'div'} class="wxcard">
-      <div class="hd"><span class="lbl">Počasí${where ? ' · ' + esc(where) : ''}</span><span class="desc">${esc(w.desc)}</span><span class="big">${w.startIcon} ${f(w.now)}°</span>${url ? `<span class="go">${icon('next', 14, 2.4)}</span>` : ''}</div>
+    box.innerHTML = `<div class="wxcard">
+      <div class="hd"><span class="lbl">Počasí${where ? ' · ' + esc(where) : ''}</span><span class="desc">${esc(w.desc)}</span><span class="big">${w.startIcon} ${f(w.now)}°</span></div>
       <div class="wxhours" style="grid-template-columns:repeat(${cols.length},1fr)">${cols.map((h) => `<div><span>${h.h}</span><b><i>${h.code != null ? wxIconOf(h.code) : ''}</i>${f(h.t)}°</b>${anyP ? `<span class="p">${h.p != null && h.p >= 10 ? h.p + ' %' : '&nbsp;'}</span>` : ''}</div>`).join('')}</div>
-    </${url ? 'a' : 'div'}>`;
+    </div>`;
   }
 
   function drawLikes(list) {
