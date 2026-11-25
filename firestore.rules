@@ -165,6 +165,11 @@ service cloud.firestore {
         && request.resource.data.players == resource.data.players;
     }
 
+    // Historie zrušených účastí (pro profil). Zapisuje každý jen svoje, číst může celá parta.
+    match /v2_attendLog/{id} {
+      allow create: if isV2Approved() && request.resource.data.user == get(memberPath()).data.name;
+    }
+
     // Sudoku dne: každý zapisuje jen svůj výsledek, číst může celá parta.
     match /v2_sudoku/{day}/times/{name} {
       allow read: if isV2Approved();

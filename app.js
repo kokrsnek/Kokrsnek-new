@@ -18,6 +18,7 @@ import * as kde from './kde.js';
 import { renderPoll } from './polls.js';
 import { renderHub, renderGame } from './games.js';
 import { renderSudoku } from './sudoku.js';
+import * as profil from './profil.js';
 import * as fotky from './fotky.js';
 import { askPushOnInstall } from './pushui.js';
 import { installPlus } from './plus.js';
@@ -52,6 +53,15 @@ function relabelTree(n) {
   const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
   for (let t = w.nextNode(); t; t = w.nextNode()) relabelText(t);
 }
+// Klepnutí na jméno (data-profile) otevře profil s historií.
+document.addEventListener('click', (e) => {
+  const p = e.target.closest('[data-profile]');
+  const n = p && p.dataset.profile;
+  if (!n || n === '?') return;
+  e.preventDefault(); e.stopPropagation();
+  location.hash = '#/profil/' + encodeURIComponent(n);
+}, true);
+
 if (LABEL_RULES.length) {
   relabelTree(document.body);
   new MutationObserver((list) => {
@@ -86,6 +96,7 @@ const ROUTES = [
   [/^\/fotky\/akce\/([^/]+)$/, (m) => fotky.render(root, { group: decodeURIComponent(m[1]) })],
   [/^\/hry$/, () => renderHub(root, { dmThreadId, threadPath: chat.threadPath })],
   [/^\/hry\/s\/([^/]+)$/, (m) => renderHub(root, { with: decodeURIComponent(m[1]), dmThreadId, threadPath: chat.threadPath })],
+  [/^\/profil\/([^/]+)$/, (m) => profil.render(root, { name: decodeURIComponent(m[1]) })],
   [/^\/sudoku\/sam$/, () => renderSudoku(root, { mode: 'solo' })],
   [/^\/sudoku\/den$/, () => renderSudoku(root, { mode: 'daily' })],
   [/^\/sudoku\/([^/]+)$/, (m) => renderSudoku(root, { mode: 'race', id: decodeURIComponent(m[1]) })],

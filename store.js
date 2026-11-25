@@ -29,7 +29,8 @@ function fromDoc(d) {
   return {
     id: d.id, title: x.title || '(bez názvu)', place: x.place || '', description: x.description || '',
     start, end, allDay: !!x.allDay, photoAlbum: x.photoAlbumApp || x.photoAlbum || '', driveFiles: x.driveFiles || [],
-    isTest: !!x.isTest, source: x.source || 'app', createdBy: x.createdBy || ''
+    isTest: !!x.isTest, source: x.source || 'app', createdBy: x.createdBy || '',
+    createdAt: toDate(x.createdAt), albumBy: x.albumBy || '', albumAt: toDate(x.albumAt)
   };
 }
 
@@ -175,7 +176,12 @@ export async function setAttendance(ev, target) {
   const batch = writeBatch(db);
   const aRef = doc(db, ...p.attendees, me), dRef = doc(db, ...p.declines, me);
   if (target === 'attend') { batch.set(aRef, data); batch.delete(dRef); }
-  else { batch.set(dRef, data); batch.delete(aRef); }
+  else {
+    batch.set(dRef, data); batch.delete(aRef);
+    // Zrušená účast (šel → nejde) se zapíše do historie kvůli profilu.
+    const was = attendCache.get(ev.id);
+    if (!ev.isTest && was && was.going.includes(me)) batch.set(doc(collection(db, 'v2_attendLog')), { user: me, eventId: ev.id, eventTitle: ev.title || '', at: new Date().toISOString(), via: 'v2' });
+  }
   await batch.commit();
 }
 

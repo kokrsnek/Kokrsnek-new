@@ -1,13 +1,13 @@
 // Service worker nové aplikace: soubory aplikace se berou ze sítě a při
 // výpadku z mezipaměti, takže se aplikace otevře i offline. Data řeší
 // Firestore sám (offline mezipaměť v prohlížeči).
-const CACHE = 'kokrsnek-1.63';
+const CACHE = 'kokrsnek-1.64';
 const SHELL = [
   './', 'index.html', 'manifest.json', 'app.css', 'themes.css',
   'app.js', 'config.js', 'firebase.js', 'util.js', 'ui.js', 'namedays.js',
   'auth.js', 'store.js', 'attend.js', 'theme.js', 'version.js', 'plus.js', 'map.js', 'coverart.js',
   'login.js', 'akce.js', 'kalendar.js', 'detail.js',
-  'editor.js', 'parta.js', 'chat.js', 'fotky.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'sudoku.js', 'people.js', 'celebrate.js', 'qr-platba.png',
+  'editor.js', 'parta.js', 'chat.js', 'fotky.js', 'kde.js', 'presence.js', 'weather.js', 'emoji.js', 'emoji-data.js', 'intro.js', 'push.js', 'pushui.js', 'voice.js', 'polls.js', 'expenses.js', 'games.js', 'sudoku.js', 'profil.js', 'people.js', 'celebrate.js', 'qr-platba.png',
   'logo-badge.png', 'icon-192.png', 'icon-512.png', 'badge-96.png'
 ];
 

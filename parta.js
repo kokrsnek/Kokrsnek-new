@@ -158,8 +158,8 @@ export function render(root) {
     const pending = members.filter((m) => m.status !== 'approved');
     const approved = members.filter((m) => m.status === 'approved').sort((a, b) => a.name.localeCompare(b.name, 'cs'));
     const line = (m, btns) => `<div class="row" style="cursor:default">
-        ${avatar(m.name)}
-        <div style="min-width:0;flex:1"><div class="t">${esc(m.name)}${m.role === 'admin' ? ' <span class="pill go" style="height:20px;font-size:11px">správce</span>' : ''}</div>
+        <span data-profile="${esc(m.name)}">${avatar(m.name)}</span>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(m.name)}">${esc(m.name)}</span>${m.role === 'admin' ? ' <span class="pill go" style="height:20px;font-size:11px">správce</span>' : ''}</div>
           <div class="s" style="overflow:hidden;text-overflow:ellipsis">${esc(m.email || '')}${m.createdAt ? ' · ' + esc(fmtStamp(m.createdAt)) : ''}</div></div>
         ${btns}
       </div>`;

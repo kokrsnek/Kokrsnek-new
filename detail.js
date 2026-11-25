@@ -146,7 +146,7 @@ function mountDetail(host, ev, live) {
         box.innerHTML = `<div class="card oncheck" style="margin-top:14px">
           <button class="btn big block ${mine ? 'yes' : ''}" data-on>${mine ? '✓ Jsem na místě' : icon('pin', 18) + 'Jsem na místě'}</button>
           ${mine && mine.verified ? '<div class="sub" style="text-align:center;margin-top:6px">📍 ověřeno polohou</div>' : ''}
-          ${list.length ? `<div class="sub" style="margin:12px 0 6px">Kdo je na místě</div><div class="chips">${list.map((c) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(c.name, 22)}${esc(c.name)}${c.verified ? ' 📍' : ''}</span>`).join('')}</div>` : ''}
+          ${list.length ? `<div class="sub" style="margin:12px 0 6px">Kdo je na místě</div><div class="chips">${list.map((c) => `<span class="chip" data-profile="${esc(c.name)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(c.name, 22)}${esc(c.name)}${c.verified ? ' 📍' : ''}</span>`).join('')}</div>` : ''}
         </div>`;
         box.querySelector('[data-on]').onclick = async (e) => {
           e.currentTarget.disabled = true;
@@ -361,13 +361,13 @@ function mountDetail(host, ev, live) {
     if (past) {
       host.querySelector('[data-attsec]').style.display = att.going.length || isAdmin() ? '' : 'none';
       host.querySelector('[data-attcount]').textContent = att.going.length ? String(att.going.length) : '';
-      el.innerHTML = `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>`;
+      el.innerHTML = `<div class="chips">${att.going.map((n) => `<span class="chip" data-profile="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>`;
       return;
     }
     host.querySelector('[data-attcount]').textContent = att.going.length ? `${att.going.length} ${att.going.length === 1 ? 'jde' : (att.going.length < 5 ? 'jdou' : 'jde')}` : '';
     el.innerHTML = `
-      ${att.going.length ? `<div class="chips">${att.going.map((n) => `<span class="chip" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>` : '<div class="sub">Zatím nikdo.</div>'}
-      ${att.declined.length ? `<div class="sub" style="margin:10px 0 6px">Nejdou</div><div class="chips">${att.declined.map((n) => `<span class="chip dash">${esc(n)}</span>`).join('')}</div>` : ''}
+      ${att.going.length ? `<div class="chips">${att.going.map((n) => `<span class="chip" data-profile="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</span>`).join('')}</div>` : '<div class="sub">Zatím nikdo.</div>'}
+      ${att.declined.length ? `<div class="sub" style="margin:10px 0 6px">Nejdou</div><div class="chips">${att.declined.map((n) => `<span class="chip dash" data-profile="${esc(n)}">${esc(n)}</span>`).join('')}</div>` : ''}
       ${past ? '' : `<div style="margin-top:14px">${attendButtons(ev, att)}</div>`}`;
     el.querySelectorAll('[data-att]').forEach((b) => { b.onclick = () => changeAttendance(ev, b.dataset.att, att); });
   }
@@ -412,8 +412,8 @@ function mountDetail(host, ev, live) {
     el.innerHTML = ordered.length ? ordered.map((c) => {
       const rs = sortedReactions(c.reactions);
       return `<div class="com" data-cid="${esc(c.id)}" ${c.parentId ? 'style="margin-left:42px"' : ''}>
-        ${avatar(c.user || '?', 32)}
-        <div style="min-width:0;flex:1"><div class="bub"><b style="font-size:13px">${esc(c.user || '?')}</b><div>${linkify(c.text || '')}</div>
+        <span data-profile="${esc(c.user || '')}">${avatar(c.user || '?', 32)}</span>
+        <div style="min-width:0;flex:1"><div class="bub"><b style="font-size:13px" data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</b><div>${linkify(c.text || '')}</div>
           ${(c.images || []).map((src) => `<img src="${esc(src)}" alt="" loading="lazy">`).join('')}
           <div class="ts">${esc(fmtStamp(c.at))}${!ro && c.user === me ? ` · <button data-del="${esc(c.id)}" style="background:none;border:none;color:var(--muted);padding:0;font-size:11px;text-decoration:underline">smazat</button>` : ''}</div></div>
           ${rs.length ? `<div class="reacts">${rs.map(([k, l]) => `<button class="react ${l.includes(me) ? 'on' : ''}" data-creact="${esc(k)}">${emo(k, 16)}<span>${l.length}</span></button>`).join('')}</div>` : ''}</div>

@@ -74,8 +74,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
     em.forEach(([, e]) => { emCount[e] = (emCount[e] || 0) + 1; });
     const cs = comments[c.id];
     return `<div class="ci" data-ci="${esc(c.id)}">
-      <div class="cihead">${avatar(c.user || '?', 36)}
-        <div style="min-width:0;flex:1"><div class="t">${esc(c.user || '?')}${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}</div><div class="s">${esc(when(c.at))}</div></div>
+      <div class="cihead"><span data-profile="${esc(c.user || '')}">${avatar(c.user || '?', 36)}</span>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}</div><div class="s">${esc(when(c.at))}</div></div>
         ${c.lat != null && c.lng != null
           ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
           : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
@@ -94,7 +94,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
         <button class="pill" data-act="com">${icon('chat', 14)} ${c.commentCount || (cs ? cs.length : 0) || ''}</button>
         ${mine && w ? `<button class="pill" data-act="del" aria-label="Smazat">${icon('trash', 14)}</button>` : ''}
       </div>
-      ${open.has(c.id) ? `<div class="cicoms">${cs ? (cs.length ? cs.map((m) => `<div class="com">${avatar(m.user || '?', 26)}<div class="bub"><b style="font-size:12px">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub">Zatím bez komentářů.</div>') : spinner()}
+      ${open.has(c.id) ? `<div class="cicoms">${cs ? (cs.length ? cs.map((m) => `<div class="com"><span data-profile="${esc(m.user || '')}">${avatar(m.user || '?', 26)}</span><div class="bub"><b style="font-size:12px" data-profile="${esc(m.user || '')}">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub">Zatím bez komentářů.</div>') : spinner()}
         ${w ? `<form class="inrow" data-cform style="margin-top:8px"><input class="input" name="t" placeholder="Komentář" maxlength="300" autocomplete="off"><button class="ibtn" aria-label="Odeslat">${icon('next', 20, 2.4)}</button></form>` : ''}</div>` : ''}
     </div>`;
   }
@@ -249,7 +249,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
           <span class="pl-t"><b>${esc(g.name)}</b><small>${ppl}</small><small>naposledy ${esc(when(g.items[0].at))}${myPos && g.lat != null ? ' · ' + fmtD(dist(myPos, g)) : ''}</small></span>
           <span class="pl-n">${g.items.length}×</span></button>
         ${op ? `<div class="pl-d">${g.lat != null ? `<a href="${esc(gplace(g))}" target="_blank" rel="noopener">Otevřít v Google Mapách</a>` : ''}
-          ${g.items.slice(0, 20).map((d) => `<div class="pl-r">${avatar(d.user || '?', 26)}<span><b>${esc(d.user || '?')}</b>${d.note ? `<small>„${esc(d.note)}“</small>` : ''}</span><small>${esc(when(d.at))}</small>${d.photo ? `<img src="${esc(d.photo)}" alt="" loading="lazy">` : ''}</div>`).join('')}
+          ${g.items.slice(0, 20).map((d) => `<div class="pl-r"><span data-profile="${esc(d.user || '')}">${avatar(d.user || '?', 26)}</span><span><b data-profile="${esc(d.user || '')}">${esc(d.user || '?')}</b>${d.note ? `<small>„${esc(d.note)}“</small>` : ''}</span><small>${esc(when(d.at))}</small>${d.photo ? `<img src="${esc(d.photo)}" alt="" loading="lazy">` : ''}</div>`).join('')}
           ${g.items.length > 20 ? `<div class="sub">…a ${g.items.length - 20} starších</div>` : ''}</div>` : ''}
       </div>`;
     }).join('')}</div>`;

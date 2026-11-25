@@ -316,9 +316,9 @@ export function renderThread(root, { id }) {
       const reacts = sortedReactions(m.reactions).map(([e, l]) =>
         `<button class="react ${l.includes(me) ? 'on' : ''}" data-react="${esc(e)}" data-id="${esc(m.id)}">${emo(e, 16)}<span>${l.length}</span></button>`).join('');
       html += `<div class="msg ${mine ? 'mine' : ''}" data-id="${esc(m.id)}">
-        ${!mine && group ? (showName ? avatar(m.from || '?', 28) : '<span class="avsp"></span>') : ''}
+        ${!mine && group ? (showName ? `<span data-profile="${esc(m.from || '')}">${avatar(m.from || '?', 28)}</span>` : '<span class="avsp"></span>') : ''}
         <div class="mcol">
-          ${showName ? `<div class="mname">${esc(m.from || '?')}</div>` : ''}
+          ${showName ? `<div class="mname" data-profile="${esc(m.from || '')}">${esc(m.from || '?')}</div>` : ''}
           ${m.game ? gameCardHtml(m.game, gamesMap.get(m.game.id), me) : `<div class="bubble ${m.image || m.audio ? 'media' : ''}">
             ${m.forwardedFrom ? `<div class="fwd">přeposláno od ${esc(m.forwardedFrom)}</div>` : ''}
             ${m.replyTo ? `<div class="quote"><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
