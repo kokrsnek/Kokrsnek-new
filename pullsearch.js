@@ -4,13 +4,14 @@
 // a hledání se zavře tahem po řádku s polem.
 import { icon, esc } from './util.js';
 
-export function pullSearch({ scroll, before = scroll, placeholder = 'Hledat', onQuery, skip = null }) {
+export function pullSearch({ scroll, before = scroll, placeholder = 'Hledat', onQuery, skip = null, extra = '', onExtra = null }) {
   const pull = document.createElement('div');
   pull.className = 'pullind'; pull.setAttribute('aria-hidden', 'true');
   pull.innerHTML = `<div class="pullpill">${icon('search', 18)}<span>${esc(placeholder)}</span></div><div class="pulltxt">↓ Táhni dál</div>`;
   const sbox = document.createElement('div');
   sbox.className = 'sboxrow'; sbox.style.display = 'none';
-  sbox.innerHTML = `<input class="input" type="search" placeholder="${esc(placeholder)}" aria-label="Hledat" autocomplete="off" enterkeyhint="search">`;
+  sbox.innerHTML = `<input class="input" type="search" placeholder="${esc(placeholder)}" aria-label="Hledat" autocomplete="off" enterkeyhint="search">${extra}`;
+  if (onExtra) sbox.lastElementChild.addEventListener('click', (e) => { e.preventDefault(); onExtra(); });
   before.before(pull, sbox);
   const input = sbox.querySelector('input'), pullTxt = pull.querySelector('.pulltxt');
   let open = false, q = '';
@@ -25,7 +26,9 @@ export function pullSearch({ scroll, before = scroll, placeholder = 'Hledat', on
   };
   input.addEventListener('input', () => { q = input.value.trim(); onQuery(q); });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
-  input.addEventListener('blur', () => setTimeout(() => { if (open && !q && document.activeElement !== input) set(false); }, 120));
+  let extraAt = 0;
+  sbox.addEventListener('pointerdown', (e) => { if (e.target !== input) extraAt = Date.now(); });
+  input.addEventListener('blur', () => setTimeout(() => { if (open && !q && document.activeElement !== input && Date.now() - extraAt > 400) set(false); }, 120));
 
   const PULL = 70;
   let py0 = 0, px0 = 0, pd = 0, axis = null, pulling = false, closing = false;

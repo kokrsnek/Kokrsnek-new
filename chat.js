@@ -2,7 +2,7 @@
 // Skutečná vlákna party (chats/{id}/messages) se čtou. Ve zkušebním provozu
 // se píše jen do testovacího vlákna v2_chats/test; s CHAT_LIVE se píše naostro.
 import { esc, icon, fmtTime, sameDay, dayDiff, toDate, DAYS_FULL, looseName } from './util.js';
-import { tabbar, avatar, toast, spinner, confirmDanger } from './ui.js';
+import { tabbar, avatar, toast, spinner, confirmDanger, goFocus } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
@@ -48,6 +48,83 @@ const snippet = (m) => m ? (m.game ? 'Hra' : m.text ? m.text : m.image ? 'Fotka'
 // Ikona před textem v seznamu chatů (fotka, hlasovka, hra).
 const snipIcon = (m) => { const n = !m || m.text ? '' : m.game ? 'gamepad' : m.image ? 'camera' : m.audio ? 'mic' : ''; return n ? `<span class="snipic">${icon(n, 15)}</span>` : ''; };
 
+// ---------- všechny zprávy všech chatů (hledání, fotky) ----------
+// Načte se jednou při prvním hledání; dvě minuty se drží v paměti.
+let allMsgs = null, allAt = 0;
+export function loadAllMessages(me) {
+  if (allMsgs && Date.now() - allAt < 120000) return allMsgs;
+  allAt = Date.now();
+  allMsgs = (async () => {
+    const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
+    const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n))];
+    let metas = {};
+    try { (await getDocs(collection(db, 'chats'))).docs.forEach((d) => { metas[d.id] = d.data(); }); } catch (x) { /* nic */ }
+    const lists = await Promise.all(threads.map((id) => getDocs(query(collection(db, ...threadPath(id)), orderBy('at', 'desc'), limit(3000)))
+      .then((s) => {
+        const cut = ((metas[id] || {}).hiddenBy || {})[me];
+        const cutT = cut ? new Date(cut).getTime() : 0;
+        return s.docs.map((d) => ({ id: d.id, thread: id, ...d.data() })).filter((m) => (toDate(m.at)?.getTime() || 0) > cutT);
+      }).catch(() => [])));
+    return lists.flat().sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
+  })();
+  allMsgs.catch(() => { allMsgs = null; });
+  return allMsgs;
+}
+
+// ---------- fotky ze všech chatů (#/chat-fotky) ----------
+export function renderPhotos(root) {
+  const me = myName();
+  let alive = true, list = [], cur = -1;
+  root.innerHTML = `<div class="screen">
+    <div class="top"><button class="ibtn" data-back aria-label="Zpět">${icon('back')}</button><div style="flex:1;min-width:0"><div class="h1">Fotky z chatů</div><div class="sub" data-sub>Načítám…</div></div></div>
+    <div class="scroll" data-body>${spinner()}</div>
+  </div>`;
+  const body = root.querySelector('[data-body]'), sub = root.querySelector('[data-sub]');
+  root.querySelector('[data-back]').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#/chat'; };
+  const MONTHS = ['leden', 'únor', 'březen', 'duben', 'květen', 'červen', 'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'];
+  loadAllMessages(me).then((all) => {
+    if (!alive) return;
+    list = all.filter((m) => m.image);
+    sub.textContent = list.length ? `${list.length} ${list.length === 1 ? 'fotka' : list.length < 5 ? 'fotky' : 'fotek'} · od nejnovější` : '';
+    if (!list.length) { body.innerHTML = '<div class="empty">V chatech zatím nejsou žádné fotky.</div>'; return; }
+    let html = '', lastKey = '';
+    list.forEach((m, i) => {
+      const d = toDate(m.at) || new Date(0), key = d.getFullYear() + '-' + d.getMonth();
+      if (key !== lastKey) { html += (lastKey ? '</div>' : '') + `<div class="section-h">${MONTHS[d.getMonth()]} ${d.getFullYear()}</div><div class="chph">`; lastKey = key; }
+      html += `<button data-i="${i}"><img src="${esc(m.image)}" alt="" loading="lazy"></button>`;
+    });
+    body.innerHTML = html + '</div>';
+  }).catch(() => { body.innerHTML = '<div class="empty">Fotky se nepodařilo načíst.</div>'; });
+
+  // Prohlížeč: velká fotka, kdo a kde ji poslal, tah do strany = další/předchozí.
+  const viewer = document.createElement('div');
+  viewer.className = 'chpv'; viewer.hidden = true;
+  viewer.innerHTML = `<div class="chpvtop"><button class="ibtn" data-x aria-label="Zavřít">${icon('close', 20)}</button><div class="chpvinfo" data-info></div><button class="btn" data-go>Otevřít v chatu</button></div><img data-img alt="">`;
+  root.querySelector('.screen').appendChild(viewer);
+  const show = (i) => {
+    cur = Math.max(0, Math.min(list.length - 1, i));
+    const m = list[cur], d = toDate(m.at);
+    viewer.querySelector('[data-img]').src = m.image;
+    viewer.querySelector('[data-info]').innerHTML = `<b>${esc(m.from || '?')}</b><small>${esc(threadTitle(m.thread))} · ${d ? esc(`${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} ${fmtTime(d)}`) : ''}</small>`;
+    viewer.hidden = false;
+  };
+  body.addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (b) show(+b.dataset.i); });
+  viewer.querySelector('[data-x]').onclick = () => { viewer.hidden = true; };
+  viewer.querySelector('[data-go]').onclick = () => {
+    const m = list[cur]; if (!m) return;
+    const sq = m.id.replace(/["\\]/g, '');
+    goFocus('#/chat/' + encodeURIComponent(m.thread), `[data-photo-id="${sq}"], [data-id="${sq}"]`);
+  };
+  let vx = null;
+  viewer.addEventListener('touchstart', (e) => { vx = e.touches[0].clientX; }, { passive: true });
+  viewer.addEventListener('touchend', (e) => {
+    if (vx == null) return;
+    const dx = e.changedTouches[0].clientX - vx; vx = null;
+    if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1));
+  });
+  return () => { alive = false; };
+}
+
 // ---------- seznam vláken ----------
 const SWB = 64;   // šířka místa pro jeden kroužek při odsunutí chatu
 
@@ -59,8 +136,15 @@ export function renderList(root) {
     ${tabbar('chat')}
   </div>`;
   const box = root.querySelector('[data-list]');
-  // Hledání konverzace (jméno, poslední zpráva): potažením seznamu dolů.
-  pullSearch({ scroll: box, placeholder: 'Hledat v chatech', skip: '.swrow.open', onQuery: (v) => { q = v; draw(); } });
+  // Hledání ve všech zprávách všech chatů: potažením seznamu dolů. Vpravo v poli fotky ze všech chatů.
+  let found = null, loadingAll = false;
+  pullSearch({ scroll: box, placeholder: 'Hledat ve všech chatech', skip: '.swrow.open',
+    extra: `<button class="ibtn" type="button" aria-label="Fotky ze všech chatů">${icon('photo', 20)}</button>`,
+    onExtra: () => { location.hash = '#/chat-fotky'; },
+    onQuery: (v) => {
+      q = v; draw();
+      if (q && !found && !loadingAll) { loadingAll = true; loadAllMessages(me).then((l) => { found = l; loadingAll = false; if (alive) draw(); }); }
+    } });
   const others = PARTY_NAMES.filter((n) => norm(n) !== norm(me));
   const threads = [PARTY_THREAD, ...others.map((n) => dmThreadId(me, n)), ...(CHAT_LIVE ? [] : [TEST_THREAD])];
   const last = new Map();
@@ -77,11 +161,32 @@ export function renderList(root) {
     return t <= new Date(h).getTime();
   };
 
+  // Výsledky hledání ve zprávách: nejnovější nahoře, klepnutí otevře chat přímo na té zprávě.
+  const msgResults = () => {
+    if (!found) return `<div class="section-h">Zprávy</div>${spinner()}`;
+    const nqq = nq(q);
+    const hits = found.filter((m) => m.text && nq(m.text).includes(nqq)).slice(0, 150);
+    if (!hits.length) return '<div class="section-h">Zprávy</div><div class="empty" style="padding:18px">Ve zprávách nic nenalezeno.</div>';
+    return `<div class="section-h">Zprávy · ${hits.length >= 150 ? '150+' : hits.length}</div><div class="chsr">${hits.map((m) => {
+      const t = m.text, i = nq(t).indexOf(nqq);
+      const a = Math.max(0, i - 40), b = Math.min(t.length, i + nqq.length + 60);
+      const snip = (a ? '…' : '') + esc(t.slice(a, i)) + '<mark>' + esc(t.slice(i, i + nqq.length)) + '</mark>' + esc(t.slice(i + nqq.length, b)) + (b < t.length ? '…' : '');
+      return `<button class="chsrow" data-hit="${esc(m.thread)}|${esc(m.id)}">${avatar(m.from || '?', 34)}<div style="min-width:0;flex:1"><div class="t"><b>${esc(m.from || '?')}</b><span>${m.thread === PARTY_THREAD ? ' · Celá parta' : ''}</span><small>${esc(stamp(m.at))}</small></div><div class="s">${snip}</div></div></button>`;
+    }).join('')}</div>`;
+  };
+  box.addEventListener('click', (e) => {
+    const h = e.target.closest('[data-hit]');
+    if (!h) return;
+    const [tid, mid] = h.dataset.hit.split('|');
+    const sq = mid.replace(/["\\]/g, '');
+    goFocus('#/chat/' + encodeURIComponent(tid), `[data-id="${sq}"], [data-photo-id="${sq}"]`);
+  });
+
   const draw = () => {
     if (dragging) { pending = true; return; }
     const rows = threads
       .filter((id) => (id === PARTY_THREAD || id === TEST_THREAD || last.get(id)) && !isHidden(id))
-      .filter((id) => !q || nq(`${threadTitle(id)} ${last.get(id) ? snippet(last.get(id)) + ' ' + (last.get(id).from || '') : ''}`).includes(nq(q)))
+      .filter((id) => !q || nq(threadTitle(id)).includes(nq(q)))
       .sort((a, b) => {
         const pa = isPinned(a), pb = isPinned(b);
         if (pa !== pb) return pa ? -1 : 1;
@@ -111,7 +216,7 @@ export function renderList(root) {
           <div class="s" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? esc(id === PARTY_THREAD && m.from ? m.from + ': ' : '') + snipIcon(m) + esc(snippet(m)) : (id === TEST_THREAD ? 'Sem jde psát ve zkušebním provozu' : 'Zatím žádné zprávy')}</div></div>
         <div class="r">${m ? esc(stamp(m.at)) : ''}<span class="swicons">${mute ? icon('bellOff', 14) : ''}${pin ? `<i class="pinic">${icon('thumbtack', 14)}</i>` : ''}</span></div>
       </a></div>`;
-    }).join('') + (q && !rows.length && !noDm.length ? '<div class="empty">Nic nenalezeno.</div>' : '') + (q ? '' : pollRows(polls)) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
+    }).join('') + (q ? msgResults() : '') + (q ? '' : pollRows(polls)) + (noDm.length ? `<div class="section-h">Napsat</div><div class="chips">${noDm.map((n) => `<a class="chip" href="#/chat/${encodeURIComponent(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;color:inherit;text-decoration:none">${avatar(n, 22)}${esc(n)}</a>`).join('')}</div>` : '');
   };
 
   // Nastavení vláken (ztlumení, připnutí, smazání) — chats/{id}.

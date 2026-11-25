@@ -91,6 +91,7 @@ const ROUTES = [
   // z notifikace: otevřít Feed a sjet na konkrétní check-in
   [/^\/kde\/c\/([^/]+)$/, (m) => kde.renderDetail(root, { id: decodeURIComponent(m[1]) })],
   [/^\/chat$/, () => chat.renderList(root)],
+  [/^\/chat-fotky$/, () => chat.renderPhotos(root)],
   [/^\/chat\/([^/]+)$/, (m) => chat.renderThread(root, { id: decodeURIComponent(m[1]) })],
   // Cíle z notifikací (chatWith = jméno nebo celá parta)
   [/^\/s\/chat\/([^/]+)$/, (m) => { const n = decodeURIComponent(m[1]); location.replace('#/chat/' + encodeURIComponent(n === PARTY_THREAD ? PARTY_THREAD : dmThreadId(myName(), n))); }],
