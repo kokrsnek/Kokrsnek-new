@@ -230,7 +230,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
       </div>
       <a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>
       ${c.place ? `<div class="ciplace">${esc(c.place.split(',')[0])}</div>` : ''}
-      <div class="cinote" style="color:var(--muted)">Jsem na místě${c.verified ? ' · 📍 ověřeno polohou' : ''}</div>
+      <div class="cinote" style="color:var(--muted)">${active ? 'Jsem na místě' : 'Byl jsem tu'}${c.verified ? ' · 📍 ověřeno polohou' : ''}</div>
     </div>`;
   }
 
