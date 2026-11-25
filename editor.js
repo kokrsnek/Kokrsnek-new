@@ -26,6 +26,7 @@ export function render(root, { id }) {
         <button class="side r" data-save>Uložit</button>
       </div>
       <form class="form" novalidate>
+        ${ev && ev.source === 'gcal' && !LIVE ? `<div class="banner" style="margin:0">${icon('calendar', 18)}<span>Akce je převzatá z Google Kalendáře. Po uložení ji import z kalendáře už nepřepíše. Stará aplikace změnu do 1. 12. neuvidí.</span></div>` : ''}
         ${ev || LIVE ? '' : isAdmin()
           ? `<label class="banner" style="margin:0;display:flex;gap:10px;align-items:center"><input type="checkbox" name="isTest"><span><b>Jen testovací</b> — uvidí ji jen nová aplikace a parta nedostane notifikaci. Bez zaškrtnutí je akce naostro pro celou partu (stará aplikace ji neuvidí, ta bere akce jen z Google Kalendáře).</span></label>`
           : `<div class="banner" style="margin:0">${icon('lock', 18)}<span>Akce se uloží jako testovací — naostro je zakládá jen správce.</span></div>`}
@@ -40,13 +41,21 @@ export function render(root, { id }) {
         <div class="field"><label for="f-album">Odkaz na album fotek</label><input id="f-album" class="input" name="photoAlbum" type="url" inputmode="url" value="${esc(ev?.photoAlbum || '')}" placeholder="https://photos.app.goo.gl/…"></div>
         <div class="err" role="alert"></div>
         <button type="submit" class="btn primary big block">Uložit</button>
-        ${ev ? `<button type="button" class="btn danger block" data-del>${icon('trash', 18)}Smazat akci</button>` : ''}
+        ${ev && !(ev.source === 'gcal' && !LIVE) ? `<button type="button" class="btn danger block" data-del>${icon('trash', 18)}Smazat akci</button>` : ''}
       </form>
     </div>`;
     const form = root.querySelector('form');
     const err = root.querySelector('.err');
     const syncTimes = () => root.querySelectorAll('[data-time]').forEach((t) => { t.style.display = form.allDay.checked ? 'none' : ''; });
-    form.allDay.onchange = syncTimes; syncTimes();
+    // Přepnutí akce „0:00 – 0:00 dalšího dne“ na celodenní: konec je ten předchozí den, ne další.
+    form.allDay.onchange = () => {
+      if (form.allDay.checked && (form.et.value || '00:00') === '00:00' && form.ed.value > form.sd.value) {
+        const d = new Date(form.ed.value + 'T12:00'); d.setDate(d.getDate() - 1);
+        form.ed.value = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      }
+      syncTimes();
+    };
+    syncTimes();
     form.sd.addEventListener('change', () => { if (form.ed.value < form.sd.value) form.ed.value = form.sd.value; });
 
     const save = async () => {
@@ -64,7 +73,9 @@ export function render(root, { id }) {
       if (album && !/^https?:\/\//.test(album)) { err.textContent = 'Odkaz na album musí začínat https://'; return; }
       root.querySelectorAll('button').forEach((b) => { b.disabled = true; });
       try {
-        const newId = await saveEvent({ title, place: form.place.value, description: form.description.value, start, end, allDay: ad, photoAlbum: album, isTest: !isAdmin() || !!(form.isTest && form.isTest.checked) }, ev?.id || null);
+        const newId = await saveEvent({ title, place: form.place.value, description: form.description.value, start, end, allDay: ad, photoAlbum: album, isTest: !isAdmin() || !!(form.isTest && form.isTest.checked),
+          // akce z Google Kalendáře upravená v aplikaci: import ji už nepřepíše
+          keepLocal: !!(ev && ev.source === 'gcal') }, ev?.id || null);
         toast('Uloženo');
         location.replace('#/akce/' + encodeURIComponent(newId));
       } catch (x) {
@@ -88,7 +99,7 @@ export function render(root, { id }) {
     if (drawn) return;
     const ev = findEvent(id);
     if (!ev) { if (events.loaded) root.innerHTML = '<div class="screen"><div class="empty">Akce nenalezena. <a href="#/akce">Zpět</a></div></div>'; return; }
-    const editable = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || ((ev.source === 'app' || LIVE) && isAdmin());
+    const editable = (ev.isTest && ev.createdBy === myName()) || isAdmin();
     if (!editable) {
       root.innerHTML = `<div class="screen"><div class="empty">Tuhle akci tady upravit nejde${ev.source === 'gcal' ? ' — patří Google Kalendáři (opravuje se tam a pak znovu importuje)' : ''}.<br><a href="#/akce/${encodeURIComponent(ev.id)}">Zpět</a></div></div>`;
       drawn = true;

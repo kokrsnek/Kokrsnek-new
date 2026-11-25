@@ -56,7 +56,8 @@ function mountDetail(host, ev, live) {
   function shell() {
     const past = isPast(ev);
     const ro = !canWrite(ev);
-    const mine = (ev.isTest && (ev.createdBy === myName() || isAdmin())) || ((ev.source === 'app' || LIVE) && isAdmin());
+    // Správce upravuje všechny akce (i převzaté z Google Kalendáře).
+    const mine = (ev.isTest && ev.createdBy === myName()) || isAdmin();
     const enterCls = live && enterFrom ? (enterFrom > 0 ? ' det-in-r' : ' det-in-l') : '';
     if (live) enterFrom = 0;
     host.innerHTML = `<div class="screen${enterCls}" style="padding-top:0">

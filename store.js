@@ -381,7 +381,7 @@ export async function saveEvent(data, id = null) {
     photoAlbum: (data.photoAlbum || '').trim(), updatedAt: serverTimestamp(), updatedBy: myName()
   };
   if (id) {
-    await updateDoc(doc(db, 'v2_akce', id), payload);
+    await updateDoc(doc(db, 'v2_akce', id), data.keepLocal ? { ...payload, keepLocal: true } : payload);
     return id;
   }
   const ref = doc(collection(db, 'v2_akce'));

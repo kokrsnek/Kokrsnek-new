@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.78',
+    date: '25. 11. 2026',
+    items: [
+      'Správce může upravit každou akci (název, místo, datum, čas, popis, album) – i převzatou z Google Kalendáře. Takovou akci pak import z kalendáře už nepřepíše.',
+      'Oprava: akce „0:00 – 0:00 dalšího dne“ přepnutá na celý den se už neuloží jako dvoudenní.'
+    ]
+  },
+  {
     version: '1.77',
     date: '25. 11. 2026',
     items: [
