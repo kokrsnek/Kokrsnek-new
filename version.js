@@ -6,7 +6,8 @@ export const CHANGELOG = [
     version: '1.85',
     date: '25. 11. 2026',
     items: [
-      'Akce: hledání už nemá křížek – zavřeš ho posunutím karty nahoru (funguje i s otevřenou klávesnicí a po napsání textu).'
+      'Akce: hledání už nemá křížek – zavřeš ho posunutím karty nahoru (funguje i s otevřenou klávesnicí a po napsání textu).',
+      'Prázdné hledání se zavře i zavřením klávesnice.'
     ]
   },
   {

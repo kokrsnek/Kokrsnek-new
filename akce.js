@@ -52,6 +52,12 @@ export function render(root, { tab }) {
     q = ''; sinput.value = ''; sinput.blur();
     if (had) draw();
   };
+  // Zavření klávesnice (Hotovo / tah dolů po klávesnici) zavře i hledání, pokud v něm nic není.
+  // S napsaným textem zůstane otevřené, ať jde procházet výsledky.
+  sinput.addEventListener('blur', () => setTimeout(() => {
+    if (searchOpen && !q.trim() && document.activeElement !== sinput) setSearch(false);
+  }, 120));
+  sinput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sinput.blur(); });
   const pull = root.querySelector('[data-pull]'), pullTxt = root.querySelector('[data-pulltxt]');
   const PULL = 70;
   let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false, closing = false;
