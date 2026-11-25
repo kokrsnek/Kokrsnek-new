@@ -118,6 +118,17 @@
 .theme-opt .sw{height:64px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;padding:8px;font-size:15px;overflow:hidden}
 .theme-opt .sw i{display:block;height:8px;border-radius:100px}
 .theme-opt small{font-weight:500;color:var(--muted);font-size:12px}
+/* jeden řádek v nastavení + mřížka 3×N v nabídce zespodu */
+.themerow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px 10px 10px;border-radius:var(--r-lg);border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.themerow .sw.mini{width:64px;height:44px;flex:0 0 auto;font-size:0;padding:6px;border-radius:9px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.themerow .sw.mini i{display:block;height:6px;border-radius:100px}
+.themerow .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.themerow .tx b{font-size:16px}.themerow .tx small{font-weight:500;color:var(--muted);font-size:13px}
+.themerow .chg{color:var(--accent-text);font-weight:700;font-size:14px;white-space:nowrap}
+.themes3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:60vh;overflow-y:auto}
+.themes3 .theme-opt{padding:6px;gap:5px;font-size:12.5px;font-weight:700;align-items:stretch;text-align:center}
+.themes3 .theme-opt .sw{height:50px;font-size:12px;padding:6px 7px;border-radius:9px;text-align:left}
+.themes3 .theme-opt .sw i{height:6px}
 
 
 /* =====================================================================

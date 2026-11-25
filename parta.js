@@ -29,8 +29,8 @@ export function render(root) {
       <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, hry, nová alba… Když máš zapnuté obě aplikace, chodí upozornění jen do nové.</div>
 
       <div class="section-h">Vzhled</div>
-      <div class="modeseg" role="radiogroup" aria-label="Tmavý nebo světlý režim" data-modes></div>
-      <div class="themes" role="radiogroup" aria-label="Styl vzhledu" data-themes></div>
+      <button class="themerow" data-themerow aria-label="Změnit vzhled"></button>
+      <div class="modeseg" role="radiogroup" aria-label="Tmavý nebo světlý režim" data-modes style="margin-top:10px"></div>
       <div class="note" style="margin-top:8px">Volba platí v tomhle zařízení.</div>
 
       ${admin && !LIVE ? `<div class="section-h">Akce</div>
@@ -61,25 +61,42 @@ export function render(root) {
     ${tabbar('parta')}
   </div>`;
 
-  // Výběr stylu: každý náhled je ve vlastních barvách a písmu.
+  // Vzhled: v nastavení jen jeden řádek s náhledem, výběr všech vzhledů vyjede zespodu.
+  // Každý náhled je ve vlastních barvách a písmu; vybraný se použije hned.
   preloadAllFonts();
-  const themesEl = root.querySelector('[data-themes]');
+  const swatch = (t, cls = '') => `<span class="sw ${cls}" style="background:${t.bg};color:${t.ink};font-family:'${t.font}',sans-serif;font-weight:800">
+      <span>${esc(t.name)}</span>
+      <span style="display:flex;gap:5px"><i style="flex:2;background:${t.a}"></i><i style="flex:1;background:${t.b}"></i></span></span>`;
+  const rowEl = root.querySelector('[data-themerow]');
   const drawThemes = () => {
-    const cur = currentTheme().id;
-    themesEl.innerHTML = THEMES.map((t) => `<button class="theme-opt ${t.id === cur ? 'on' : ''}" role="radio" aria-checked="${t.id === cur}" data-theme-id="${t.id}">
-        <span class="sw" style="background:${t.bg};color:${t.ink};font-family:'${t.font}',sans-serif;font-weight:800">
-          <span>${esc(t.name)}</span>
-          <span style="display:flex;gap:6px"><i style="flex:2;background:${t.a}"></i><i style="flex:1;background:${t.b}"></i></span>
-        </span>
-        <span>${esc(t.name)} <small>· ${esc(t.note)}</small></span>
-      </button>`).join('');
-    themesEl.querySelectorAll('[data-theme-id]').forEach((b) => { b.onclick = () => { applyTheme(b.dataset.themeId); drawThemes(); }; });
+    const t = currentTheme();
+    rowEl.innerHTML = `${swatch(t, 'mini')}<span class="tx"><b>${esc(t.name)}</b><small>${esc(t.note)}</small></span><span class="chg">Změnit ›</span>`;
     // Tmavý / Světlý / Podle telefonu — jen u Původního vzhledu.
     const modesEl = root.querySelector('[data-modes]');
     const m = currentMode();
-    modesEl.hidden = cur !== 'puvodni';
+    modesEl.hidden = t.id !== 'puvodni';
     modesEl.innerHTML = MODES.map(([k, l]) => `<button role="radio" aria-checked="${k === m}" class="${k === m ? 'on' : ''}" data-mode-id="${k}">${l}</button>`).join('');
     modesEl.querySelectorAll('[data-mode-id]').forEach((b) => { b.onclick = () => { setMode(b.dataset.modeId); drawThemes(); }; });
+  };
+  rowEl.onclick = () => {
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vzhled"><div class="grab"></div>
+      <h3>Vzhled</h3>
+      <div class="themes3" role="radiogroup" aria-label="Styl vzhledu" data-list></div>
+      <button class="btn primary block" data-done style="margin-top:14px">Hotovo</button></div>`;
+    const list = bd.querySelector('[data-list]');
+    const draw = () => {
+      const cur = currentTheme().id;
+      list.innerHTML = THEMES.map((t) => `<button class="theme-opt ${t.id === cur ? 'on' : ''}" role="radio" aria-checked="${t.id === cur}" data-theme-id="${t.id}">
+          ${swatch(t)}<span>${t.id === cur ? '✓ ' : ''}${esc(t.name)}</span></button>`).join('');
+    };
+    list.onclick = (e) => { const b = e.target.closest('[data-theme-id]'); if (!b) return; applyTheme(b.dataset.themeId); draw(); drawThemes(); };
+    const close = () => bd.remove();
+    bd.addEventListener('click', (e) => { if (e.target === bd) close(); });
+    bd.querySelector('[data-done]').onclick = close;
+    draw();
+    document.body.appendChild(bd);
   };
   drawThemes();
 

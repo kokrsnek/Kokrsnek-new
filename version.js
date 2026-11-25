@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.72',
+    date: '25. 11. 2026',
+    items: [
+      'Parta → Vzhled: místo dlouhé mřížky jen jeden řádek s náhledem. Po klepnutí vyjede zespodu výběr všech 11 vzhledů, vybraný se použije hned.'
+    ]
+  },
+  {
     version: '1.71',
     date: '25. 11. 2026',
     items: [
