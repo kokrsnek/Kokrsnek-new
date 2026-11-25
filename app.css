@@ -826,3 +826,5 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 @keyframes flashHl{0%,35%{box-shadow:0 0 0 3px var(--accent-hi),0 0 0 9px var(--accent-soft)}100%{box-shadow:0 0 0 0 transparent}}
 .pfit[data-go]{cursor:pointer}.pfit[data-go]:active{transform:scale(.985)}
 .pfit[data-go] .pfdt::after{content:' ›';font-weight:700}
+/* stará obrazovka během přechodu */
+.navold{position:fixed;inset:0;pointer-events:none;overflow:hidden}

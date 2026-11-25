@@ -3,6 +3,15 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.70',
+    date: '25. 11. 2026',
+    items: [
+      'Plynulé přechody mezi obrazovkami: karty dole se prolnou s malým posunem, kalendář se rozbalí z ikony a zpět se do ní složí, nastavení, detail akce, profil a další obrazovky přijedou zprava.',
+      'Swipe od levého okraje obrazovky = zpět.',
+      'Když má telefon zapnuté omezení pohybu, přechody se nepouštějí.'
+    ]
+  },
+  {
     version: '1.69',
     date: '25. 11. 2026',
     items: [

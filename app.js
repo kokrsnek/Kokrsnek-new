@@ -32,6 +32,7 @@ import { myName, isAdmin } from './auth.js';
 import { db, collection, query, where, onSnapshot } from './firebase.js';
 import { dmThreadId, PARTY_THREAD } from './chat.js';
 import { NAME_LABELS } from './config.js';
+import { navOut, navIn } from './nav.js';
 let pushChecked = false;
 
 const root = document.getElementById('app');
@@ -104,13 +105,18 @@ const ROUTES = [
   [/^\/hra\/([^/]+)$/, (m) => renderGame(root, { id: decodeURIComponent(m[1]), dmThreadId })]
 ];
 
-function mount(key, fn) {
+function mount(key, fn, path = null) {
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
   lastKey = key;
+  const nav = navOut(root, path);
   root.innerHTML = '';
+  if (path) window.scrollTo(0, 0);
   cleanup = fn() || null;
+  navIn(root, nav);
   runFocus();
 }
+
+
 
 function route(force = false) {
   // Stav přihlášení má přednost před adresou.
@@ -137,8 +143,7 @@ function route(force = false) {
     const m = path.match(re);
     if (m) {
       if (!force && lastKey === 'r:' + path) return;
-      window.scrollTo(0, 0);
-      return mount('r:' + path, () => fn(m));
+      return mount('r:' + path, () => fn(m), path);
     }
   }
   location.replace('#/akce');
