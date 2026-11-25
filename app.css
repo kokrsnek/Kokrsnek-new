@@ -153,6 +153,25 @@ textarea.input{height:auto;padding:12px 14px;resize:vertical;min-height:90px}
 .day.ev i{background:var(--coral-text)}
 .day.going i{background:var(--accent-hi)}
 .day.ev{font-weight:700}
+/* dny s akcí: vybarvené, větší, se stínem; u více akcí číslo místo tečky */
+.grid7{padding-top:4px;padding-bottom:4px}
+.day.ev:not(.out){background:var(--accent);color:var(--on-accent);border-color:var(--accent);transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.18);position:relative;z-index:1}
+.day.ev:not(.out) i{background:var(--on-accent);opacity:.9}
+.day.ev:not(.out).going{border-color:var(--accent-hi);box-shadow:0 0 0 2px var(--accent-hi),0 4px 12px rgba(0,0,0,.18)}
+.day.ev.out i{background:var(--day-out)}
+.day i:not(:empty){width:auto;height:auto;min-width:14px;padding:0 3px;border-radius:8px;font-style:normal;font-size:10px;line-height:14px;font-weight:800;background:var(--on-accent);color:var(--accent);opacity:1}
+.day.ev:not(.out).sel{box-shadow:0 0 0 3px var(--accent-hi),0 4px 12px rgba(0,0,0,.2);transform:scale(1.16)}
+.day.bump{animation:calBump .45s ease}
+@keyframes calBump{0%{transform:scale(1.1)}40%{transform:scale(1.24) translateY(-3px)}100%{transform:scale(1.1)}}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.calhead .chip{font:inherit;font-size:13px;font-weight:600;padding:6px 12px}
+.callist{display:flex;flex-direction:column}
+.calcard{transition:opacity .3s,transform .3s}
+.calcard.pre{opacity:0;transform:translateY(-8px)}
+.calbd{width:46px;height:46px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 auto;line-height:1.05}
+.calbd b{font-size:17px}.calbd small{font-size:11px;font-weight:600;opacity:.9}
+.pill.calgo{background:var(--accent-soft);color:var(--accent-text)}
+.calfly{position:fixed;z-index:60;border-radius:12px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;pointer-events:none;box-shadow:0 10px 22px rgba(0,0,0,.25)}
 
 /* Přihlášení */
 .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center;padding:24px}

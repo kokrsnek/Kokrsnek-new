@@ -1,5 +1,8 @@
-// Kalendář: měsíční mřížka, pod ní akce vybraného dne.
+// Kalendář: měsíční mřížka (dny s akcí vybarvené a větší), pod ní akce celého měsíce.
+// Po dvou sekundách akce „vypadnou“ ze svých dnů dolů do seznamu. Klepnutí na den zúží seznam na ten den.
 import { esc, icon, MONTHS_NOM, fmtWhen, fmtLongDate, sameDay, startOfDay } from './util.js';
+
+const MONTHS_LOC = ['lednu', 'únoru', 'březnu', 'dubnu', 'květnu', 'červnu', 'červenci', 'srpnu', 'září', 'říjnu', 'listopadu', 'prosinci'];
 import { tabbar, spinner, choose, toast, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
 import { watchEvents, events, cachedAttendance, loadAttendance, icsForMany, shareIcs } from './store.js';
@@ -13,7 +16,9 @@ export function render(root, { year, month }) {
   const now = new Date();
   const y = year ?? now.getFullYear();
   const m = month ?? now.getMonth();
-  let sel = (y === now.getFullYear() && m === now.getMonth()) ? startOfDay(now) : new Date(y, m, 1);
+  let sel = null;               // vybraný den; null = celý měsíc
+  let pending = true, dropT = null, flies = [];   // animace „pádu“ akcí do seznamu
+  const revealed = new Set();
   const prev = new Date(y, m - 1, 1), next = new Date(y, m + 1, 1);
   const href = (d) => `#/kalendar/${d.getFullYear()}-${d.getMonth() + 1}`;
 
@@ -29,7 +34,7 @@ export function render(root, { year, month }) {
       <button class="t mpick" data-pick aria-label="Vybrat měsíc a rok">${MONTHS_NOM[m]} ${y} <span aria-hidden="true">▾</span></button>
       <button class="ibtn ghost" data-mon="1" aria-label="Další měsíc">${icon('next')}</button>
     </div>
-    <div class="calswipe"><div data-grid class="${enterFrom ? (enterFrom > 0 ? 'cal-in-r' : 'cal-in-l') : ''}">${spinner()}</div></div>
+    <div class="calswipe" data-calarea><div data-grid class="${enterFrom ? (enterFrom > 0 ? 'cal-in-r' : 'cal-in-l') : ''}">${spinner()}</div></div>
     <div class="scroll" data-day style="padding-top:14px"></div>
     ${tabbar('akce')}
   </div>`;
@@ -71,7 +76,7 @@ export function render(root, { year, month }) {
     gridEl.style.transform = ''; gridEl.style.opacity = '';
   });
 
-  root.querySelector('[data-today]').onclick = () => { location.hash = '#/kalendar'; if (y === now.getFullYear() && m === now.getMonth()) { sel = startOfDay(now); draw(); } };
+  root.querySelector('[data-today]').onclick = () => { location.hash = '#/kalendar'; if (y === now.getFullYear() && m === now.getMonth()) { stopDrop(); sel = startOfDay(now); draw(); } };
 
   const evOn = (d) => events.list.filter((e) => {
     const s = startOfDay(e.start);
@@ -93,18 +98,78 @@ export function render(root, { year, month }) {
       ${days.map((d) => {
         const evs = evOn(d);
         const going = evs.some((e) => cachedAttendance(e.id)?.going.includes(me));
-        const cls = ['day', d.getMonth() !== m ? 'out' : '', sameDay(d, now) ? 'today' : '', sameDay(d, sel) ? 'sel' : '', evs.length ? 'ev' : '', going ? 'going' : ''].join(' ');
-        return `<button class="${cls}" data-d="${d.getTime()}" aria-label="${esc(fmtLongDate(d))}${evs.length ? ', ' + evs.length + ' akce' : ''}">${d.getDate()}<i></i></button>`;
+        const cls = ['day', d.getMonth() !== m ? 'out' : '', sameDay(d, now) ? 'today' : '', sel && sameDay(d, sel) ? 'sel' : '', evs.length ? 'ev' : '', going ? 'going' : ''].join(' ');
+        return `<button class="${cls}" data-d="${d.getTime()}" aria-label="${esc(fmtLongDate(d))}${evs.length ? ', ' + evs.length + ' akce' : ''}">${d.getDate()}<i>${evs.length > 1 ? evs.length : ''}</i></button>`;
       }).join('')}</div>`;
-    grid.querySelectorAll('[data-d]').forEach((b) => { b.onclick = () => { sel = new Date(+b.dataset.d); draw(); }; });
+    grid.querySelectorAll('[data-d]').forEach((b) => { b.onclick = () => { stopDrop(); const d = new Date(+b.dataset.d); sel = sel && sameDay(sel, d) ? null : d; draw(); }; });
 
-    const list = evOn(sel);
-    root.querySelector('[data-day]').innerHTML = `<div class="section-h" style="padding-top:0">${esc(fmtLongDate(sel))}</div>` +
-      (list.length ? list.map((e) => `<a class="row" href="#/akce/${encodeURIComponent(e.id)}">
-        <div style="width:4px;align-self:stretch;border-radius:4px;background:${cachedAttendance(e.id)?.going.includes(me) ? 'var(--accent-hi)' : 'var(--coral)'}"></div>
+    const mStart = new Date(y, m, 1), mEnd = new Date(y, m + 1, 1);
+    const list = sel ? evOn(sel) : events.list.filter((e) => e.start < mEnd && e.end > mStart);
+    const today0 = startOfDay(now);
+    const pill = (e) => {
+      if (cachedAttendance(e.id)?.going.includes(me)) return '<span class="pill calgo">Jdu ✓</span>';
+      if (e.end <= now) return '<span class="pill">proběhla</span>';
+      if (e.start <= now) return '<span class="pill calgo">právě teď</span>';
+      const n = Math.round((startOfDay(e.start) - today0) / 86400000);
+      return `<span class="pill">${n === 0 ? 'dnes' : n === 1 ? 'zítra' : 'za ' + n + ' ' + (n < 5 ? 'dny' : 'dní')}</span>`;
+    };
+    // Den, ze kterého karta „vypadne“ (u vícedenní akce první den v tomto měsíci).
+    const fromDay = (e) => (e.start < mStart ? mStart : startOfDay(e.start));
+    const WD = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'];
+    const head = sel
+      ? `<div class="calhead"><span class="section-h" style="padding:0">${esc(fmtLongDate(sel))}</span><button class="chip" data-all>Celý měsíc</button></div>`
+      : `<div class="calhead"><span class="section-h" style="padding:0">${list.length ? `${list.length} ${list.length === 1 ? 'akce' : list.length < 5 ? 'akce' : 'akcí'} v ${MONTHS_LOC[m]}` : `V ${MONTHS_LOC[m]} zatím nic`}</span></div>`;
+    root.querySelector('[data-day]').innerHTML = head + (list.length ? '<div class="callist">' + list.map((e) => {
+      const fd = fromDay(e), k = e.id;
+      const hide = !sel && pending && !revealed.has(k);
+      return `<a class="row calcard${hide ? ' pre' : ''}" data-k="${esc(k)}" data-from="${fd.getTime()}" href="#/akce/${encodeURIComponent(e.id)}">
+        <div class="calbd"><b>${fd.getDate()}.</b><small>${WD[fd.getDay()]}</small></div>
         <div style="min-width:0;flex:1"><div class="t">${esc(e.title)}</div><div class="s">${esc(fmtWhen(e))}${e.place ? ' · ' + esc(e.place) : ''}</div></div>
-        ${e.isTest ? '<span class="pill test">test</span>' : ''}
-      </a>`).join('') : '<div class="empty" style="padding:20px">Tenhle den nic.</div>');
+        ${e.isTest ? '<span class="pill test">test</span>' : pill(e)}
+      </a>`;
+    }).join('') + '</div>' : (sel ? '<div class="empty" style="padding:20px">Tenhle den nic.</div>' : ''));
+    const all = root.querySelector('[data-all]');
+    if (all) all.onclick = () => { sel = null; draw(); };
+    if (!sel && pending && list.length && !dropT) dropT = setTimeout(drop, 2000);
+  }
+
+  // Pád akcí: z každého vybarveného dne vyletí kopie a dopadne na datum karty v seznamu.
+  function drop() {
+    dropT = null;
+    const cards = [...root.querySelectorAll('.calcard.pre')];
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    cards.forEach((card, i) => {
+      const k = card.dataset.k;
+      const show = () => { revealed.add(k); const c = root.querySelector(`.calcard[data-k="${CSS.escape(k)}"]`); if (c) c.classList.remove('pre'); };
+      const cell = root.querySelector(`.day[data-d="${card.dataset.from}"]:not(.out)`);
+      const badge = card.querySelector('.calbd');
+      const a = cell && cell.getBoundingClientRect(), b = badge && badge.getBoundingClientRect();
+      if (reduce || i >= 10 || !a || !b || b.top > window.innerHeight + 200) { setTimeout(show, reduce ? 0 : i * 60); return; }
+      setTimeout(() => {
+        if (!pending) return;
+        cell.classList.remove('bump'); void cell.offsetWidth; cell.classList.add('bump');
+        const f = document.createElement('div');
+        f.className = 'calfly';
+        f.textContent = cell.firstChild ? cell.firstChild.textContent + '.' : '';
+        Object.assign(f.style, { left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', height: a.height + 'px' });
+        document.body.appendChild(f);
+        flies.push(f);
+        const dx = b.left - a.left, dy = b.top - a.top;
+        const anim = f.animate([
+          { transform: 'translate(0,0) scale(1.12)' },
+          { transform: `translate(${dx * 0.5}px,${dy * 0.3}px) scale(1.3) rotate(${i % 2 ? -9 : 9}deg)`, offset: 0.35 },
+          { transform: `translate(${dx}px,${dy}px) scale(${b.width / a.width},${b.height / a.height})` }
+        ], { duration: 700, easing: 'cubic-bezier(.5,0,.6,1.15)', fill: 'forwards' });
+        anim.onfinish = () => { show(); setTimeout(() => f.remove(), 120); };
+      }, i * 230);
+    });
+    setTimeout(() => { pending = false; }, cards.length * 230 + 900);
+  }
+  // Klepnutí na den nebo „Dnes“ během čekání: animaci přeskočit a ukázat vše hned.
+  function stopDrop() {
+    if (dropT) { clearTimeout(dropT); dropT = null; }
+    pending = false;
+    flies.forEach((f) => f.remove()); flies = [];
   }
 
   // Docházka pro akce tohoto měsíce, kvůli zelenému označení "jdu".
@@ -116,7 +181,7 @@ export function render(root, { year, month }) {
     const monthEvs = events.list.filter((e) => e.start.getFullYear() === y && e.start.getMonth() === m && !cachedAttendance(e.id));
     Promise.all(monthEvs.slice(0, 20).map((e) => loadAttendance(e).catch(() => {}))).then(draw);
   });
-  return unsub;
+  return () => { unsub(); stopDrop(); };
 }
 
 function feedUrl(token) {

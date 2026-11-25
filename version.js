@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.67',
+    date: '25. 11. 2026',
+    items: [
+      'Kalendář: dny s akcí jsou vybarvené a větší, u více akcí v jednom dni je místo tečky číslo.',
+      'Pod kalendářem jsou všechny akce měsíce – po dvou sekundách „vypadnou“ ze svých dnů dolů do seznamu. Klepnutím na den se seznam zúží jen na ten den, tlačítkem „Celý měsíc“ zpět.'
+    ]
+  },
+  {
     version: '1.66',
     date: '25. 11. 2026',
     items: [
