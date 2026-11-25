@@ -32,7 +32,7 @@ import { myName, isAdmin } from './auth.js';
 import { db, collection, query, where, onSnapshot } from './firebase.js';
 import { dmThreadId, PARTY_THREAD } from './chat.js';
 import { NAME_LABELS } from './config.js';
-import { navOut, navIn } from './nav.js';
+import { navOut, navIn, fixIosViewport } from './nav.js';
 let pushChecked = false;
 
 const root = document.getElementById('app');
@@ -113,6 +113,7 @@ function mount(key, fn, path = null) {
   if (path) window.scrollTo(0, 0);
   cleanup = fn() || null;
   navIn(root, nav);
+  if (path) setTimeout(fixIosViewport, 420);
   runFocus();
 }
 

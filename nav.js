@@ -123,3 +123,37 @@ function animateNav(root, kind, old, oldCal) {
     if (t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60) history.back();
   }, { passive: true });
 })();
+// ---------- obejití chyby Safari v iOS 26 ----------
+// Po zavření klávesnice nechá Safari posunutý viditelný výřez (visualViewport.offsetTop)
+// a lišty přichycené k dolnímu okraji (spodní menu, úvodní animace) skončí výš, pod nimi bílý
+// pruh. Spraví se to až posunem stránky — proto ji nenápadně posuneme o pixel tam a zpět
+// (u krátké stránky na chvilku přidáme výšku, aby šla posunout).
+export function fixIosViewport() {
+  const vv = window.visualViewport;
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // klávesnice je otevřená
+  const y = window.scrollY;
+  const b = document.body;
+  const prev = b.style.minHeight;
+  b.style.minHeight = (window.innerHeight + 2) + 'px';
+  window.scrollTo(window.scrollX, y + 1);
+  requestAnimationFrame(() => {
+    window.scrollTo(window.scrollX, y);
+    b.style.minHeight = prev;
+    if (vv && vv.offsetTop > 0) window.scrollTo(window.scrollX, y);
+  });
+}
+if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+  let lastH = window.visualViewport ? window.visualViewport.height : 0;
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const h = window.visualViewport.height;
+      if (h > lastH + 80) setTimeout(fixIosViewport, 50);   // klávesnice zmizela
+      lastH = h;
+    });
+  }
+  document.addEventListener('focusout', (e) => {
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) setTimeout(fixIosViewport, 300);
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(fixIosViewport, 100); });
+}

@@ -16,6 +16,7 @@ export function showIntro(force = false) {
   el.innerHTML = SVG + '<div class="ilogo"><img src="logo-badge.png" alt=""></div>';
   document.head.appendChild(st);
   document.body.appendChild(el);
+  import('./nav.js').then((m) => m.fixIosViewport()).catch(() => {});
   let gone = false;
   const close = () => {
     if (gone) return; gone = true;

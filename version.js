@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.73',
+    date: '25. 11. 2026',
+    items: [
+      'iPhone (iOS 26): obejití chyby Safari, kdy po zavření klávesnice zůstal pod spodní lištou bílý pruh (v kalendáři, v úvodní animaci i jinde).'
+    ]
+  },
+  {
     version: '1.72',
     date: '25. 11. 2026',
     items: [
