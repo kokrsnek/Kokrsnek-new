@@ -114,13 +114,20 @@ function animateNav(root, kind, old, oldCal) {
 }
 
 // Swipe od levého okraje = zpět (na vnořených obrazovkách).
+// iOS 26 má v aplikaci na ploše vlastní gesto zpět od okraje — to už stránku vrátí samo.
+// Kdybychom pak zavolali history.back() i my, skočilo by to o dvě obrazovky zpět
+// (z detailu check-inu až na Akce). Proto zpět jen tehdy, když se adresa mezitím nezměnila.
 (() => {
-  let x0 = 0, y0 = 0, on = false;
-  document.addEventListener('touchstart', (e) => { const t = e.touches[0]; on = t.clientX < 22 && navStack.length > 1 && e.touches.length === 1; x0 = t.clientX; y0 = t.clientY; }, { passive: true });
+  let x0 = 0, y0 = 0, on = false, h0 = '';
+  document.addEventListener('touchstart', (e) => { const t = e.touches[0]; on = t.clientX < 22 && navStack.length > 1 && e.touches.length === 1; x0 = t.clientX; y0 = t.clientY; h0 = location.hash; }, { passive: true });
+  document.addEventListener('touchcancel', () => { on = false; }, { passive: true });
   document.addEventListener('touchend', (e) => {
     if (!on) return; on = false;
     const t = e.changedTouches[0];
-    if (t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60) history.back();
+    if (!(t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60)) return;
+    if (location.hash !== h0) return;
+    const h = h0;
+    setTimeout(() => { if (location.hash === h) history.back(); }, 450);
   }, { passive: true });
 })();
 // ---------- obejití chyby Safari v iOS 26 ----------

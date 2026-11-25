@@ -499,7 +499,7 @@ export function renderDetail(root, { id }) {
   </div>`;
   const body = root.querySelector('[data-body]'), own = root.querySelector('[data-own]'), form = root.querySelector('[data-cform]');
   root.querySelector('[data-back]').onclick = () => {
-    if (history.length > 1) { setFocus(`[data-ci="${String(id).replace(/["\\]/g, '')}"]`, true); history.back(); } else location.replace('#/kde');
+    if (history.length > 1) history.back(); else location.replace('#/kde');
   };
 
   function draw() {
@@ -586,7 +586,11 @@ export function renderDetail(root, { id }) {
     else setTimeout(() => body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }), 300);
     sending = false;
   });
-  return () => { alive = false; unsubs.forEach((u) => { try { u(); } catch (x) { /* nic */ } }); };
+  return () => {
+    alive = false; unsubs.forEach((u) => { try { u(); } catch (x) { /* nic */ } });
+    // zpět do Feedu (šipkou i gestem): najet na tenhle check-in
+    if (location.hash === '#/kde' || location.hash === '') setFocus(`[data-ci="${String(id).replace(/["\\]/g, '')}"]`, true);
+  };
 }
 
 async function favoritePlaces(me) {

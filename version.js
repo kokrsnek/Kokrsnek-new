@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.88',
+    date: '25. 11. 2026',
+    items: [
+      'Oprava: gesto zpět od okraje obrazovky na iPhonu vracelo o dvě obrazovky (z detailu check-inu až na Akce).',
+      'Po návratu z detailu check-inu (šipkou i gestem) najede Feed na ten check-in.'
+    ]
+  },
+  {
     version: '1.87',
     date: '25. 11. 2026',
     items: [
