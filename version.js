@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.63',
+    date: '25. 11. 2026',
+    items: [
+      'Pecák s čárkou všude v aplikaci i v notifikacích.',
+      'Hledání v Akcích: potažením dolů se otevře, potažením zpět nahoru se zavře a karta zůstane na akci, kterou jsi měl(a) otevřenou.'
+    ]
+  },
+  {
     version: '1.62',
     date: '25. 11. 2026',
     items: [

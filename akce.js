@@ -37,23 +37,39 @@ export function render(root, { tab }) {
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 
-  // Hledání: otevře se potažením obsahu dolů (když je stránka nahoře), zavře křížkem.
+  // Hledání: otevře se potažením obsahu dolů (když je stránka nahoře), zavře křížkem
+  // nebo potažením zpět nahoru (když se zatím nic nehledá). Karta zůstane na akci,
+  // na které byla — bez hledaného textu se nic nepřekresluje.
   const setSearch = (open) => {
     searchOpen = open;
     sbox.style.display = open ? 'flex' : 'none';
-    if (open) sinput.focus(); else { q = ''; sinput.value = ''; sinput.blur(); draw(); }
+    if (open) { sinput.focus(); return; }
+    const had = !!q.trim();
+    q = ''; sinput.value = ''; sinput.blur();
+    if (had) draw();
   };
   root.querySelector('[data-sclose]').onclick = () => setSearch(false);
   const pull = root.querySelector('[data-pull]'), pullTxt = root.querySelector('[data-pulltxt]');
   const PULL = 70;
-  let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false;
+  let py0 = 0, px0 = 0, pd = 0, pAxis = null, pulling = false, closing = false;
   const atTop = () => (body.scrollTop || 0) <= 0 && (window.scrollY || 0) <= 0;
   body.addEventListener('touchstart', (e) => {
-    pulling = false; pAxis = null; pd = 0;
-    if (searchOpen || e.touches.length !== 1 || !atTop()) return;
+    pulling = false; closing = false; pAxis = null; pd = 0;
+    if (e.touches.length !== 1 || !atTop()) return;
+    if (searchOpen) {
+      if (q.trim()) return;
+      py0 = e.touches[0].clientY; px0 = e.touches[0].clientX; closing = true; return;
+    }
     py0 = e.touches[0].clientY; px0 = e.touches[0].clientX; pulling = true;
   }, { passive: true });
   body.addEventListener('touchmove', (e) => {
+    if (closing) {
+      const dy = e.touches[0].clientY - py0, dx = e.touches[0].clientX - px0;
+      if (dy < -8 && Math.abs(dy) > Math.abs(dx) && e.cancelable) e.preventDefault(); // stránka se při zavírání neposune
+      if (dy < -45 && Math.abs(dy) > Math.abs(dx) * 1.3) { closing = false; setSearch(false); }
+      else if (dy > 20 || Math.abs(dx) > 40) closing = false;
+      return;
+    }
     if (!pulling) return;
     const dy = e.touches[0].clientY - py0, dx = e.touches[0].clientX - px0;
     if (!pAxis) {
@@ -69,6 +85,7 @@ export function render(root, { tab }) {
     pullTxt.textContent = pd >= PULL ? '↓ Pusť pro hledání' : '↓ Táhni dál';
   }, { passive: false });
   const pullEnd = () => {
+    closing = false;
     if (!pulling) return;
     pulling = false;
     pull.style.transition = '';

@@ -30,9 +30,37 @@ import { checkCelebrations } from './celebrate.js';
 import { myName, isAdmin } from './auth.js';
 import { db, collection, query, where, onSnapshot } from './firebase.js';
 import { dmThreadId, PARTY_THREAD } from './chat.js';
+import { NAME_LABELS } from './config.js';
 let pushChecked = false;
 
 const root = document.getElementById('app');
+
+// Jména v zobrazení (např. Pecak → Pecák). Uložená jména se nemění — kvůli
+// návaznosti na starou aplikaci; přepisuje se jen zobrazený text, ne políčka pro psaní.
+const LABEL_RULES = Object.entries(NAME_LABELS).map(([k, v]) => [k, new RegExp(`(^|[^\\p{L}])${k}(?![\\p{L}])`, 'gu'), `$1${v}`]);
+const LABEL_SKIP = /^(TEXTAREA|INPUT|SCRIPT|STYLE)$/;
+function relabelText(t) {
+  const p = t.parentNode;
+  if (!p || LABEL_SKIP.test(p.nodeName) || p.isContentEditable) return;
+  let v = t.nodeValue;
+  for (const [k, re, rep] of LABEL_RULES) if (v.includes(k)) v = v.replace(re, rep);
+  if (v !== t.nodeValue) t.nodeValue = v;
+}
+function relabelTree(n) {
+  if (n.nodeType === 3) return relabelText(n);
+  if (n.nodeType !== 1 && n.nodeType !== 11) return;
+  const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+  for (let t = w.nextNode(); t; t = w.nextNode()) relabelText(t);
+}
+if (LABEL_RULES.length) {
+  relabelTree(document.body);
+  new MutationObserver((list) => {
+    for (const m of list) {
+      if (m.type === 'characterData') relabelText(m.target);
+      else m.addedNodes.forEach(relabelTree);
+    }
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+}
 let cleanup = null;
 let lastKey = '';
 
