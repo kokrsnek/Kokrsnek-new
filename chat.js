@@ -75,6 +75,7 @@ export function loadAllMessages(me) {
 export function renderPhotos(root) {
   const me = myName();
   let alive = true, list = [], cur = -1;
+  const cleanups = [];
   root.innerHTML = `<div class="screen">
     <div class="top"><button class="ibtn" data-back aria-label="Zpět">${icon('back')}</button><div style="flex:1;min-width:0"><div class="h1">Fotky z chatů</div><div class="sub" data-sub>Načítám…</div></div></div>
     <div class="scroll" data-body>${spinner()}</div>
@@ -87,14 +88,75 @@ export function renderPhotos(root) {
     list = all.filter((m) => m.image);
     sub.textContent = list.length ? `${list.length} ${list.length === 1 ? 'fotka' : list.length < 5 ? 'fotky' : 'fotek'} · od nejnovější` : '';
     if (!list.length) { body.innerHTML = '<div class="empty">V chatech zatím nejsou žádné fotky.</div>'; return; }
+    const keyOf = (m) => { const d = toDate(m.at) || new Date(0); return d.getFullYear() + '-' + d.getMonth(); };
+    const counts = {}; list.forEach((m) => { const k = keyOf(m); counts[k] = (counts[k] || 0) + 1; });
     let html = '', lastKey = '';
     list.forEach((m, i) => {
-      const d = toDate(m.at) || new Date(0), key = d.getFullYear() + '-' + d.getMonth();
-      if (key !== lastKey) { html += (lastKey ? '</div>' : '') + `<div class="section-h">${MONTHS[d.getMonth()]} ${d.getFullYear()}</div><div class="chph">`; lastKey = key; }
+      const d = toDate(m.at) || new Date(0), key = keyOf(m);
+      if (key !== lastKey) { html += (lastKey ? '</div>' : '') + `<button class="section-h chmh" data-sec="${key}" data-y="${d.getFullYear()}" data-m="${d.getMonth()}" data-n="${counts[key]}">${MONTHS[d.getMonth()]} ${d.getFullYear()} <i>▾</i></button><div class="chph">`; lastKey = key; }
       html += `<button data-i="${i}"><img src="${esc(m.image)}" alt="" loading="lazy"></button>`;
     });
     body.innerHTML = html + '</div>';
+    buildRail();
   }).catch(() => { body.innerHTML = '<div class="empty">Fotky se nepodařilo načíst.</div>'; });
+
+  // Posuvník na pravém okraji (jako Fotky v iPhonu): roky a měsíce, tažením prstu se jede
+  // seznamem a v bublině je měsíc s počtem fotek. Klepnutí na nadpis měsíce posuvník ukáže.
+  const SHORT = ['led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro'];
+  const plural = (n) => `${n} ${n === 1 ? 'fotka' : n < 5 ? 'fotky' : 'fotek'}`;
+  let rail = null, layoutT = 0;
+  function buildRail() {
+    rail = document.createElement('div');
+    rail.className = 'chrail';
+    rail.innerHTML = '<div class="chrlbl" data-lbls></div><div class="chrknob">⇅</div><div class="chrbub" hidden><b></b><small></small></div>';
+    root.querySelector('.screen').appendChild(rail);
+    const lbls = rail.querySelector('[data-lbls]'), knob = rail.querySelector('.chrknob'), bub = rail.querySelector('.chrbub');
+    const secs = () => [...body.querySelectorAll('[data-sec]')];
+    const maxY = () => Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const absTop = (el) => el.getBoundingClientRect().top + scrollY;
+    const head = () => 110;   // nadpis měsíce „nahoře“ = asi pod horním okrajem displeje
+    function layout() {
+      const H = rail.clientHeight - 30;
+      let last = -99, lastY = null, out = '';
+      secs().forEach((s) => {
+        const y = Math.min(1, Math.max(0, (absTop(s) - head()) / maxY())) * H;
+        if (s.dataset.y !== lastY) { out += `<span class="yr" style="top:${y}px">${s.dataset.y}</span>`; lastY = s.dataset.y; last = y + 6; return; }
+        if (y - last < 15) return;
+        out += `<span style="top:${y}px">${SHORT[+s.dataset.m]}</span>`; last = y;
+      });
+      lbls.innerHTML = out;
+      place();
+    }
+    const cur = () => { let c = null; const lim = scrollY + head() + 4; for (const s of secs()) { if (absTop(s) <= lim) c = s; else break; } return c || secs()[0]; };
+    function place() {
+      const H = rail.clientHeight - 30, y = Math.min(1, scrollY / maxY()) * H;
+      knob.style.top = y + 'px'; bub.style.top = y + 'px';
+      const c = cur();
+      if (c) { bub.querySelector('b').textContent = `${MONTHS[+c.dataset.m]} ${c.dataset.y}`; bub.querySelector('small').textContent = plural(+c.dataset.n); }
+    }
+    let hideT = 0;
+    const showBub = (ms) => { bub.hidden = false; rail.classList.add('act'); clearTimeout(hideT); if (ms) hideT = setTimeout(() => { bub.hidden = true; rail.classList.remove('act'); }, ms); };
+    const onScroll = () => { if (alive && rail.isConnected) place(); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    cleanups.push(() => window.removeEventListener('scroll', onScroll));
+    let drag = false;
+    const go = (cy) => {
+      const r = rail.getBoundingClientRect(), H = r.height - 30;
+      const f = Math.min(1, Math.max(0, (cy - r.top - 15) / H));
+      window.scrollTo(0, f * maxY()); place();
+    };
+    rail.addEventListener('pointerdown', (e) => { drag = true; rail.setPointerCapture(e.pointerId); showBub(0); go(e.clientY); e.preventDefault(); });
+    rail.addEventListener('pointermove', (e) => { if (drag) go(e.clientY); });
+    const up = () => { if (!drag) return; drag = false; showBub(900); };
+    rail.addEventListener('pointerup', up); rail.addEventListener('pointercancel', up);
+    body.addEventListener('click', (e) => { if (e.target.closest('[data-sec]')) { place(); showBub(1800); rail.classList.remove('hint'); void rail.offsetWidth; rail.classList.add('hint'); } });
+    // Obrázky se načítají postupně → výška stránky se mění; rozložení párkrát přepočítat.
+    layout();
+    [300, 1000, 2500].forEach((ms) => setTimeout(() => { if (alive) layout(); }, ms));
+    const onRes = () => { clearTimeout(layoutT); layoutT = setTimeout(layout, 150); };
+    window.addEventListener('resize', onRes);
+    cleanups.push(() => window.removeEventListener('resize', onRes));
+  }
 
   // Prohlížeč: velká fotka, kdo a kde ji poslal, tah do strany = další/předchozí.
   const viewer = document.createElement('div');
@@ -122,7 +184,7 @@ export function renderPhotos(root) {
     const dx = e.changedTouches[0].clientX - vx; vx = null;
     if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1));
   });
-  return () => { alive = false; };
+  return () => { alive = false; cleanups.forEach((f) => f()); };
 }
 
 // ---------- seznam vláken ----------

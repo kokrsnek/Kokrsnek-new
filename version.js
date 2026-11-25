@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.99',
+    date: '25. 11. 2026',
+    items: [
+      'Fotky z chatů: posuvník na pravém okraji jako ve Fotkách v iPhonu – roky a měsíce, tažením prstu přeskočíš a v bublině vidíš měsíc i počet fotek. Klepnutí na nadpis měsíce posuvník ukáže.'
+    ]
+  },
+  {
     version: '1.98',
     date: '25. 11. 2026',
     items: [
