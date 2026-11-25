@@ -10,7 +10,7 @@ import {
 } from './store.js';
 import { geocode } from './map.js';
 import { showPayment, showReceipt, editExpenses, loadExpenses } from './expenses.js';
-import { PARTY_NAMES, LIVE } from './config.js';
+import { PARTY_NAMES, LIVE, nameLabel } from './config.js';
 import { emo, sortedReactions, emojiSheet, onLongPress } from './emoji.js';
 import { eventWeather, cachedWeather, hourColumns, wxIcon as wxIconOf, tempRange } from './weather.js';
 import { plural } from './util.js';
@@ -332,7 +332,7 @@ function mountDetail(host, ev, live) {
     const draw = () => {
       bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>
         <h3>Kdo se opravdu zúčastnil</h3>
-        <div class="chips" style="max-height:46vh;overflow:auto;margin-bottom:12px">${names.map((n) => `<button class="chip ${sel.has(n) ? 'on' : ''}" data-n="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;${sel.has(n) ? 'background:var(--accent-soft);border-color:var(--accent-hi);color:var(--accent-text)' : ''}">${avatar(n, 22)}${esc(n)}${sel.has(n) ? ' ✓' : ''}</button>`).join('')}</div>
+        <div class="chips" style="max-height:46vh;overflow:auto;margin-bottom:12px">${names.map((n) => `<button class="chip ${sel.has(n) ? 'on' : ''}" data-n="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px;${sel.has(n) ? 'background:var(--accent-soft);border-color:var(--accent-hi);color:var(--accent-text)' : ''}">${avatar(n, 22)}${esc(nameLabel(n))}${sel.has(n) ? ' ✓' : ''}</button>`).join('')}</div>
         <form class="inrow" data-add style="margin-bottom:12px"><input class="input" name="n" placeholder="Přidat jméno…" maxlength="40" autocomplete="off"><button class="ibtn" aria-label="Přidat">${icon('plus')}</button></form>
         <div style="display:flex;flex-direction:column;gap:10px"><button class="btn primary big block" data-save>Uložit (${sel.size})</button><button class="btn block" data-x>Zrušit</button></div>
       </div>`;

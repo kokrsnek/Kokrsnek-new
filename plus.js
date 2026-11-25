@@ -1,7 +1,7 @@
 // Tlačítko + ve spodní liště: Zpráva v chatu, Check-in; správce navíc Přidat akci a Přidat fotoalbum.
 import { esc, icon, fmtWhen, looseName } from './util.js';
 import { toast, avatar } from './ui.js';
-import { PARTY_NAMES } from './config.js';
+import { PARTY_NAMES, nameLabel } from './config.js';
 import { dmThreadId, PARTY_THREAD } from './chat.js';
 import { events, isPast, setAlbum } from './store.js';
 import { isAdmin, myName } from './auth.js';
@@ -49,7 +49,7 @@ function chatFlow() {
   const others = PARTY_NAMES.filter((n) => n.normalize('NFC').trim() !== (me || '').normalize('NFC').trim());
   const bd = sheet(`<h3>Komu napíšeš?</h3>
     <div class="pickev" style="margin-bottom:10px"><button data-t="${esc(PARTY_THREAD)}"><span class="ic" style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">${icon('people', 18)}</span><b style="flex:1">Celá parta</b></button></div>
-    <div class="chips" style="margin-bottom:12px">${others.map((n) => `<button class="chip" data-t="${esc(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</button>`).join('')}</div>
+    <div class="chips" style="margin-bottom:12px">${others.map((n) => `<button class="chip" data-t="${esc(dmThreadId(me, n))}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(nameLabel(n))}</button>`).join('')}</div>
     <button class="btn block" data-close>Zrušit</button>`);
   bd.querySelector('[data-close]').onclick = () => bd.remove();
   bd.querySelector('.sheet').addEventListener('click', (e) => {

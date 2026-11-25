@@ -6,7 +6,7 @@ import { db, collection, doc, query, where, onSnapshot, addDoc, updateDoc, getDo
 import { esc, icon } from './util.js';
 import { avatar, toast, spinner, confirmDanger } from './ui.js';
 import { myName } from './auth.js';
-import { PARTY_NAMES } from './config.js';
+import { PARTY_NAMES, nameLabel } from './config.js';
 import { CUSTOM } from './emoji-data.js';
 import { LEVELS, newRaceState, newSolo, sdLoad, sdSave, fmtMs, filledCount, todayKey } from './sudoku.js';
 
@@ -224,7 +224,7 @@ export function renderHub(root, { with: withName = '', tab = null, dmThreadId, t
       if (withName) return go(withName);
       const bd = document.createElement('div');
       bd.className = 'backdrop';
-      bd.innerHTML = `<div class="sheet"><div class="grab"></div><h3>Koho vyzveš?</h3><div class="chips">${PARTY_NAMES.filter((n) => norm(n) !== norm(me)).map((n) => `<button class="chip" data-n="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(n)}</button>`).join('')}</div><button class="btn block" data-x style="margin-top:12px">Zrušit</button></div>`;
+      bd.innerHTML = `<div class="sheet"><div class="grab"></div><h3>Koho vyzveš?</h3><div class="chips">${PARTY_NAMES.filter((n) => norm(n) !== norm(me)).map((n) => `<button class="chip" data-n="${esc(n)}" style="display:inline-flex;align-items:center;gap:6px;padding-left:4px">${avatar(n, 22)}${esc(nameLabel(n))}</button>`).join('')}</div><button class="btn block" data-x style="margin-top:12px">Zrušit</button></div>`;
       bd.addEventListener('click', (ev) => { if (ev.target === bd || ev.target.closest('[data-x]')) return bd.remove(); const c = ev.target.closest('[data-n]'); if (c) { bd.remove(); go(c.dataset.n); } });
       document.body.appendChild(bd);
     }

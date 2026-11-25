@@ -31,8 +31,12 @@ export const TEST_MODE = !LIVE;
 // Jména, pod kterými lidé používají současnou aplikaci — nabídka v "Kdo jsi?".
 export const PARTY_NAMES = [
   'Šuraj', 'Dáša', 'Míra', 'Pecak', 'Peca', 'Pif', 'Guči', 'Gudas', 'Iva',
-  'Majkl', 'Alex', 'Bazi', 'Čento', 'Pavel', 'Dejv', 'Zuzi'
+  'Majkl', 'Alex', 'Bazi', 'Čento', 'Pavel', 'Dejv'
 ];
+// Jak se jméno ukazuje v nabídkách. Uložené jméno zůstává stejné jako ve staré
+// aplikaci (pod ním jsou zprávy, docházka i notifikace), mění se jen popisek.
+export const NAME_LABELS = { Pecak: 'Pecák' };
+export const nameLabel = (n) => NAME_LABELS[n] || n;
 
 // Číslo verze a seznam změn jsou ve version.js.
 

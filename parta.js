@@ -3,7 +3,7 @@ import { esc, icon, fmtStamp } from './util.js';
 import { tabbar, avatar, toast, choose, confirmDanger, spinner, avatarImage } from './ui.js';
 import { session, isAdmin, logout, watchMembers, approveMember, setRole, removeMember, changeMyName } from './auth.js';
 import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
-import { TEST_MODE, PARTY_NAMES, LIVE } from './config.js';
+import { TEST_MODE, PARTY_NAMES, LIVE, nameLabel } from './config.js';
 import { db, doc, updateDoc } from './firebase.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
@@ -202,7 +202,7 @@ export function render(root) {
           bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>
             <h3 style="text-align:center;overflow-wrap:anywhere">Jméno pro ${esc(m.email || m.name)}</h3>
             <p class="sub" style="text-align:center;margin-top:-4px">Vyber jméno, pod kterým byl ve staré aplikaci. Zabraná jména tu nejsou.</p>
-            <div class="namegrid">${free.map((n) => `<button class="chip${n === m.name ? ' on' : ''}" data-n="${esc(n)}">${avatar(n, 24)}${esc(n)}</button>`).join('')}</div>
+            <div class="namegrid">${free.map((n) => `<button class="chip${n === m.name ? ' on' : ''}" data-n="${esc(n)}">${avatar(n, 24)}${esc(nameLabel(n))}</button>`).join('')}</div>
             <button class="btn block" data-x style="margin-top:14px">Zrušit</button></div>`;
           bd.addEventListener('click', (e) => {
             const c = e.target.closest('[data-n]');

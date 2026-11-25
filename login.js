@@ -1,7 +1,7 @@
 // Přihlášení, "Kdo jsi?" a čekání na schválení.
-import { esc, icon } from './util.js';
+import { esc, icon, looseName } from './util.js';
 import { avatar, toast } from './ui.js';
-import { PARTY_NAMES } from './config.js';
+import { PARTY_NAMES, nameLabel } from './config.js';
 import {
   session, signInGoogle, signInEmail, registerEmail, resetPassword, logout,
   createMember, authErrorText, isAdminEmail
@@ -76,7 +76,7 @@ export function renderWho(root) {
     <div class="scroll" style="padding-bottom:30px">
       <p class="sub" style="margin:0 0 14px;font-size:14px;line-height:1.45">Vyber jméno, pod kterým tě parta zná. Podle něj se k tobě připojí docházka, komentáře a věci ze staré aplikace.</p>
       <div style="display:flex;flex-direction:column;gap:8px" role="radiogroup" aria-label="Jméno">
-        ${PARTY_NAMES.map((n) => `<label class="pick"><input type="radio" name="who" value="${esc(n)}" style="order:3">${avatar(n)}<b>${esc(n)}</b></label>`).join('')}
+        ${PARTY_NAMES.map((n) => `<label class="pick"><input type="radio" name="who" value="${esc(n)}" style="order:3">${avatar(n)}<b>${esc(nameLabel(n))}</b></label>`).join('')}
         <label class="pick"><input type="radio" name="who" value="__jine" style="order:3"><span class="av" style="background:var(--surface);color:var(--ink2)">${icon('plus', 18)}</span><b>Jiné jméno</b></label>
       </div>
       <input class="input" data-other placeholder="Tvoje jméno" aria-label="Jiné jméno" style="margin-top:10px;display:none" maxlength="30">
@@ -94,7 +94,10 @@ export function renderWho(root) {
   }));
   root.querySelector('[data-out]').onclick = () => logout();
   root.querySelector('[data-go]').onclick = async (e) => {
-    const name = chosen === '__jine' ? other.value.trim() : chosen;
+    let name = chosen === '__jine' ? other.value.trim() : chosen;
+    // Kdo napíše „Pecák“ ručně, dostane stejné jméno jako ve staré aplikaci.
+    const same = PARTY_NAMES.find((n) => looseName(n) === looseName(name));
+    if (same) name = same;
     if (!name) { err.textContent = 'Vyber jméno.'; return; }
     if (/[\/]/.test(name)) { err.textContent = 'Jméno nesmí obsahovat lomítko.'; return; }
     e.target.disabled = true;
