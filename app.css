@@ -828,3 +828,16 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .pfit[data-go] .pfdt::after{content:' ›';font-weight:700}
 /* stará obrazovka během přechodu */
 .navold{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+
+/* 1.79 — odsunutí chatu: kulatá tlačítka, která rostou (jako Zprávy na iPhonu) */
+.swrow{overflow:visible}
+.swrow.open .swfront{border-top-right-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+.swact{right:0;align-items:center;gap:0;padding-right:4px;background:none}
+.swact button{width:64px;height:64px;background:none!important;padding:0;display:flex;align-items:center;justify-content:center;transform:scale(.25);opacity:0;transition:transform .25s cubic-bezier(.3,1.4,.5,1),opacity .2s}
+.swact button i{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;background:#5E5CE6;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.swact button.pin i{background:#2F80D1}
+.swact button.del i{background:#FF453A}
+.swact button i svg{margin:0}
+.swrow.open .swact button{transform:scale(1);opacity:1}
+.swrow.open .swact button:nth-last-child(2){transition-delay:.04s}
+.swrow.open .swact button:nth-last-child(3){transition-delay:.08s}

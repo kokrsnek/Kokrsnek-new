@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.79',
+    date: '25. 11. 2026',
+    items: [
+      'Chat: po odtažení řádku doleva se jako ve Zprávách na iPhonu postupně objevují kulatá tlačítka (smazat, připnout, ztlumit), která rostou s tím, jak táhneš.'
+    ]
+  },
+  {
     version: '1.78',
     date: '25. 11. 2026',
     items: [

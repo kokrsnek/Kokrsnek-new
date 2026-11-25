@@ -48,6 +48,8 @@ const snippet = (m) => m ? (m.game ? 'Hra' : m.text ? m.text : m.image ? 'Fotka'
 const snipIcon = (m) => { const n = !m || m.text ? '' : m.game ? 'gamepad' : m.image ? 'camera' : m.audio ? 'mic' : ''; return n ? `<span class="snipic">${icon(n, 15)}</span>` : ''; };
 
 // ---------- seznam vláken ----------
+const SWB = 64;   // šířka místa pro jeden kroužek při odsunutí chatu
+
 export function renderList(root) {
   const me = myName();
   root.innerHTML = `<div class="screen">
@@ -92,11 +94,12 @@ export function renderList(root) {
         : id === TEST_THREAD ? `<span class="av" style="background:var(--surface);color:var(--warn-ink)">${icon('chat', 18)}</span>`
         : `<span class="avwrap">${avatar(title, 40)}${isOnline(pres[title]) ? '<i class="onldot"></i>' : ''}</span>`;
       const pin = isPinned(id), mute = isMuted(id), canDel = id !== PARTY_THREAD && id !== TEST_THREAD;
-      return `<div class="swrow${openId === id ? ' open' : ''}" data-sw="${esc(id)}" style="--sww:${canDel ? 210 : 140}px">
+      // Tlačítka za řádkem jsou kroužky jako ve Zprávách na iPhonu — rostou s odtažením.
+      return `<div class="swrow${openId === id ? ' open' : ''}" data-sw="${esc(id)}" style="--sww:${canDel ? 3 * SWB + 8 : 2 * SWB + 8}px">
         <div class="swact">
-          <button data-act="mute">${icon(mute ? 'bell2' : 'bellOff', 26)}<span>${mute ? 'Zapnout' : 'Ztlumit'}</span></button>
-          <button data-act="pin">${icon('thumbtack', 26)}<span>${pin ? 'Odepnout' : 'Připnout'}</span></button>
-          ${canDel ? `<button data-act="del" class="del">${icon('bin', 26)}<span>Smazat</span></button>` : ''}
+          <button data-act="mute" class="mute" aria-label="${mute ? 'Zapnout notifikace' : 'Ztlumit'}"><i>${icon(mute ? 'bell2' : 'bellOff', 24)}</i></button>
+          <button data-act="pin" class="pin" aria-label="${pin ? 'Odepnout' : 'Připnout'}"><i>${icon('thumbtack', 24)}</i></button>
+          ${canDel ? `<button data-act="del" class="del" aria-label="Smazat"><i>${icon('bin', 24)}</i></button>` : ''}
         </div>
         <a class="row swfront" href="#/chat/${encodeURIComponent(id)}">
         ${av}
@@ -118,8 +121,19 @@ export function renderList(root) {
     return setDoc(metaRef(id), { [field]: { [me]: val } }, { merge: true }).catch(() => toast('Nepovedlo se uložit.'));
   };
 
-  // Odsunutí řádku doleva odkryje tlačítka (jako ve WhatsAppu).
+  // Odsunutí řádku doleva odkryje kulatá tlačítka (jako ve Zprávách na iPhonu).
   const W = (row) => row.querySelector('.swact').offsetWidth;
+  // Kroužky se objevují zprava (koš první) a rostou podle toho, kolik je odhaleno.
+  const grow = (row, revealed) => {
+    const bs = [...row.querySelectorAll('.swact button')].reverse();
+    bs.forEach((b, k) => {
+      const t = Math.max(0, Math.min(1, (revealed - k * SWB - 6) / (SWB - 10)));
+      b.style.transition = 'none';
+      b.style.transform = `scale(${(0.25 + 0.75 * t).toFixed(3)})`;
+      b.style.opacity = t < 0.02 ? '0' : String(Math.min(1, t * 1.6));
+    });
+  };
+  const ungrow = (row) => row.querySelectorAll('.swact button').forEach((b) => { b.style.transition = ''; b.style.transform = ''; b.style.opacity = ''; });
   let sx = 0, sy = 0, dx = 0, cur = null, axis = null, moved = false;
   box.addEventListener('touchstart', (e) => {
     const f = e.target.closest('.swfront');
@@ -137,6 +151,7 @@ export function renderList(root) {
     dx = Math.max(-w - 30, Math.min(0, base + x));
     const f = cur.querySelector('.swfront');
     f.style.transition = 'none'; f.style.transform = `translateX(${dx}px)`;
+    grow(cur, -dx);
   }, { passive: false });
   const end = () => {
     if (!cur) return;
@@ -144,6 +159,7 @@ export function renderList(root) {
     cur = null;
     if (!moved) return;
     f.style.transition = ''; f.style.transform = '';
+    ungrow(row);
     const open = dx < -w / 2;
     box.querySelectorAll('.swrow.open').forEach((r) => { if (r !== row) r.classList.remove('open'); });
     row.classList.toggle('open', open);
