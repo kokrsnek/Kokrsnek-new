@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.66',
+    date: '25. 11. 2026',
+    items: [
+      'Akce: klepnutí na „dřívější“ a „pozdější“ otočí velkou kartu stejně jako swipe – stará karta odjede po oblouku a nová přijede z boku.'
+    ]
+  },
+  {
     version: '1.65',
     date: '25. 11. 2026',
     items: [

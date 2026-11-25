@@ -371,7 +371,14 @@ export function render(root, { tab }) {
       if (busy || animating) return;
       if (!ensureGhost(dir, steps)) { place(0, true); toast(dir > 0 ? 'Další akce už není.' : 'Starší akce už není.'); return; }
       busy = true; animating = true;
-      const ms = fast ? 170 : 280;
+      // Při klepnutí na „dřívější/pozdější“ (bez tažení) nová karta ještě nestojí
+      // vedle — postavit ji na oblouk mimo obrazovku, ať přijede stejně jako při swipu.
+      if (!ghost.style.transform) {
+        ghost.style.transition = 'none';
+        ghost.style.transform = arc(dir * W());
+        void ghost.offsetWidth;
+      }
+      const ms = fast ? 170 : (Math.abs(parseFloat((el.style.transform.match(/-?[\d.]+/) || [0])[0])) < 1 ? 420 : 280);
       el.style.transition = `transform ${ms}ms ease-out`;
       el.style.transform = arc(-dir * W());
       ghost.style.transition = `transform ${ms}ms ease-out`;
