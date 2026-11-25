@@ -147,3 +147,37 @@ export function installSheetGestures() {
     if (g) close(g.closest('.sheet'));
   });
 }
+
+// ---------- přesun na konkrétní místo (např. z profilu) ----------
+// goFocus uloží, co se má po otevření obrazovky najít; runFocus (volá app.js
+// po každém přepnutí obrazovky) počká, až se prvek vykreslí, posune k němu a krátce ho zvýrazní.
+const FOCUS_KEY = 'kokrsnek2Focus';
+export function goFocus(hash, sel = '', click = '') {
+  try { sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ sel, click, at: Date.now() })); } catch (e) { /* nic */ }
+  location.hash = hash;
+}
+export function runFocus() {
+  let f = null;
+  try { f = JSON.parse(sessionStorage.getItem(FOCUS_KEY) || 'null'); sessionStorage.removeItem(FOCUS_KEY); } catch (e) { /* nic */ }
+  if (!f || Date.now() - f.at > 15000) return;
+  if (!f.sel) { window.scrollTo(0, 0); return; }
+  const t0 = Date.now();
+  let clicked = false;
+  const timer = setInterval(() => {
+    const el = document.querySelector(f.sel);
+    if (!el || !el.offsetParent) {
+      if (Date.now() - t0 > 8000) { clearInterval(timer); toast('Tohle místo se nepodařilo najít — možná je moc staré nebo smazané.'); }
+      return;
+    }
+    clearInterval(timer);
+    if (f.click && !clicked) { clicked = true; const c = el.querySelector(f.click); if (c) c.click(); }
+    const target = el.closest('.msg') || el;
+    const go = () => { const n = document.querySelector(f.sel); const t = n ? (n.closest('.msg') || n) : target; t.scrollIntoView({ block: 'center', behavior: 'smooth' }); return t; };
+    setTimeout(() => {
+      const t = go();
+      t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+      setTimeout(go, 900);
+      setTimeout(() => t.classList.remove('flash'), 2600);
+    }, 450);
+  }, 150);
+}

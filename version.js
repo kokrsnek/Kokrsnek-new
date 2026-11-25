@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '1.65',
+    date: '25. 11. 2026',
+    items: [
+      'Profil: klepnutím na položku časové osy se přesuneš přímo na místo – ke komentáři, do docházky, k lajkům, k věcem, ke zprávě v chatu party, ke check-inu, do ankety nebo do hry. Místo se krátce zvýrazní.'
+    ]
+  },
+  {
     version: '1.64',
     date: '25. 11. 2026',
     items: [

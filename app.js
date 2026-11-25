@@ -25,7 +25,7 @@ import { installPlus } from './plus.js';
 import { startPresence } from './presence.js';
 import { startWeatherEffect } from './weather.js';
 import { watchAvatars } from './store.js';
-import { setAvatarImages } from './ui.js';
+import { setAvatarImages, runFocus } from './ui.js';
 import { refreshPush, consumePendingNav } from './push.js';
 import { checkCelebrations } from './celebrate.js';
 import { myName, isAdmin } from './auth.js';
@@ -109,6 +109,7 @@ function mount(key, fn) {
   lastKey = key;
   root.innerHTML = '';
   cleanup = fn() || null;
+  runFocus();
 }
 
 function route(force = false) {

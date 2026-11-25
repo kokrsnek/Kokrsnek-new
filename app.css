@@ -803,3 +803,7 @@ button.link{background:none;border:0;padding:6px 2px;font:inherit;font-size:14px
 .pfmore{text-align:center;color:var(--muted);font-size:13px;padding:12px 0}
 .pfup{position:fixed;right:18px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;border:none;border-radius:999px;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:14px;padding:10px 16px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
 .pfup.on{opacity:1;pointer-events:auto;transform:none}
+.flash{animation:flashHl 2.4s ease-out}
+@keyframes flashHl{0%,35%{box-shadow:0 0 0 3px var(--accent-hi),0 0 0 9px var(--accent-soft)}100%{box-shadow:0 0 0 0 transparent}}
+.pfit[data-go]{cursor:pointer}.pfit[data-go]:active{transform:scale(.985)}
+.pfit[data-go] .pfdt::after{content:' ›';font-weight:700}

@@ -8,12 +8,12 @@
 // Podkolekce akcí se čtou jednou pro všechny profily (collectionGroup) a drží se v paměti.
 import { db, collection, collectionGroup, query, where, getDocs } from './firebase.js';
 import { esc, icon, toDate, looseName, MONTHS_NOM } from './util.js';
-import { avatar, spinner } from './ui.js';
+import { avatar, spinner, goFocus } from './ui.js';
 import { myName } from './auth.js';
 import { watchEvents, events } from './store.js';
 import { PARTY_PEOPLE } from './people.js';
 import { GAME_NAMES } from './games.js';
-import { fmtMs } from './sudoku.js';
+import { fmtMs, todayKey } from './sudoku.js';
 
 const PARTY_THREAD = 'parta-vsichni';
 const PAGE = 50;
@@ -50,58 +50,63 @@ async function collect(name) {
   };
   const out = [];
   const add = (when, kinds, ic, html, extra = {}) => { const d = toDate(when); if (d && d.getTime() > 0) out.push({ when: d, kinds, ic, html, ...extra }); };
-  const evB = (e) => e.link ? `<a href="${e.link}"><b>${esc(e.title)}</b></a>` : `<b>${esc(e.title)}</b>`;
+  const evB = (e) => `<b>${esc(e.title)}</b>`;
+  // Kam vede klepnutí: [adresa, selektor místa, co rozkliknout].
+  const toEv = (e, sel = '') => (e.link ? { go: [e.link, sel] } : {});
+  const sq = (v) => String(v).replace(/["\\]/g, '\\$&');
   const isEv = (p) => p[0] === 'events' || p[0] === 'v2_akce';
   const who = (d) => d.user || d.name || d.id;
 
-  sh.attendees.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '✅', `Jde na ${evB(e)}`, { att: e.id }); });
-  sh.declines.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '🛋️', `Nejde na ${evB(e)}`, { off: true }); });
-  log.forEach((d) => add(d.at, ['akce'], '↩️', `Zrušil(a) účast na <b>${esc(d.eventTitle || 'akce')}</b> · předtím šel/šla`, { off: true }));
-  sh.likes.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce'], '❤️', `Lajk ${evB(e)}`); });
-  sh.checkins.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce', 'kde'], '📍', `Na místě: ${evB(e)}${d.verified ? ' · ověřeno polohou' : ''}`, { ci: true }); });
+  sh.attendees.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '✅', `Jde na ${evB(e)}`, { att: e.id, ...toEv(e, '[data-attsec]') }); });
+  sh.declines.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '🛋️', `Nejde na ${evB(e)}`, { off: true, ...toEv(e, '[data-attsec]') }); });
+  log.forEach((d) => add(d.at, ['akce'], '↩️', `Zrušil(a) účast na <b>${esc(d.eventTitle || 'akce')}</b> · předtím šel/šla`, { off: true, ...(evById.has(d.eventId) ? { go: ['#/akce/' + encodeURIComponent(d.eventId), '[data-attsec]'] } : {}) }));
+  sh.likes.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce'], '❤️', `Lajk ${evB(e)}`, toEv(e, '[data-likes]')); });
+  sh.checkins.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce', 'kde'], '📍', `Na místě: ${evB(e)}${d.verified ? ' · ověřeno polohou' : ''}`, { ci: true, ...toEv(e, '[data-attsec]') }); });
   sh.comments.filter((d) => same(d.user, name)).forEach((d) => {
     const q = d.text ? `<q>${esc(String(d.text).slice(0, 140))}</q>` : '';
-    if (isEv(d.path)) { const e = evOf(d.path, d); add(d.at, ['kom', 'akce'], '💬', `${d.parentId ? 'Odpověď' : 'Komentář'} u ${evB(e)}${q}`, { com: true }); }
-    else if (d.path[0] === 'placeCheckins' || d.path[0] === 'v2_checkins') add(d.at, ['kom', 'kde'], '💬', `Komentář u check-inu${q}`, { com: true });
+    if (isEv(d.path)) { const e = evOf(d.path, d); add(d.at, ['kom', 'akce'], '💬', `${d.parentId ? 'Odpověď' : 'Komentář'} u ${evB(e)}${q}`, { com: true, ...toEv(e, `[data-cid="${sq(d.id)}"]`) }); }
+    else if (d.path[0] === 'placeCheckins' || d.path[0] === 'v2_checkins') add(d.at, ['kom', 'kde'], '💬', `Komentář u check-inu${q}`, { com: true, go: ['#/kde', `[data-ci="${sq(d.path[1])}"]`, '[data-act="com"]'] });
   });
   sh.items.filter((d) => d.path[0] === 'bringLists' || d.path[0] === 'v2_akce').forEach((d) => {
     const e = evOf(d.path, d);
-    if (same(d.takenBy, name)) add(d.at, ['akce'], '🎒', `Přinese <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`);
-    else if (same(d.addedBy, name)) add(d.at, ['akce'], '📝', `Přidal(a) do „Co přinést“ <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`);
+    if (same(d.takenBy, name)) add(d.at, ['akce'], '🎒', `Přinese <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`, toEv(e, '[data-itemsec]'));
+    else if (same(d.addedBy, name)) add(d.at, ['akce'], '📝', `Přidal(a) do „Co přinést“ <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`, toEv(e, '[data-itemsec]'));
   });
-  events.list.filter((e) => !e.isTest && e.source !== 'gcal' && same(e.createdBy, name)).forEach((e) => add(e.createdAt, ['akce'], '🗓️', `Založil(a) akci ${evB({ ...e, link: '#/akce/' + encodeURIComponent(e.id) })}`));
+  events.list.filter((e) => !e.isTest && e.source !== 'gcal' && same(e.createdBy, name)).forEach((e) => add(e.createdAt, ['akce'], '🗓️', `Založil(a) akci ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), ''] }));
   place.forEach((d) => {
-    add(d.at, ['kde'].concat(d.photo ? ['foto'] : []), '📍', `Check-in <b>${esc(d.place || 'místo')}</b>${d.note ? `<q>${esc(d.note)}</q>` : ''}${d.photo ? `<img class="pfimg" src="${esc(d.photo)}" alt="" loading="lazy">` : ''}`, { ci: true });
+    add(d.at, ['kde'].concat(d.photo ? ['foto'] : []), '📍', `Check-in <b>${esc(d.place || 'místo')}</b>${d.note ? `<q>${esc(d.note)}</q>` : ''}${d.photo ? `<img class="pfimg" src="${esc(d.photo)}" alt="" loading="lazy">` : ''}`, { ci: true, go: ['#/kde', `[data-ci="${sq(d.id)}"]`] });
   });
   // Zprávy v chatu party; více fotek poslaných najednou = jeden záznam.
   const batches = new Map();
   chat.forEach((m) => {
-    if (m.image && m.batch) { const b = batches.get(m.batch) || { at: m.at, n: 0, img: m.image }; b.n++; batches.set(m.batch, b); return; }
-    if (m.image) return add(m.at, ['chat', 'foto'], '📷', `Fotka v <b>chatu party</b><img class="pfimg" src="${esc(m.image)}" alt="" loading="lazy">`, { msg: true });
-    if (m.audio) return add(m.at, ['chat'], '🎙️', 'Hlasovka v <b>chatu party</b>', { msg: true });
+    if (m.image && m.batch) { const b = batches.get(m.batch) || { at: m.at, n: 0, img: m.image, id: m.id }; b.n++; batches.set(m.batch, b); return; }
+    const toMsg = { go: ['#/chat/' + PARTY_THREAD, `[data-id="${sq(m.id)}"], [data-photo-id="${sq(m.id)}"]`] };
+    if (m.image) return add(m.at, ['chat', 'foto'], '📷', `Fotka v <b>chatu party</b><img class="pfimg" src="${esc(m.image)}" alt="" loading="lazy">`, { msg: true, ...toMsg });
+    if (m.audio) return add(m.at, ['chat'], '🎙️', 'Hlasovka v <b>chatu party</b>', { msg: true, ...toMsg });
     if (m.game) return;
-    if (m.text) add(m.at, ['chat'], '💭', `Zpráva v <b>chatu party</b><q>${esc(String(m.text).slice(0, 160))}</q>`, { msg: true });
+    if (m.text) add(m.at, ['chat'], '💭', `Zpráva v <b>chatu party</b><q>${esc(String(m.text).slice(0, 160))}</q>`, { msg: true, ...toMsg });
   });
-  batches.forEach((b) => add(b.at, ['chat', 'foto'], '📷', `${b.n} ${b.n < 5 ? 'fotky' : 'fotek'} v <b>chatu party</b><img class="pfimg" src="${esc(b.img)}" alt="" loading="lazy">`, { msg: true }));
+  batches.forEach((b) => add(b.at, ['chat', 'foto'], '📷', `${b.n} ${b.n < 5 ? 'fotky' : 'fotek'} v <b>chatu party</b><img class="pfimg" src="${esc(b.img)}" alt="" loading="lazy">`, { msg: true, go: ['#/chat/' + PARTY_THREAD, `[data-photo-id="${sq(b.id)}"]`] }));
   polls.forEach((p) => {
-    if (same(p.createdBy, name)) add(p.createdAt, ['chat'], '📊', `Založil(a) anketu <b>${esc(p.question || '')}</b>`);
+    const toPoll = { go: ['#/anketa/' + encodeURIComponent(p.id), ''] };
+    if (same(p.createdBy, name)) add(p.createdAt, ['chat'], '📊', `Založil(a) anketu <b>${esc(p.question || '')}</b>`, toPoll);
     const v = Object.entries(p.votes || {}).find(([k]) => same(k, name));
-    if (v && !same(p.createdBy, name)) { const opt = (p.options || [])[v[1]]; add(p.createdAt, ['chat'], '🗳️', `Hlasoval(a) v anketě <b>${esc(p.question || '')}</b>${opt != null ? `<q>${esc(typeof opt === 'string' ? opt : opt.text || '')}</q>` : ''}`); }
+    if (v && !same(p.createdBy, name)) { const opt = (p.options || [])[v[1]]; add(p.createdAt, ['chat'], '🗳️', `Hlasoval(a) v anketě <b>${esc(p.question || '')}</b>${opt != null ? `<q>${esc(typeof opt === 'string' ? opt : opt.text || '')}</q>` : ''}`, toPoll); }
   });
-  events.list.filter((e) => same(e.albumBy, name)).forEach((e) => add(e.albumAt, ['foto', 'akce'], '🖼️', `Přidal(a) fotoalbum k ${evB({ ...e, link: '#/akce/' + encodeURIComponent(e.id) })}`));
+  events.list.filter((e) => same(e.albumBy, name)).forEach((e) => add(e.albumAt, ['foto', 'akce'], '🖼️', `Přidal(a) fotoalbum k ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), '[data-albumrow]'] }));
   games.forEach((g) => {
     const o = (g.players || []).find((p) => !same(p, name)) || '';
     const gn = (GAME_NAMES[g.type] || 'hra').toLowerCase();
     let res = '';
     if (g.finished) res = !g.winner ? ' · remíza' : same(g.winner, name) ? ' · výhra 🏆' : ' · prohra';
-    add(g.createdAt, ['hry'], g.type === 'sd' ? '🔢' : '🎮', `${g.type === 'sd' ? 'Závod v sudoku' : 'Hra ' + gn} s <b>${esc(o)}</b>${res}`);
+    add(g.createdAt, ['hry'], g.type === 'sd' ? '🔢' : '🎮', `${g.type === 'sd' ? 'Závod v sudoku' : 'Hra ' + gn} s <b>${esc(o)}</b>${res}`, { go: [(g.type === 'sd' ? '#/sudoku/' : '#/hra/') + encodeURIComponent(g.id), ''] });
   });
   const byDay = new Map();
   sh.times.filter((t) => t.path[0] === 'v2_sudoku').forEach((t) => { const l = byDay.get(t.path[1]) || []; l.push(t); byDay.set(t.path[1], l); });
   byDay.forEach((l) => {
     l.sort((a, b) => a.total - b.total);
     const i = l.findIndex((t) => same(t.name || t.id, name));
-    if (i >= 0) add(l[i].at, ['hry'], '🔢', `Sudoku dne za <b>${fmtMs(l[i].total)}</b> · ${i + 1}. místo`);
+    if (i >= 0) add(l[i].at, ['hry'], '🔢', `Sudoku dne za <b>${fmtMs(l[i].total)}</b> · ${i + 1}. místo`, { go: [l[i].path[1] === todayKey() ? '#/sudoku/den' : '#/hry', ''] });
   });
   out.sort((a, b) => b.when - a.when);
   return out;
@@ -137,12 +142,12 @@ export function render(root, { name }) {
     let month = '';
     let open = false;
     const now = new Date();
-    part.forEach((x) => {
+    part.forEach((x, k) => {
       const m = `${MONTHS_NOM[x.when.getMonth()]} ${x.when.getFullYear()}`;
       if (m !== month) { if (open) h += '</div>'; month = m; h += `<div class="pfmo">${m.toUpperCase()}</div><div class="pftl">`; open = true; }
       const today = x.when.toDateString() === now.toDateString();
       const dt = today ? `dnes ${x.when.getHours()}:${String(x.when.getMinutes()).padStart(2, '0')}` : `${x.when.getDate()}. ${x.when.getMonth() + 1}.`;
-      h += `<div class="pfit${x.off ? ' off' : ''}"><span class="pfic">${x.ic}</span><div class="pftx">${x.html}</div><span class="pfdt">${dt}</span></div>`;
+      h += `<div class="pfit${x.off ? ' off' : ''}"${x.go ? ` data-go="${k}"` : ''}><span class="pfic">${x.ic}</span><div class="pftx">${x.html}</div><span class="pfdt">${dt}</span></div>`;
     });
     if (open) h += '</div>';
     if (part.length < l.length) h += '<div class="pfmore" data-more>↓ starší se načítají…</div>';
@@ -151,7 +156,9 @@ export function render(root, { name }) {
   }
   rest.addEventListener('click', (e) => {
     const f = e.target.closest('[data-f]');
-    if (f) { filter = f.dataset.f; shown = PAGE; draw(); }
+    if (f) { filter = f.dataset.f; shown = PAGE; draw(); return; }
+    const g = e.target.closest('[data-go]');
+    if (g) { const x = list()[+g.dataset.go]; if (x && x.go) goFocus(...x.go); }
   });
   const onScroll = () => {
     up.classList.toggle('on', window.scrollY > 700);
