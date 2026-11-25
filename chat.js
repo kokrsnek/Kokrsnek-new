@@ -128,8 +128,8 @@ export function renderPhotos(root) {
       let last = -99, lastY = null, out = '';
       tops.forEach(([s, top]) => {
         const y = Math.min(1, Math.max(0, (top - head()) / mY)) * H;
-        if (s.dataset.y !== lastY) { out += `<span class="yr" style="top:${y}px">${s.dataset.y}</span>`; lastY = s.dataset.y; last = y + 6; return; }
-        if (y - last < 15) return;
+        if (s.dataset.y !== lastY) { out += `<span class="yr" style="top:${y}px">${s.dataset.y}</span>`; lastY = s.dataset.y; last = y + 4; return; }
+        if (y - last < 24) return;
         out += `<span style="top:${y}px">${SHORT[+s.dataset.m]}</span>`; last = y;
       });
       lbls.innerHTML = out;

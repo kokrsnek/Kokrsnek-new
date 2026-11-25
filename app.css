@@ -950,10 +950,10 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .chmh{display:flex;align-items:center;gap:6px;background:none;border:none;font:inherit;padding-left:0;padding-right:0;color:inherit;cursor:pointer}
 .chmh i{font-style:normal;font-size:12px;opacity:.6}
 .chrail{position:fixed;right:0;top:calc(var(--safe-top,0px) + 120px);bottom:calc(env(safe-area-inset-bottom) + 20px);width:44px;z-index:30;touch-action:none;-webkit-user-select:none;user-select:none}
-.chrail::before{content:'';position:absolute;inset:0 0 0 -6px;background:linear-gradient(to left,color-mix(in srgb,var(--bg) 88%,transparent),transparent);opacity:.7;transition:opacity .2s;border-radius:14px 0 0 14px}
+.chrail::before{content:'';position:absolute;inset:0 0 0 -6px;background:linear-gradient(to left,color-mix(in srgb,var(--bg) 70%,transparent),transparent);opacity:0;transition:opacity .2s;border-radius:14px 0 0 14px}
 .chrail.act::before{opacity:1}
-.chrlbl span{position:absolute;right:6px;margin-top:8px;font-size:10.5px;font-weight:600;color:var(--muted);line-height:1}
-.chrlbl span.yr{font-size:11.5px;font-weight:800;color:var(--accent-text)}
+.chrlbl span{position:absolute;right:5px;margin-top:6px;font-size:11px;font-weight:700;color:var(--ink);line-height:1;background:var(--card);padding:4px 7px;border-radius:99px;box-shadow:0 1px 5px rgba(0,0,0,.22)}
+.chrlbl span.yr{font-size:11.5px;font-weight:800;background:var(--accent);color:var(--on-accent)}
 .chrknob{position:absolute;right:4px;top:0;width:34px;height:34px;margin-top:-2px;will-change:transform;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
 
 .chrbub{position:absolute;right:46px;top:0;margin-top:-6px;will-change:transform;background:var(--accent);color:var(--on-accent);padding:7px 14px 8px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}

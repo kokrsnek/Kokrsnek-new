@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.01',
+    date: '26. 11. 2026',
+    items: [
+      'Fotky z chatů: roky a měsíce na posuvníku jsou v bublinách, aby byly vidět i přes fotky.'
+    ]
+  },
+  {
     version: '2.00',
     date: '26. 11. 2026',
     items: [
