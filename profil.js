@@ -6,6 +6,7 @@
 //   v2_akce (založené akce, přidaná alba), v2_games, v2_sudoku/{den}/times,
 //   v2_attendLog (zrušené účasti – zapisuje se od verze 1.64).
 // Podkolekce akcí se čtou jednou pro všechny profily (collectionGroup) a drží se v paměti.
+import { gx } from './config.js';
 import { db, collection, collectionGroup, query, where, getDocs } from './firebase.js';
 import { esc, icon, toDate, looseName, MONTHS_NOM } from './util.js';
 import { avatar, spinner, goFocus } from './ui.js';
@@ -59,7 +60,7 @@ async function collect(name) {
 
   sh.attendees.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '✅', `Jde na ${evB(e)}`, { att: e.id, ...toEv(e, '[data-attsec]') }); });
   sh.declines.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at || e.start, ['akce'], '🛋️', `Nejde na ${evB(e)}`, { off: true, ...toEv(e, '[data-attsec]') }); });
-  log.forEach((d) => add(d.at, ['akce'], '↩️', `Zrušil(a) účast na <b>${esc(d.eventTitle || 'akce')}</b> · předtím šel/šla`, { off: true, ...(evById.has(d.eventId) ? { go: ['#/akce/' + encodeURIComponent(d.eventId), '[data-attsec]'] } : {}) }));
+  log.forEach((d) => add(d.at, ['akce'], '↩️', `${gx(name, 'Zrušil', 'Zrušila')} účast na <b>${esc(d.eventTitle || 'akce')}</b> · předtím ${gx(name, 'šel', 'šla')}`, { off: true, ...(evById.has(d.eventId) ? { go: ['#/akce/' + encodeURIComponent(d.eventId), '[data-attsec]'] } : {}) }));
   sh.likes.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce'], '❤️', `Lajk ${evB(e)}`, toEv(e, '[data-likes]')); });
   sh.checkins.filter((d) => isEv(d.path) && same(who(d), name)).forEach((d) => { const e = evOf(d.path, d); add(d.at, ['akce', 'kde'], '📍', `Na místě: ${evB(e)}${d.verified ? ' · ověřeno polohou' : ''}`, { ci: true, ...toEv(e, '[data-attsec]') }); });
   sh.comments.filter((d) => same(d.user, name)).forEach((d) => {
@@ -70,9 +71,9 @@ async function collect(name) {
   sh.items.filter((d) => d.path[0] === 'bringLists' || d.path[0] === 'v2_akce').forEach((d) => {
     const e = evOf(d.path, d);
     if (same(d.takenBy, name)) add(d.at, ['akce'], '🎒', `Přinese <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`, toEv(e, '[data-itemsec]'));
-    else if (same(d.addedBy, name)) add(d.at, ['akce'], '📝', `Přidal(a) do „Co přinést“ <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`, toEv(e, '[data-itemsec]'));
+    else if (same(d.addedBy, name)) add(d.at, ['akce'], '📝', `${gx(name, 'Přidal', 'Přidala')} do „Co přinést“ <b>${esc(d.name || 'věc')}</b> · ${evB(e)}`, toEv(e, '[data-itemsec]'));
   });
-  events.list.filter((e) => !e.isTest && e.source !== 'gcal' && same(e.createdBy, name)).forEach((e) => add(e.createdAt, ['akce'], '🗓️', `Založil(a) akci ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), ''] }));
+  events.list.filter((e) => !e.isTest && e.source !== 'gcal' && same(e.createdBy, name)).forEach((e) => add(e.createdAt, ['akce'], '🗓️', `${gx(name, 'Založil', 'Založila')} akci ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), ''] }));
   place.forEach((d) => {
     add(d.at, ['kde'].concat(d.photo ? ['foto'] : []), '📍', `Check-in <b>${esc(d.place || 'místo')}</b>${d.note ? `<q>${esc(d.note)}</q>` : ''}${d.photo ? `<img class="pfimg" src="${esc(d.photo)}" alt="" loading="lazy">` : ''}`, { ci: true, go: ['#/kde/c/' + encodeURIComponent(d.id)] });
   });
@@ -89,11 +90,11 @@ async function collect(name) {
   batches.forEach((b) => add(b.at, ['chat', 'foto'], '📷', `${b.n} ${b.n < 5 ? 'fotky' : 'fotek'} v <b>chatu party</b><img class="pfimg" src="${esc(b.img)}" alt="" loading="lazy">`, { msg: true, go: ['#/chat/' + PARTY_THREAD, `[data-photo-id="${sq(b.id)}"]`] }));
   polls.forEach((p) => {
     const toPoll = { go: ['#/anketa/' + encodeURIComponent(p.id), ''] };
-    if (same(p.createdBy, name)) add(p.createdAt, ['chat'], '📊', `Založil(a) anketu <b>${esc(p.question || '')}</b>`, toPoll);
+    if (same(p.createdBy, name)) add(p.createdAt, ['chat'], '📊', `${gx(name, 'Založil', 'Založila')} anketu <b>${esc(p.question || '')}</b>`, toPoll);
     const v = Object.entries(p.votes || {}).find(([k]) => same(k, name));
-    if (v && !same(p.createdBy, name)) { const opt = (p.options || [])[v[1]]; add(p.createdAt, ['chat'], '🗳️', `Hlasoval(a) v anketě <b>${esc(p.question || '')}</b>${opt != null ? `<q>${esc(typeof opt === 'string' ? opt : opt.text || '')}</q>` : ''}`, toPoll); }
+    if (v && !same(p.createdBy, name)) { const opt = (p.options || [])[v[1]]; add(p.createdAt, ['chat'], '🗳️', `${gx(name, 'Hlasoval', 'Hlasovala')} v anketě <b>${esc(p.question || '')}</b>${opt != null ? `<q>${esc(typeof opt === 'string' ? opt : opt.text || '')}</q>` : ''}`, toPoll); }
   });
-  events.list.filter((e) => same(e.albumBy, name)).forEach((e) => add(e.albumAt, ['foto', 'akce'], '🖼️', `Přidal(a) fotoalbum k ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), '[data-albumrow]'] }));
+  events.list.filter((e) => same(e.albumBy, name)).forEach((e) => add(e.albumAt, ['foto', 'akce'], '🖼️', `${gx(name, 'Přidal', 'Přidala')} fotoalbum k ${evB(e)}`, { go: ['#/akce/' + encodeURIComponent(e.id), '[data-albumrow]'] }));
   games.forEach((g) => {
     const o = (g.players || []).find((p) => !same(p, name)) || '';
     const gn = (GAME_NAMES[g.type] || 'hra').toLowerCase();

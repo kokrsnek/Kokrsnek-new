@@ -4,7 +4,7 @@
 import { esc, icon, fmtTime, sameDay, dayDiff, toDate, DAYS_FULL, looseName } from './util.js';
 import { tabbar, avatar, toast, spinner, confirmDanger, goFocus, popMessage, topButton } from './ui.js';
 import { myName } from './auth.js';
-import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
+import { TEST_MODE, PARTY_NAMES, CHAT_LIVE, gx } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
 import { shrinkPhoto } from './store.js';
 import { isOnline, lastSeenText, watchPresence, watchOne } from './presence.js';
@@ -635,7 +635,7 @@ export function renderThread(root, { id }) {
   // Hipnutí (šťouchnutí) — cloudová funkce pošle notifikaci „👊 Hipnutí“
   const pokeBtn = root.querySelector('[data-poke]');
   if (pokeBtn) pokeBtn.onclick = async () => {
-    try { await addDoc(collection(db, 'pokes'), { from: me, to: norm(threadTitle(id)), type: 'poke', at: new Date().toISOString(), via: 'v2' }); toast(`Hipnul(a) jsi ${threadTitle(id)} 👊`); }
+    try { await addDoc(collection(db, 'pokes'), { from: me, to: norm(threadTitle(id)), type: 'poke', at: new Date().toISOString(), via: 'v2' }); toast(`${gx(me, 'Hipnul', 'Hipnula')} jsi ${threadTitle(id)} 👊`); }
     catch (x) { toast('Nepovedlo se.'); }
   };
   // Přečtení: kdy jsem vlákno naposledy viděl

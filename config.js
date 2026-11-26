@@ -36,6 +36,12 @@ export const PARTY_NAMES = [
 // Jak se jméno ukazuje v nabídkách. Uložené jméno zůstává stejné jako ve staré
 // aplikaci (pod ním jsou zprávy, docházka i notifikace), mění se jen popisek.
 export const NAME_LABELS = { Pecak: 'Pecák' };
+// Ženy v partě — kvůli rodu sloves v textech („Byla jsem tu“, „odešla“, „Založila akci“…).
+export const WOMEN = ['Dáša', 'Iva'];
+const _wn = (n) => String(n || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+export const isWoman = (n) => WOMEN.some((w) => _wn(w) === _wn(n));
+// gx('Iva', 'Byl', 'Byla') → 'Byla'
+export const gx = (n, m, f) => (isWoman(n) ? f : m);
 export const nameLabel = (n) => NAME_LABELS[n] || n;
 
 // Číslo verze a seznam změn jsou ve version.js.

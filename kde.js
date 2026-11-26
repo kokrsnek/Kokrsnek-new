@@ -11,7 +11,7 @@ import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, ca
 import { loadLeaflet, geocode } from './map.js';
 import { placeCoords } from './util.js';
 import { pullSearch } from './pullsearch.js';
-import { PARTY_NAMES } from './config.js';
+import { PARTY_NAMES, gx } from './config.js';
 
 const isTestDoc = (c) => c._col === 'v2_checkins';
 const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE || CHAT_LIVE;
@@ -195,7 +195,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     const cs = comments[c.id];
     return `<div class="ci" data-ci="${esc(c.id)}">
       <div class="cihead"><span data-profile="${esc(c.user || '')}">${avTr(c, 36)}</span>
-        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · odešel(a) ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
         ${c.lat != null && c.lng != null
           ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
           : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
@@ -231,7 +231,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
       </div>
       <a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>
       ${c.place ? `<div class="ciplace">${esc(c.place.split(',')[0])}</div>` : ''}
-      <div class="cinote" style="color:var(--muted)">${active ? 'Jsem na místě' : 'Byl jsem tu'}${c.verified ? ' · 📍 ověřeno polohou' : ''}</div>
+      <div class="cinote" style="color:var(--muted)">${active ? 'Jsem na místě' : gx(c.user, 'Byl jsem tu', 'Byla jsem tu')}${c.verified ? ' · 📍 ověřeno polohou' : ''}</div>
     </div>`;
   }
 
@@ -519,7 +519,7 @@ export function renderDetail(root, { id }) {
     body.innerHTML = `<div class="ci cidcard">
       <div class="cihead" style="align-items:center"><span data-profile="${esc(c.user || '')}">${avTr(c, 48)}</span>
         <div style="min-width:0;flex:1"><div class="t" style="font-size:18px"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span></div>
-          <div class="s" style="font-size:13px">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · odešel(a) ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+          <div class="s" style="font-size:13px">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
         ${active ? '<span class="cinow">právě tady</span>' : ''}</div>
       ${c.eventId ? `<a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>` : ''}
       <div class="ciplace cidplace">${esc(c.place || '')}</div>
