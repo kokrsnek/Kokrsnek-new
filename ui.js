@@ -161,6 +161,37 @@ export function goFocus(hash, sel = '', click = '', replace = false) {
 export function setFocus(sel, quiet = false) {
   try { sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ sel, click: '', quiet, at: Date.now() })); } catch (e) { /* nic */ }
 }
+// Zpráva v chatu se „nafoukne“ (až o 100 %, ale nikdy nevyleze z displeje) a pružně vrátí.
+export function popMessage(t) {
+  const bub = t.querySelector('.bubble') || t;
+  const r = bub.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight, m = 8;
+  // Roste od svého okraje: moje zprávy od pravého, ostatní od levého; svisle od středu.
+  const roomX = t.classList.contains('mine') ? r.right - m : W - m - r.left;
+  const roomY = Math.min(r.top + r.height / 2 - m, H - m - (r.top + r.height / 2)) * 2;
+  const k = Math.min(2, roomX / Math.max(1, r.width), roomY / Math.max(1, r.height));
+  t.style.setProperty('--pop', Math.max(1.05, k).toFixed(3));
+  t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop');
+  setTimeout(() => t.classList.remove('pop'), 2600);
+}
+
+// Kulaté tlačítko „nahoru“, které se ukáže po odscrollování (stránka se posouvá celým oknem).
+export function topButton(screen, { left = false, aboveTabbar = false } = {}) {
+  const b = document.createElement('button');
+  b.className = 'totop' + (left ? ' left' : '') + (aboveTabbar ? ' tb' : '');
+  b.setAttribute('aria-label', 'Nahoru'); b.hidden = true;
+  b.innerHTML = icon('back', 20);
+  b.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  screen.appendChild(b);
+  let raf = 0;
+  const on = () => {
+    if (!b.isConnected) { window.removeEventListener('scroll', on); return; }
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; b.hidden = scrollY < 600; });
+  };
+  window.addEventListener('scroll', on, { passive: true });
+  return () => window.removeEventListener('scroll', on);
+}
+
 export function runFocus() {
   let f = null;
   try { f = JSON.parse(sessionStorage.getItem(FOCUS_KEY) || 'null'); sessionStorage.removeItem(FOCUS_KEY); } catch (e) { /* nic */ }
@@ -180,20 +211,11 @@ export function runFocus() {
     const go = () => { const n = document.querySelector(f.sel); const t = n ? (n.closest('.msg') || n) : target; t.scrollIntoView({ block: 'center', behavior: 'smooth' }); return t; };
     setTimeout(() => {
       const t = go();
-      // Zpráva v chatu se „nafoukne“ (až o 100 %, ale nikdy nevyleze z displeje); ostatní dostanou rámeček.
-      const fx = t.classList.contains('msg') ? 'pop' : 'flash';
-      if (fx === 'pop') {
-        const bub = t.querySelector('.bubble') || t;
-        const r = bub.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight, m = 8;
-        // Roste od svého okraje: moje zprávy od pravého, ostatní od levého; svisle od středu.
-        const roomX = t.classList.contains('mine') ? r.right - m : W - m - r.left;
-        const roomY = Math.min(r.top + r.height / 2 - m, H - m - (r.top + r.height / 2)) * 2;
-        const k = Math.min(2, roomX / Math.max(1, r.width), roomY / Math.max(1, r.height));
-        t.style.setProperty('--pop', Math.max(1.05, k).toFixed(3));
-      }
-      t.classList.remove(fx); void t.offsetWidth; t.classList.add(fx);
-      if (fx === 'flash') setTimeout(go, 900);
-      setTimeout(() => t.classList.remove(fx), 2600);
+      // Zpráva v chatu se „nafoukne“; ostatní dostanou rámeček.
+      if (t.classList.contains('msg')) { popMessage(t); return; }
+      t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+      setTimeout(go, 900);
+      setTimeout(() => t.classList.remove('flash'), 2600);
     }, 450);
   }, 150);
 }

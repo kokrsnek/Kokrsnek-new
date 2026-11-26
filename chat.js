@@ -2,7 +2,7 @@
 // Skutečná vlákna party (chats/{id}/messages) se čtou. Ve zkušebním provozu
 // se píše jen do testovacího vlákna v2_chats/test; s CHAT_LIVE se píše naostro.
 import { esc, icon, fmtTime, sameDay, dayDiff, toDate, DAYS_FULL, looseName } from './util.js';
-import { tabbar, avatar, toast, spinner, confirmDanger, goFocus } from './ui.js';
+import { tabbar, avatar, toast, spinner, confirmDanger, goFocus, popMessage, topButton } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, PARTY_NAMES, CHAT_LIVE } from './config.js';
 import { db, collection, doc, query, orderBy, limit, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from './firebase.js';
@@ -179,6 +179,7 @@ export function renderPhotos(root) {
   viewer.className = 'chpv'; viewer.hidden = true;
   viewer.innerHTML = `<div class="chpvtop"><button class="ibtn" data-x aria-label="Zavřít">${icon('close', 20)}</button><div class="chpvinfo" data-info></div><button class="btn" data-go>Otevřít v chatu</button></div><img data-img alt="">`;
   root.querySelector('.screen').appendChild(viewer);
+  cleanups.push(topButton(root.querySelector('.screen'), { left: true }));
   const show = (i) => {
     cur = Math.max(0, Math.min(list.length - 1, i));
     const m = list[cur], d = toDate(m.at);
@@ -524,7 +525,7 @@ export function renderThread(root, { id }) {
           ${showName ? `<div class="mname" data-profile="${esc(m.from || '')}">${esc(m.from || '?')}</div>` : ''}
           ${m.game ? gameCardHtml(m.game, gamesMap.get(m.game.id), me) : `<div class="bubble ${m.image || m.audio ? 'media' : ''}">
             ${m.forwardedFrom ? `<div class="fwd">přeposláno od ${esc(m.forwardedFrom)}</div>` : ''}
-            ${m.replyTo ? `<div class="quote"><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
+            ${m.replyTo ? `<div class="quote"${m.replyTo.id ? ` data-qid="${esc(m.replyTo.id)}"` : ''}><b>${esc(m.replyTo.from || '')}</b><span>${esc(m.replyTo.snippet || '')}</span></div>` : ''}
             ${batchImgs ? photoGrid(batchImgs) : m.image ? `<img src="${esc(m.image)}" alt="" data-photo-id="${esc(m.id)}">` : ''}
             ${m.audio ? `<audio controls preload="metadata" src="${esc(m.audio)}"></audio>` : ''}
             ${m.text ? `<div class="mtext">${esc(m.text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`).replace(/\n/g, '<br>')}</div>` : ''}
@@ -660,6 +661,16 @@ export function renderThread(root, { id }) {
   ['touchend', 'touchmove', 'touchcancel'].forEach((t) => box.addEventListener(t, () => clearTimeout(pressT), { passive: true }));
   box.addEventListener('contextmenu', (e) => { const el = e.target.closest('.msg'); if (el && writable) { e.preventDefault(); msgMenu(el.dataset.id); } });
   box.addEventListener('click', (e) => {
+    // Klepnutí na citovanou zprávu: přesun na původní zprávu a „nafouknutí“.
+    const qt = e.target.closest('.quote[data-qid]');
+    if (qt && Date.now() - menuAt > 800) {
+      const sq = qt.dataset.qid.replace(/["\\]/g, '');
+      const t = box.querySelector(`.msg[data-id="${sq}"]`) || box.querySelector(`[data-photo-id="${sq}"]`)?.closest('.msg');
+      if (!t) { toast('Původní zpráva už v chatu není.'); return; }
+      t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(() => popMessage(t), 450);
+      return;
+    }
     const ph = e.target.closest('[data-photo-id]');
     if (ph && Date.now() - menuAt > 800) { openViewer(ph.dataset.photoId); return; }
     const r = e.target.closest('[data-react]');

@@ -963,3 +963,11 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 @keyframes chrHint{50%{box-shadow:0 0 0 10px var(--accent-soft),0 3px 10px rgba(0,0,0,.3)}}
 
 .chph{content-visibility:auto}
+
+/* 2.02 — tlačítko nahoru po odscrollování */
+.totop{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 22px);width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.22);display:grid;place-items:center;z-index:40;animation:jdIn .18s ease-out}
+.totop svg{transform:rotate(90deg)}
+.totop.left{right:auto;left:16px}
+.totop.tb{bottom:calc(env(safe-area-inset-bottom) + 108px)}
+.totop[hidden]{display:none}
+.quote[data-qid]{cursor:pointer}

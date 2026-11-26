@@ -5,7 +5,7 @@
 // napříč roky — číslovka na začátku názvu se ignoruje).
 import { db, collection, getDocs } from './firebase.js';
 import { esc, icon } from './util.js';
-import { tabbar, spinner } from './ui.js';
+import { tabbar, spinner, topButton } from './ui.js';
 import { watchEvents, events, isPast, loadCover, cachedCover } from './store.js';
 import { coverArt } from './coverart.js';
 import { setFotky } from './badges.js';
@@ -157,5 +157,6 @@ export function render(root, { group = null } = {}) {
   const unsub = watchEvents(() => draw());
   loadOld().then(draw);
   draw();
-  return () => unsub();
+  const offTop = topButton(root.querySelector('.screen'), { aboveTabbar: true });
+  return () => { unsub(); offTop(); };
 }
