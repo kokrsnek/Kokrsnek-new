@@ -134,7 +134,9 @@ export function hourColumns(w, n = 7) {
 
 // ---------- déšť / sníh přes aplikaci podle počasí tam, kde jsi ----------
 const PERM = 'kokrsnekLocationWeatherPermission'; // stejný klíč jako stará aplikace
-let effectOn = false;
+let effectOn = false, fx = null, fxKind = '', lastCheck = 0;
+// Počasí se kontroluje při spuštění, pak každých 15 minut a při každém návratu do aplikace
+// (když se rozsněží, až když už KoKrŠNeK běží, efekt se přidá; když přestane, zmizí).
 export function startWeatherEffect() {
   if (effectOn || !navigator.geolocation) return;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -142,16 +144,31 @@ export function startWeatherEffect() {
   try { perm = localStorage.getItem(PERM); } catch (e) { /* nic */ }
   if (perm === 'denied') return;
   effectOn = true;
+  checkWeatherNow();
+  setInterval(() => { if (!document.hidden) checkWeatherNow(); }, 15 * 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastCheck > 10 * 60000) checkWeatherNow(); });
+}
+function checkWeatherNow() {
+  lastCheck = Date.now();
   navigator.geolocation.getCurrentPosition(async (pos) => {
     try { localStorage.setItem(PERM, 'granted'); } catch (e) { /* nic */ }
     try {
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude.toFixed(3)}&longitude=${pos.coords.longitude.toFixed(3)}&current_weather=true`);
-      const code = (await r.json()).current_weather?.weathercode;
-      const kind = [51, 56, 61, 66, 80].includes(code) ? ['rain', 'light'] : [53, 63, 81].includes(code) ? ['rain', 'moderate'] : [55, 57, 65, 67, 82, 95, 96, 99].includes(code) ? ['rain', 'heavy']
-        : [71, 77, 85].includes(code) ? ['snow', 'light'] : [73].includes(code) ? ['snow', 'moderate'] : [75, 86].includes(code) ? ['snow', 'heavy'] : null;
-      if (kind) runEffect(...kind);
+      // „current“ = 15minutová data (přesnější než hodinové current_weather); sněžení se pozná i podle
+      // množství sněhu, když kód počasí ještě ukazuje jen „zataženo“.
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude.toFixed(3)}&longitude=${pos.coords.longitude.toFixed(3)}&current=weather_code,snowfall,rain,showers,precipitation`);
+      const c = (await r.json()).current || {};
+      const code = c.weather_code, snow = +c.snowfall || 0, rain = (+c.rain || 0) + (+c.showers || 0);
+      let kind = [71, 77, 85].includes(code) ? ['snow', 'light'] : [73].includes(code) ? ['snow', 'moderate'] : [75, 86].includes(code) ? ['snow', 'heavy']
+        : [51, 56, 61, 66, 80].includes(code) ? ['rain', 'light'] : [53, 63, 81].includes(code) ? ['rain', 'moderate'] : [55, 57, 65, 67, 82, 95, 96, 99].includes(code) ? ['rain', 'heavy'] : null;
+      if (!kind && snow > 0) kind = ['snow', snow >= 0.4 ? 'heavy' : snow >= 0.15 ? 'moderate' : 'light'];
+      if (!kind && rain > 0) kind = ['rain', rain >= 1.5 ? 'heavy' : rain >= 0.4 ? 'moderate' : 'light'];
+      const k = kind ? kind.join('-') : '';
+      if (k === fxKind) return;
+      if (fx) { fx.stop(); fx = null; }
+      fxKind = k;
+      if (kind) fx = runEffect(...kind);
     } catch (e) { /* bez efektu */ }
-  }, () => { try { localStorage.setItem(PERM, 'denied'); } catch (e) { /* nic */ } }, { maximumAge: 30 * 60000, timeout: 15000 });
+  }, () => { try { localStorage.setItem(PERM, 'denied'); } catch (e) { /* nic */ } }, { maximumAge: 10 * 60000, timeout: 15000 });
 }
 
 function runEffect(type, intensity) {
@@ -161,7 +178,7 @@ function runEffect(type, intensity) {
   box.setAttribute('aria-hidden', 'true');
   document.body.appendChild(box);
   const wind = Math.random() < 0.5 ? -1 : 1;
-  setInterval(() => {
+  const t = setInterval(() => {
     if (document.hidden) return;
     const el = document.createElement('i');
     if (type === 'rain') {
@@ -175,4 +192,5 @@ function runEffect(type, intensity) {
     box.appendChild(el);
     setTimeout(() => el.remove(), 8000);
   }, every);
+  return { stop: () => { clearInterval(t); setTimeout(() => box.remove(), 8000); } };
 }
