@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.07',
+    date: '26. 11. 2026',
+    items: [
+      'Kde jsi?: swipem doleva/doprava přepínáš Feed ↔ Mapa ↔ Místa (obsah se při tahu posouvá za prstem, přechod jede správným směrem).'
+    ]
+  },
+  {
     version: '2.06',
     date: '26. 11. 2026',
     items: [

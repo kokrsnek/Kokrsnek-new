@@ -14,7 +14,10 @@ function navKind(path) {
   lastPath = path; lastMountAt = Date.now();
   if (!prev) { navStack = [path]; return null; }
   if (tabOf(path) >= 0) {
-    const kind = tabOf(prev) >= 0 ? { k: 'tab', dir: tabOf(path) >= tabOf(prev) ? 1 : -1 } : { k: 'pop', cal: isCal(prev) };
+    // Feed / Mapa / Místa na Kde jsi?: směr podle pořadí záložek (kvůli swipu do strany).
+    const KS = ['/kde', '/kde/mapa', '/kde/mista'];
+    const sub = KS.includes(path) && KS.includes(prev) ? (KS.indexOf(path) >= KS.indexOf(prev) ? 1 : -1) : 0;
+    const kind = tabOf(prev) >= 0 ? { k: 'tab', dir: sub || (tabOf(path) >= tabOf(prev) ? 1 : -1) } : { k: 'pop', cal: isCal(prev) };
     navStack = [path];
     return quick ? null : kind;
   }

@@ -83,6 +83,43 @@ export function render(root, { tab = 'feed', openNew = false }) {
   const body = root.querySelector('[data-body]');
   topButton(root.querySelector('.screen'), { aboveTabbar: true });   // po odscrollování šipka nahoru
   root.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => location.replace(b.dataset.tab); });
+  // Swipe doleva/doprava přepíná Feed ↔ Mapa ↔ Místa. Ne z mapy (tam se jí posouvá), ne z řádků,
+  // které se posouvají do strany, a ne od úplného okraje (tam je gesto zpět).
+  {
+    const ORDER = ['#/kde', '#/kde/mapa', '#/kde/mista'], idx = ['feed', 'mapa', 'mista'].indexOf(tab);
+    const scr = root.querySelector('.screen');
+    let x0 = 0, y0 = 0, axis = null, on = false, dx = 0;
+    scr.addEventListener('touchstart', (e) => {
+      on = false; axis = null; dx = 0;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      if (t.clientX < 28 || t.clientX > innerWidth - 28) return;
+      if (e.target.closest('.cimap, .leaflet-container, .cistrip, [data-chips], .trchips, .tabbar, input, textarea, .sheet')) return;
+      x0 = t.clientX; y0 = t.clientY; on = true;
+    }, { passive: true });
+    scr.addEventListener('touchmove', (e) => {
+      if (!on) return;
+      const t = e.touches[0]; dx = t.clientX - x0; const dy = t.clientY - y0;
+      if (!axis) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        axis = Math.abs(dx) > Math.abs(dy) * 1.6 ? 'x' : 'y';
+        if (axis === 'y') { on = false; return; }
+      }
+      const next = idx + (dx < 0 ? 1 : -1);
+      if (e.cancelable) e.preventDefault();
+      const k = next < 0 || next > 2 ? 0.15 : 0.4;   // na krajích jen lehký odpor
+      body.style.transition = 'none';
+      body.style.transform = `translateX(${dx * k}px)`;
+    }, { passive: false });
+    const end = () => {
+      if (!on) return; on = false;
+      const next = idx + (dx < 0 ? 1 : -1);
+      if (axis === 'x' && Math.abs(dx) > 70 && next >= 0 && next <= 2) { location.replace(ORDER[next]); return; }
+      body.style.transition = 'transform .2s ease'; body.style.transform = '';
+    };
+    scr.addEventListener('touchend', end);
+    scr.addEventListener('touchcancel', end);
+  }
   root.querySelector('[data-new]').onclick = () => newCheckin();
 
   // Zvoneček: upozornění na nové check-iny a reakce na ty tvoje (settings/placeCheckins,
