@@ -6,6 +6,7 @@ import { importCalendar, events, watchEvents, setMyAvatar } from './store.js';
 import { TEST_MODE, PARTY_NAMES, LIVE, nameLabel } from './config.js';
 import { db, doc, updateDoc, callFunction } from './firebase.js';
 import { demoBadges } from './badges.js';
+import { weatherDiag, recheckWeather, demoWeather } from './weather.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
 import { isPushOn, pushToggle } from './pushui.js';
@@ -29,7 +30,9 @@ export function render(root) {
       <button class="btn block" data-push style="justify-content:space-between"><span style="display:inline-flex;gap:8px;align-items:center">${icon('bell', 18)}Notifikace v tomhle telefonu</span><b data-pushstate>${isPushOn() ? 'zapnuté' : 'vypnuté'}</b></button>
       <div class="note" style="margin-top:8px">Lajky, Jdu, komentáře, zprávy v chatu, hry, nová alba… Když máš zapnuté obě aplikace, chodí upozornění jen do nové.</div>
       ${admin ? `<button class="btn block" data-testpush style="margin-top:10px;justify-content:flex-start;gap:8px">🧪 Poslat si zkušební notifikace</button>
-      <div class="note" style="margin-top:6px">Jen pro správce: přijdou jen na tvoje zařízení (chat, check-in, nová akce).</div>` : ''}
+      <div class="note" style="margin-top:6px">Jen pro správce: přijdou jen na tvoje zařízení (chat, check-in, nová akce).</div>
+      <button class="btn block" data-wxdemo style="margin-top:10px;justify-content:flex-start;gap:8px">❄️ Vyzkoušet sníh (20 s)</button>
+      <div class="note" style="margin-top:6px" data-wxdiag></div>` : ''}
 
       <div class="section-h">Vzhled</div>
       <button class="themerow" data-themerow aria-label="Změnit vzhled"></button>
@@ -139,6 +142,19 @@ export function render(root) {
   };
 
   root.querySelector('[data-intro]').onclick = () => showIntro(true);
+  const wd = root.querySelector('[data-wxdiag]');
+  if (wd) {
+    const showDiag = () => {
+      const d = weatherDiag();
+      const t = d && d.at ? new Date(d.at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : '';
+      const rm = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Pozor: na zařízení je zapnuté „Omezit pohyb“, proto se sníh/déšť nezobrazuje. ' : '';
+      wd.textContent = rm + (!d ? 'Počasí pro sníh/déšť se zatím nezjišťovalo.'
+        : d.err ? `Počasí pro sníh/déšť (${t}): ${d.err}.`
+        : `Počasí pro sníh/déšť (${t}): kód ${d.code}, sníh ${d.snow} cm, déšť ${d.rain} mm → ${d.kind === 'nic' ? 'bez efektu' : d.kind}.`);
+    };
+    showDiag(); recheckWeather(); setTimeout(showDiag, 4000);
+    root.querySelector('[data-wxdemo]').onclick = () => demoWeather('snow');
+  }
   const tp = root.querySelector('[data-testpush]');
   if (tp) tp.onclick = async () => {
     const delay = await choose({ title: 'Zkušební notifikace', text: 'Přijdou 3 ukázky (chat, check-in, nová akce) jen na tvoje zařízení a na minutu se rozsvítí odznaky v dolní liště (jen u tebe). Se zpožděním stihneš zavřít aplikaci a uvidíš i číslo na ikoně.', buttons: [

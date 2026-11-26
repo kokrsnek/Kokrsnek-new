@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.06',
+    date: '26. 11. 2026',
+    items: [
+      'Oprava sněhu/deště: když jednou nevyšlo zjištění polohy (vypršel čas, nebo zákaz ze staré aplikace), efekt se už nikdy nezapnul. Teď se „zakázáno“ ukládá jen při skutečném zákazu polohy.',
+      'Nastavení party (správce): co hlásí počasí pro sníh/déšť a tlačítko „Vyzkoušet sníh“.'
+    ]
+  },
+  {
     version: '2.05',
     date: '26. 11. 2026',
     items: [

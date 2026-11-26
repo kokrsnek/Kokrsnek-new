@@ -140,11 +140,14 @@ let effectOn = false, fx = null, fxKind = '', lastCheck = 0;
 export function startWeatherEffect() {
   if (effectOn || !navigator.geolocation) return;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  effectOn = true;
   let perm = null;
   try { perm = localStorage.getItem(PERM); } catch (e) { /* nic */ }
-  if (perm === 'denied') return;
-  effectOn = true;
-  checkWeatherNow();
+  // Dřív se „zakázáno“ uložilo i po pouhém vypršení času (nebo ve staré aplikaci) a efekt
+  // se pak už nikdy nezapnul. Teď se zeptáme prohlížeče, jestli je poloha opravdu zakázaná.
+  if (perm === 'denied' && navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then((p) => { if (p.state !== 'denied') checkWeatherNow(); }).catch(() => checkWeatherNow());
+  } else checkWeatherNow();
   setInterval(() => { if (!document.hidden) checkWeatherNow(); }, 15 * 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastCheck > 10 * 60000) checkWeatherNow(); });
 }
@@ -163,12 +166,27 @@ function checkWeatherNow() {
       if (!kind && snow > 0) kind = ['snow', snow >= 0.4 ? 'heavy' : snow >= 0.15 ? 'moderate' : 'light'];
       if (!kind && rain > 0) kind = ['rain', rain >= 1.5 ? 'heavy' : rain >= 0.4 ? 'moderate' : 'light'];
       const k = kind ? kind.join('-') : '';
+      wxDiag = { at: new Date().toISOString(), code, snow, rain, kind: k || 'nic' };
+      try { localStorage.setItem('kokrsnekWxDiag', JSON.stringify(wxDiag)); } catch (e) { /* nic */ }
       if (k === fxKind) return;
       if (fx) { fx.stop(); fx = null; }
       fxKind = k;
       if (kind) fx = runEffect(...kind);
     } catch (e) { /* bez efektu */ }
-  }, () => { try { localStorage.setItem(PERM, 'denied'); } catch (e) { /* nic */ } }, { maximumAge: 10 * 60000, timeout: 15000 });
+  }, (err) => {
+    wxDiag = { at: new Date().toISOString(), err: err && err.code === 1 ? 'poloha zakázána' : 'poloha nezjištěna' };
+    // „Zakázáno“ uložit jen při skutečném zákazu, ne při vypršení času.
+    if (err && err.code === 1) { try { localStorage.setItem(PERM, 'denied'); } catch (e) { /* nic */ } }
+  }, { maximumAge: 10 * 60000, timeout: 20000 });
+}
+// Pro správce (Nastavení party): co naposledy přišlo z počasí, a zkouška efektu na 20 s.
+let wxDiag = null;
+try { wxDiag = JSON.parse(localStorage.getItem('kokrsnekWxDiag') || 'null'); } catch (e) { /* nic */ }
+export const weatherDiag = () => wxDiag;
+export function recheckWeather() { effectOn = true; checkWeatherNow(); }
+export function demoWeather(type = 'snow') {
+  const f = runEffect(type, 'heavy');
+  setTimeout(() => f.stop(), 20000);
 }
 
 function runEffect(type, intensity) {
