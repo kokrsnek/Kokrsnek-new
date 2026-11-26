@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.03',
+    date: '26. 11. 2026',
+    items: [
+      'Tlačítko pro návrat nahoru po odscrollování i na Akcích, Kde jsi? a v seznamu Chatu.'
+    ]
+  },
+  {
     version: '2.02',
     date: '26. 11. 2026',
     items: [

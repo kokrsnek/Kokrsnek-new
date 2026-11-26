@@ -3,7 +3,7 @@
 // check-iny, reakce a komentáře zapisují jen do v2_checkins (test).
 import { emo, emojiSheet } from './emoji.js';
 import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
-import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus } from './ui.js';
+import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus, topButton } from './ui.js';
 import { myName } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
 import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, writeBatch, callFunction } from './firebase.js';
@@ -81,6 +81,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     ${tabbar('kde')}
   </div>`;
   const body = root.querySelector('[data-body]');
+  topButton(root.querySelector('.screen'), { aboveTabbar: true });   // po odscrollování šipka nahoru
   root.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => location.replace(b.dataset.tab); });
   root.querySelector('[data-new]').onclick = () => newCheckin();
 

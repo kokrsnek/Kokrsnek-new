@@ -1,6 +1,6 @@
 // Akce: Nadcházející / Proběhlé.
 import { esc, icon, fmtWhen, relDays, fmtSpan, MONTHS_NOM, MONTHS_SHORT, DAYS_SHORT, fmtTime, fmtLongDate, looseName } from './util.js';
-import { tabbar, faces, toast, spinner } from './ui.js';
+import { tabbar, faces, toast, spinner, topButton } from './ui.js';
 import { namedayFor } from './namedays.js';
 import { myName } from './auth.js';
 import { prefetchEvent, neighboursOf, cachedLikes, loadLikes, watchLikes, toggleLike } from './store.js';
@@ -37,6 +37,7 @@ export function render(root, { tab }) {
     ${tabbar('akce')}
   </div>`;
   const body = root.querySelector('[data-body]');
+  topButton(root.querySelector('.screen'), { aboveTabbar: true });   // po odscrollování šipka nahoru
   const sbox = root.querySelector('[data-sbox]');
   const sinput = sbox.querySelector('input');
 

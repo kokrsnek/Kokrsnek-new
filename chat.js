@@ -215,6 +215,7 @@ export function renderList(root) {
     ${tabbar('chat')}
   </div>`;
   const box = root.querySelector('[data-list]');
+  topButton(root.querySelector('.screen'), { aboveTabbar: true });   // po odscrollování šipka nahoru
   // Hledání ve všech zprávách všech chatů: potažením seznamu dolů. Vpravo v poli fotky ze všech chatů.
   let found = null, loadingAll = false;
   pullSearch({ scroll: box, placeholder: 'Hledat ve všech chatech', skip: '.swrow.open',
