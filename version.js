@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.08',
+    date: '26. 11. 2026',
+    items: [
+      'Kde jsi? → Mapa: mapa v kartě je jen náhled, přes který jde swipovat mezi Feed/Mapa/Místa. Klepnutím se otevře přes celou obrazovku (posouvání, přiblížení, klepnutí na člověka → check-in); zavřeš křížkem nebo gestem zpět.'
+    ]
+  },
+  {
     version: '2.07',
     date: '26. 11. 2026',
     items: [

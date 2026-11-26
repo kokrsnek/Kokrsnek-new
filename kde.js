@@ -94,7 +94,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX < 28 || t.clientX > innerWidth - 28) return;
-      if (e.target.closest('.cimap, .leaflet-container, .cistrip, [data-chips], .trchips, .tabbar, input, textarea, .sheet')) return;
+      if (e.target.closest('.cistrip, [data-chips], .trchips, .tabbar, input, textarea, .sheet')) return;
       x0 = t.clientX; y0 = t.clientY; on = true;
     }, { passive: true });
     scr.addEventListener('touchmove', (e) => {
@@ -344,17 +344,17 @@ export function render(root, { tab = 'feed', openNew = false }) {
   // ---------- Mapa ----------
   async function drawMap() {
     if (!body.querySelector('.cimap')) {
-      body.innerHTML = '<div class="cimap"></div><div class="note" style="margin-top:8px">Check-iny za posledních 7 dní</div>';
+      body.innerHTML = '<div class="cimap mprev" role="button" aria-label="Otevřít mapu přes celou obrazovku"><span class="mpexp">⤢ Celá mapa</span></div><div class="note" style="margin-top:8px">Check-iny za posledních 7 dní · klepnutím otevřeš mapu přes celou obrazovku</div>';
       try {
         const L = await loadLeaflet();
         if (!alive) return;
-        map = L.map(body.querySelector('.cimap'), { zoomControl: false, attributionControl: false }).setView([49.43, 16.62], 11);
-        const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
-        L.tileLayer(MAPY_API_KEY ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}` : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, tileSize: 256 }).addTo(map);
+        // Náhled v kartě je jen obrázek (nejde posouvat), aby přes něj šlo swipovat mezi záložkami.
+        // Klepnutím se otevře mapa přes celou obrazovku.
+        const box = body.querySelector('.cimap');
+        map = L.map(box, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false }).setView([49.43, 16.62], 11);
+        addTiles(L, map, box);
         markers = L.layerGroup().addTo(map);
-        body.querySelector('.cimap').insertAdjacentHTML('beforeend', MAPY_API_KEY
-          ? '<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a><a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>'
-          : '<span class="mapcopy">© OpenStreetMap</span>');
+        box.addEventListener('click', (e) => { if (!e.target.closest('a')) openBigMap(); });
       } catch (x) { body.innerHTML = '<div class="empty">Mapu se nepodařilo načíst.</div>'; return; }
     }
     if (!map || !window.L) return;
@@ -369,14 +369,63 @@ export function render(root, { tab = 'feed', openNew = false }) {
       const key = c.user + '|' + c.lat.toFixed(4) + '|' + c.lng.toFixed(4);
       if (seen.has(key)) return;
       seen.add(key);
-      const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: 'cipin', html: `${avatar(c.user || '?', 30)}`, iconSize: [30, 30], iconAnchor: [15, 15] }) });
-      m.bindPopup(`<b>${esc(c.user)}</b><br>${c._kind === 'ev' || c.eventId ? '🎉 ' + esc(c.eventTitle || '') + '<br>' : ''}${esc((c.place || '').split(',')[0])}<br><small>${esc(when(c.at))}</small>`);
-      m.addTo(markers);
+      L.marker([c.lat, c.lng], { interactive: false, icon: L.divIcon({ className: 'cipin', html: `${avatar(c.user || '?', 30)}`, iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(markers);
     });
+    mapPts = pts;
     if (!pts.length && !map._fitted) { map.setView([49.43, 16.62], 11); }
     if (pts.length && !map._fitted) { map.fitBounds(pts.map((c) => [c.lat, c.lng]), { padding: [30, 30], maxZoom: 14 }); map._fitted = true; }
     setTimeout(() => map.invalidateSize(), 50);
   }
+
+  // Dlaždice Mapy.com (nebo OSM) + povinné logo a copyright.
+  function addTiles(L, m, box) {
+    const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
+    L.tileLayer(MAPY_API_KEY ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}` : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, tileSize: 256 }).addTo(m);
+    box.insertAdjacentHTML('beforeend', MAPY_API_KEY
+      ? '<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a><a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>'
+      : '<span class="mapcopy">© OpenStreetMap</span>');
+  }
+  // Mapa přes celou obrazovku: posouvání, přiblížení, klepnutí na člověka ukáže check-in.
+  // Zavře se křížkem nebo gestem zpět.
+  let mapPts = [];
+  function openBigMap() {
+    const L = window.L;
+    if (!L || document.querySelector('.cimapfs')) return;
+    const fs = document.createElement('div');
+    fs.className = 'cimapfs';
+    fs.innerHTML = `<div class="fsmap"></div><div class="fstop"><button class="ibtn" data-x aria-label="Zavřít mapu">${icon('close', 22)}</button><div class="fst">Check-iny · 7 dní</div></div>`;
+    document.body.appendChild(fs);
+    const box = fs.querySelector('.fsmap');
+    const big = L.map(box, { zoomControl: false, attributionControl: false });
+    addTiles(L, big, box);
+    big.fitBounds(map.getBounds());
+    const seen = new Set();
+    mapPts.forEach((c) => {
+      const key = c.user + '|' + c.lat.toFixed(4) + '|' + c.lng.toFixed(4);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: 'cipin', html: `${avatar(c.user || '?', 36)}`, iconSize: [36, 36], iconAnchor: [18, 18] }) });
+      const open = c._kind === 'ev' ? '' : `<br><a href="#/kde/c/${encodeURIComponent(c.id)}" data-fsgo>Otevřít check-in ›</a>`;
+      m.bindPopup(`<b>${esc(c.user)}</b><br>${c._kind === 'ev' || c.eventId ? '🎉 ' + esc(c.eventTitle || '') + '<br>' : ''}${esc((c.place || '').split(',')[0])}<br><small>${esc(when(c.at))}</small>${open}`);
+      m.addTo(big);
+    });
+    setTimeout(() => big.invalidateSize(), 60);
+    let closed = false;
+    const close = (fromPop) => {
+      if (closed) return; closed = true;
+      removeEventListener('popstate', onPop);
+      fs.classList.add('out');
+      setTimeout(() => { big.remove(); fs.remove(); }, 200);
+      if (!fromPop) history.back();
+    };
+    const onPop = () => close(true);
+    history.pushState({ kdeMap: 1 }, '');
+    addEventListener('popstate', onPop);
+    fs.querySelector('[data-x]').onclick = () => close(false);
+    fs.addEventListener('click', (e) => { if (e.target.closest('[data-fsgo]')) { closed = true; removeEventListener('popstate', onPop); fs.remove(); } });
+    cleanupBig = () => { if (!closed) { closed = true; removeEventListener('popstate', onPop); big.remove(); fs.remove(); } };
+  }
+  let cleanupBig = null;
 
   // ---------- Místa: kde se parta nejčastěji schází (z posledních check-inů) ----------
   let allPlaces = null, placesOpen = null, myPos = null;
@@ -469,7 +518,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
 
   if (tab !== 'mista') drawFilters();
   if (openNew) setTimeout(newCheckin, 50);
-  return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); };
+  return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); if (cleanupBig) cleanupBig(); };
 }
 
 // ---------- nový check-in (stejně jako ve staré aplikaci) ----------

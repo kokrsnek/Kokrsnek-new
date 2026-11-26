@@ -971,3 +971,18 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .totop.tb{bottom:calc(env(safe-area-inset-bottom) + 108px)}
 .totop[hidden]{display:none}
 .quote[data-qid]{cursor:pointer}
+
+/* 2.08 — mapa check-inů: náhled v kartě, klepnutím přes celou obrazovku */
+.cimap.mprev{cursor:pointer}
+.cimap.mprev .leaflet-container,.cimap.mprev{touch-action:pan-y}
+.mpexp{position:absolute;right:10px;top:10px;z-index:600;background:var(--card);color:var(--ink);font-weight:700;font-size:13px;padding:7px 12px;border-radius:99px;box-shadow:0 3px 10px rgba(0,0,0,.2);pointer-events:none}
+.cimapfs{position:fixed;inset:0;z-index:200;background:var(--bg);animation:fsIn .22s cubic-bezier(.2,.9,.25,1)}
+.cimapfs.out{animation:fsOut .2s ease forwards}
+@keyframes fsIn{from{opacity:0;transform:scale(.96)}}
+@keyframes fsOut{to{opacity:0;transform:scale(.97)}}
+.cimapfs .fsmap{position:absolute;inset:0}
+.cimapfs .fstop{position:absolute;left:0;right:0;top:0;z-index:700;display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;pointer-events:none}
+.cimapfs .fstop>*{pointer-events:auto}
+.cimapfs .fst{background:var(--card);color:var(--ink);font-weight:700;font-size:14px;padding:9px 14px;border-radius:99px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.cimapfs .mapylogo{position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);top:auto;z-index:600;height:30px}.cimapfs .mapylogo img{height:30px}
+.cimapfs .mapcopy{position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:600;font-size:11px;color:#333;background:rgba(255,255,255,.8);padding:2px 8px;border-radius:8px;text-decoration:none}
