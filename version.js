@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.09',
+    date: '26. 11. 2026',
+    items: [
+      'Oprava: náhled mapy z karty prosvítal přes mapu otevřenou přes celou obrazovku.'
+    ]
+  },
+  {
     version: '2.08',
     date: '26. 11. 2026',
     items: [

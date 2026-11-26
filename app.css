@@ -383,7 +383,7 @@ body{overflow-x:hidden}
 .ciact .pill.go{border-color:var(--accent-hi);background:var(--accent-soft);color:var(--accent-text)}
 .ciem{display:inline-flex;gap:4px;font-size:15px;margin-left:auto}
 .cicoms{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
-.cimap{position:relative;height:62vh;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.cimap{position:relative;isolation:isolate;height:62vh;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);background:var(--surface)}
 .cimap .mapylogo{position:absolute;left:8px;top:6px;z-index:500;height:30px}.cimap .mapylogo img{height:30px}
 .cimap .mapcopy{position:absolute;right:8px;bottom:6px;z-index:500;font-size:10px;color:#333;background:rgba(255,255,255,.75);padding:1px 6px;border-radius:6px;text-decoration:none}
 .cipin{background:none;border:none}.cipin .av{border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
@@ -976,7 +976,7 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .cimap.mprev{cursor:pointer}
 .cimap.mprev .leaflet-container,.cimap.mprev{touch-action:pan-y}
 .mpexp{position:absolute;right:10px;top:10px;z-index:600;background:var(--card);color:var(--ink);font-weight:700;font-size:13px;padding:7px 12px;border-radius:99px;box-shadow:0 3px 10px rgba(0,0,0,.2);pointer-events:none}
-.cimapfs{position:fixed;inset:0;z-index:200;background:var(--bg);animation:fsIn .22s cubic-bezier(.2,.9,.25,1)}
+.cimapfs{position:fixed;inset:0;z-index:1000;isolation:isolate;background:var(--bg);animation:fsIn .22s cubic-bezier(.2,.9,.25,1)}
 .cimapfs.out{animation:fsOut .2s ease forwards}
 @keyframes fsIn{from{opacity:0;transform:scale(.96)}}
 @keyframes fsOut{to{opacity:0;transform:scale(.97)}}
