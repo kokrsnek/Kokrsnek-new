@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.11',
+    date: '27. 11. 2026',
+    items: [
+      'Nový vzhled Hardware: zelená deska plošných spojů s měděnými spoji, další akce jako čip (datum na červené sedmisegmentovce, postup jako řada LED), akce v seznamu jako rezistory, tlačítka jako mikrospínače, lišta s pozlacenými konektory, strojové písmo.'
+    ]
+  },
+  {
     version: '2.10',
     date: '27. 11. 2026',
     items: [

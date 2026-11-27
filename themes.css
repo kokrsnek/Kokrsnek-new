@@ -544,3 +544,87 @@ html[data-theme="western"],[data-theme="western"] body{background:#E8D3A8 radial
 [data-theme="western"] .tabbar a.on{color:#FFE29A}
 [data-theme="western"] .tabbar .plus{width:74px;height:74px;margin-top:-34px;border-radius:0;color:#5A2E12;box-shadow:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 6 L61 37 L94 37 L67 56 L77 89 L50 69 L23 89 L33 56 L6 37 L39 37Z' fill='%23D9A441' stroke='%237A4E17' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='52' r='16' fill='%23C08A2E' stroke='%237A4E17' stroke-width='3'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
 [data-theme="western"] .tabbar .plus svg{width:20px;height:20px;margin-top:4px}
+
+/* =====================================================================
+   2.11 — Hardware: deska plošných spojů, čipy, rezistory, LED a sedmisegmentovky
+   ===================================================================== */
+:root[data-theme="hardware"]{
+  --bg:#0F5C3A; --card:#1E2124; --surface:#2A2E31; --bar:#111315; --line:#000000; --line2:rgba(201,138,58,.55);
+  --ink:#EDEBDC; --ink2:#C9CED1; --muted:#9AA0A4;
+  --accent:#1F6B3C; --accent-hi:#39FF6A; --accent-text:#39FF6A; --accent-soft:rgba(57,255,106,.12);
+  --coral:#FF3B2F; --coral-text:#FF6A5F; --danger:#FF5A4F; --no-soft:rgba(255,59,47,.14);
+  --on-accent:#fff; --shadow:rgba(0,0,0,.55); --scrim:rgba(0,10,5,.7);
+  --cover:#0B4A2E; --cover-ink:#39FF6A; --cover-btn:rgba(17,19,21,.85);
+  --warn-bg:rgba(201,138,58,.12); --warn-line:#C98A3A; --warn-ink:#F2C98A;
+  --day-out:#4D7A62; --check:#39FF6A; --toast-bg:#111315; --toast-ink:#39FF6A;
+  --gbtn-bg:#EDEBDC; --gbtn-ink:#111315; --gbtn-line:transparent; --statusbar:#0F5C3A;
+  --r:5px; --r-lg:6px; --r-xl:8px; --btn-r:5px; --ibtn-r:5px;
+  --display-tt:none; --display-w:800;
+  --font:'JetBrains Mono',ui-monospace,monospace; --display:'JetBrains Mono',ui-monospace,monospace;
+  --cu:#C98A3A; --led:#39FF6A; --seg7:'Share Tech Mono',ui-monospace,monospace;
+}
+/* deska: zelený laminát s mřížkou a měděnými spoji */
+html[data-theme="hardware"],[data-theme="hardware"] body{background-color:#0F5C3A;background-image:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='390' height='420' viewBox='0 0 390 420'%3E%3Cg fill='none' stroke='%23C98A3A' stroke-opacity='.45' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M0 70 H60 L80 90 V220'/%3E%3Cpath d='M390 120 H340 L320 140 V300'/%3E%3Cpath d='M130 0 V30 L150 50 H260'/%3E%3Cpath d='M10 330 H40 L60 350 V420'/%3E%3C/g%3E%3Cg fill='%230B4A2E' stroke='%23C98A3A' stroke-opacity='.6' stroke-width='2.5'%3E%3Ccircle cx='80' cy='220' r='4'/%3E%3Ccircle cx='320' cy='300' r='4'/%3E%3Ccircle cx='260' cy='50' r='4'/%3E%3C/g%3E%3C/svg%3E"),
+  radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 1.5px);background-size:390px 420px,12px 12px;background-attachment:fixed}
+[data-theme="hardware"] .screen{background:transparent}
+[data-theme="hardware"] .h1,[data-theme="hardware"] .brand{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:24px}
+[data-theme="hardware"] .sub{text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:#BFE3CC}
+[data-theme="hardware"] .brand::before{content:'';display:inline-block;width:14px;height:14px;margin-right:9px;vertical-align:1px;border-radius:50%;background:radial-gradient(circle,#0B4A2E 0 3px,#C98A3A 3.5px 6px,transparent 6.5px)}
+[data-theme="hardware"] .eyebrow{color:#9AA0A4;letter-spacing:.12em}
+/* tlačítka = mikrospínače */
+[data-theme="hardware"] .ibtn{background:linear-gradient(#2a2d30,#111);border:1px solid #000;color:#D8DCDF;box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 0 #062c1c}
+[data-theme="hardware"] .ibtn.on,[data-theme="hardware"] .seg button.on{background:linear-gradient(#1f6b3c,#0f4426);color:#fff;border-color:#000}
+[data-theme="hardware"] .btn{font-family:var(--display);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:14px;border:1px solid #000;background:linear-gradient(#3a3e42,#1b1d1f);color:#E8E8E8;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 0 #000}
+[data-theme="hardware"] .btn.yes,[data-theme="hardware"] .btn.primary{background:linear-gradient(#1f6b3c,#0f4426);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 #000;transform:translateY(2px)}
+[data-theme="hardware"] .btn.yes::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#39FF6A;box-shadow:0 0 6px #39FF6A;margin-right:8px}
+[data-theme="hardware"] .btn.no{background:linear-gradient(#5a1a14,#2a0a07);color:#FFB4AC}
+[data-theme="hardware"] .card,[data-theme="hardware"] .ci,[data-theme="hardware"] .sheet{background:linear-gradient(160deg,#25282b,#17191B);border:1px solid #000;box-shadow:0 4px 0 #062c1c}
+[data-theme="hardware"] .input{background:#0b0d0e;border:1px solid #000;color:#39FF6A;font-family:var(--display)}
+[data-theme="hardware"] .chip,[data-theme="hardware"] .cichips button{font-family:var(--display)}
+[data-theme="hardware"] .section-h{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#BFE3CC}
+[data-theme="hardware"] .section-h::before{display:none}
+[data-theme="hardware"] .section-h::after{content:'';flex:1;height:2px;background:#C98A3A;opacity:.7}
+
+/* hlavní karta = čip s nožičkami a zářezem, počet dní na sedmisegmentovce, postup jako řada LED */
+[data-theme="hardware"] .hero-wrap{margin-left:9px;margin-right:9px}
+[data-theme="hardware"] .hero{--card:transparent;--surface:#2A2E31;position:relative;background:linear-gradient(160deg,#25282b,#17191B);border:1px solid #000;border-radius:6px;box-shadow:0 6px 0 #062c1c;overflow:visible}
+[data-theme="hardware"] .hero::before,[data-theme="hardware"] .hero::after{content:'';position:absolute;top:16px;bottom:16px;width:9px;background:repeating-linear-gradient(#C98A3A 0 6px,transparent 6px 13px);pointer-events:none}
+[data-theme="hardware"] .hero::before{left:-10px}[data-theme="hardware"] .hero::after{right:-10px}
+[data-theme="hardware"] .hero-wrap::before{content:'';position:absolute;left:50%;top:0;width:26px;height:13px;margin-left:-13px;border-radius:0 0 13px 13px;background:#0F5C3A;z-index:2}
+[data-theme="hardware"] .hero .title{font-family:var(--display);color:#fff;font-size:22px;line-height:1.15}
+[data-theme="hardware"] .hero .eyebrow::before{content:'U1 \00B7  '}
+[data-theme="hardware"] .hero .meta{font-size:12.5px;color:#C9CED1;text-transform:uppercase}
+[data-theme="hardware"] .hero .datetile{background:#050505;border:none;border-radius:4px;padding:6px 10px;box-shadow:inset 0 0 0 1px #300;min-width:64px}
+[data-theme="hardware"] .hero .datetile .d{font-family:var(--seg7);font-weight:400;font-size:38px;color:#FF3B2F;text-shadow:0 0 8px rgba(255,59,47,.8)}
+[data-theme="hardware"] .hero .datetile .m{font-family:var(--display);color:#a33;letter-spacing:.1em}
+[data-theme="hardware"] .hero .wxchip{background:#050505;border:1px solid #000;color:#39FF6A;font-family:var(--display);border-radius:3px}
+[data-theme="hardware"] .hero .progress .bar{height:10px;border-radius:0;background:repeating-linear-gradient(90deg,#1d3b2a 0 20px,transparent 20px 24px);overflow:visible}
+[data-theme="hardware"] .hero .progress .bar i{border-radius:0;background:repeating-linear-gradient(90deg,#39FF6A 0 20px,transparent 20px 24px);filter:drop-shadow(0 0 4px rgba(57,255,106,.8))}
+[data-theme="hardware"] .hero .progress .lbl{font-size:11px;text-transform:uppercase;color:#9AA0A4}
+[data-theme="hardware"] .hero .face{border-color:#1E2124}
+[data-theme="hardware"] .hero .likebtn{background:#050505;border:1px solid #000;color:#EDEBDC;border-radius:4px}
+[data-theme="hardware"] .hero .hero-nav button{font-family:var(--display);color:#BFE3CC}
+
+/* seznam akcí = rezistory na desce */
+[data-theme="hardware"] .rows .row{background:rgba(0,0,0,.28);border:1px solid rgba(201,138,58,.45);border-radius:5px;box-shadow:none;--c1:#8B4513;--c2:#000;--c3:#C00}
+[data-theme="hardware"] .rows .row:nth-child(4n+2){--c1:#C00;--c2:#E7A100;--c3:#000}
+[data-theme="hardware"] .rows .row:nth-child(4n+3){--c1:#1E5EB4;--c2:#8B4513;--c3:#1A8A3E}
+[data-theme="hardware"] .rows .row:nth-child(4n+4){--c1:#E7A100;--c2:#7B2CBF;--c3:#555}
+[data-theme="hardware"] .rows .row .datetile.sm{position:relative;width:54px;height:18px;padding:0;border-radius:9px;margin:0 6px;background:linear-gradient(90deg,transparent 0 10px,var(--c1) 10px 15px,transparent 15px 20px,var(--c2) 20px 25px,transparent 25px 30px,var(--c3) 30px 35px,transparent 35px 42px,#C9A227 42px 46px,transparent 46px),#D9C9A3!important;overflow:visible}
+[data-theme="hardware"] .rows .row .datetile.sm::before,[data-theme="hardware"] .rows .row .datetile.sm::after{content:'';position:absolute;top:8px;width:8px;height:2px;background:#bbb}
+[data-theme="hardware"] .rows .row .datetile.sm::before{left:-8px}[data-theme="hardware"] .rows .row .datetile.sm::after{right:-8px}
+[data-theme="hardware"] .rows .row .datetile.sm .m,[data-theme="hardware"] .rows .row .datetile.sm .d{display:none}
+[data-theme="hardware"] .rows .row .t{color:#fff;font-size:14px}
+[data-theme="hardware"] .rows .row .s{font-size:11px;color:#BFC6C9;text-transform:uppercase}
+[data-theme="hardware"] .rows .row .r{font-family:var(--seg7);font-size:15px;color:#39FF6A;text-shadow:0 0 6px rgba(57,255,106,.6)}
+[data-theme="hardware"] .datetile.sm{background:#050505!important;color:#39FF6A}
+
+/* dolní lišta = konektory s pozlacenými kontakty a LED */
+[data-theme="hardware"] .tabbar{background:linear-gradient(#1c1e20,#0c0d0e);border-top:3px solid #C98A3A}
+[data-theme="hardware"] .tabbar a{color:#8A9196;font-family:var(--display);font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+[data-theme="hardware"] .tabbar a svg{opacity:0;position:absolute}
+[data-theme="hardware"] .tabbar a::before{content:'';width:28px;height:18px;margin-top:2px;border-radius:2px;background:repeating-linear-gradient(90deg,#C9A227 0 3px,#222 3px 6px);box-shadow:0 0 0 1px #000}
+[data-theme="hardware"] .tabbar a.on{color:#39FF6A}
+[data-theme="hardware"] .tabbar a.on::before{box-shadow:0 0 0 1px #000,0 0 8px #39FF6A}
+[data-theme="hardware"] .tabbar .plus{border-radius:6px;width:52px;height:46px;background:linear-gradient(#b02a20,#6d140f);border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 3px 0 #000}

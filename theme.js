@@ -20,6 +20,8 @@ export const THEMES = [
     font: 'Bangers', fonts: 'family=Bangers&family=Comic+Neue:wght@400;700' },
   { id: 'vodaci', name: 'Vodáci', note: 'řeka, kanoe', bg: '#E3F3F6', card: '#0B5C73', ink: '#FFFFFF', a: '#FFD35A', b: '#1A8FB0', status: '#E3F3F6',
     font: 'Montserrat', fonts: 'family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700' },
+  { id: 'hardware', name: 'Hardware', note: 'deska, čipy, LED', bg: '#0F5C3A', card: '#1E2124', ink: '#EDEBDC', a: '#39FF6A', b: '#C98A3A', status: '#0F5C3A',
+    font: 'JetBrains Mono', fonts: 'family=JetBrains+Mono:wght@400;600;800&family=Share+Tech+Mono' },
   { id: 'western', name: 'Western', note: 'plakát, prkna', bg: '#E8D3A8', card: '#F6E7C4', ink: '#5A2E12', a: '#9C2A12', b: '#A8713C', status: '#D9BC85',
     font: 'Rye', fonts: 'family=Rye&family=Bitter:wght@700;800&family=Crimson+Text:ital,wght@0,400;0,600;1,400' }
 ];
