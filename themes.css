@@ -239,54 +239,107 @@ html[data-theme="zapisnik"],[data-theme="zapisnik"] body{background-color:#FBF5E
 [data-theme="zapisnik"] .tabbar .plus.open{transform:rotate(37deg)}
 [data-theme="zapisnik"] .plusmenu{bottom:calc(96px + var(--safe-bottom))}
 
-/* ---------- Značení: turistické směrovky, pásové značky, úzké velké písmo ---------- */
+/* ---------- Značení: podle turistického značení KČT ----------
+   (2.10) Hlavička = tabulka místního názvu, hlavní karta = velká směrovka se značkou v hrotu,
+   seznam akcí = rozcestník (směrovky na sloupku, střídavě doprava/doleva, barevné pásové značky),
+   lišta = pásové značky. Písmo úzké jako na směrovkách. */
 :root[data-theme="znaceni"]{
-  --bg:#ECEDE8; --card:#FFFFFF; --surface:#E2E4DE; --bar:#1E2422; --line:#D5D8D1; --line2:#BFC4BC;
-  --ink:#1E2422; --ink2:#3C4440; --muted:#5E6662;
-  --accent:#1E2422; --accent-hi:#1E2422; --accent-text:#C8322B; --accent-soft:#E2E4DE;
-  --coral:#C8322B; --coral-text:#C8322B; --danger:#C8322B; --no-soft:#F6DEDC;
-  --on-accent:#fff; --shadow:rgba(30,36,34,.25); --scrim:rgba(30,36,34,.55);
-  --cover:#2E5FB8; --cover-ink:#FFD43B; --cover-btn:rgba(255,255,255,.9);
-  --warn-bg:#FFF3C4; --warn-line:#E0B000; --warn-ink:#6B5300;
-  --day-out:#A9AEA7; --check:#2F8A4C; --toast-bg:#1E2422; --toast-ink:#fff;
-  --gbtn-bg:#fff; --gbtn-ink:#1E2422; --gbtn-line:#1E2422; --statusbar:#ECEDE8;
-  --r:4px; --r-lg:4px; --r-xl:6px; --btn-r:4px; --ibtn-r:4px;
-  --display-tt:uppercase; --display-w:400;
-  --font:'Fira Sans',system-ui,sans-serif; --display:'Anton','Fira Sans',sans-serif;
+  --bg:#E9E6DC; --card:#FFFFFF; --surface:#EFECE3; --bar:#FFFFFF; --line:#141414; --line2:#141414;
+  --ink:#141414; --ink2:#333333; --muted:#555555;
+  --accent:#141414; --accent-hi:#141414; --accent-text:#D2232A; --accent-soft:#EFECE3;
+  --coral:#D2232A; --coral-text:#D2232A; --danger:#D2232A; --no-soft:#F8DCDA;
+  --on-accent:#fff; --shadow:rgba(0,0,0,.18); --scrim:rgba(20,20,20,.55);
+  --cover:#1E5EB4; --cover-ink:#F2C200; --cover-btn:rgba(255,255,255,.92);
+  --warn-bg:#FFF6CC; --warn-line:#F2C200; --warn-ink:#5E4A00;
+  --day-out:#A39F94; --check:#1A8A3E; --toast-bg:#141414; --toast-ink:#fff;
+  --gbtn-bg:#fff; --gbtn-ink:#141414; --gbtn-line:#141414; --statusbar:#E9E6DC;
+  --r:3px; --r-lg:3px; --r-xl:4px; --btn-r:2px; --ibtn-r:3px;
+  --display-tt:none; --display-w:800;
+  --font:'Fira Sans',system-ui,sans-serif; --display:'Fira Sans Condensed','Fira Sans',sans-serif;
+  --kct-r:#D2232A; --kct-b:#1E5EB4; --kct-g:#1A8A3E; --kct-y:#F2C200;
 }
-[data-theme="znaceni"] .brand,[data-theme="znaceni"] .h1{letter-spacing:.02em;font-size:30px}
-[data-theme="znaceni"] .brand::before{content:'';display:inline-block;width:22px;height:22px;margin-right:8px;vertical-align:-2px;background:linear-gradient(#fff 0 33%,#C8322B 33% 67%,#fff 67%);box-shadow:0 0 0 1px rgba(0,0,0,.25);border-radius:2px}
-[data-theme="znaceni"] .sub{text-transform:uppercase;letter-spacing:.06em;font-weight:500}
-[data-theme="znaceni"] .ibtn{background:#fff;border:2px solid #1E2422}
-[data-theme="znaceni"] .btn{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:17px;border:2px solid #1E2422;background:#fff}
-[data-theme="znaceni"] .btn.yes{background:#1E2422;color:#fff}
-[data-theme="znaceni"] .btn.primary{background:#C8322B;border-color:#C8322B;color:#fff}
-[data-theme="znaceni"] .eyebrow{color:#1E2422;letter-spacing:.12em}
-/* hlavní karta jako žlutá směrovka se šipkou */
-[data-theme="znaceni"] .hero{--card:#FFD43B; --ink:#1E2422; --muted:#3C4440; --line:rgba(30,36,34,.25); --surface:rgba(30,36,34,.1);
-  border:none;border-radius:6px 0 0 6px;clip-path:polygon(0 0,calc(100% - 34px) 0,100% 50%,calc(100% - 34px) 100%,0 100%);padding-right:48px;box-shadow:none}
-[data-theme="znaceni"] .hero-wrap{filter:drop-shadow(0 6px 0 #C9A20A)}
-[data-theme="znaceni"] .hero .datetile{background:transparent;border:none;width:auto}
-[data-theme="znaceni"] .hero .datetile .d{font-size:44px;font-weight:400}
-[data-theme="znaceni"] .hero .datetile .m{color:#1E2422}
-[data-theme="znaceni"] .hero .progress .bar{background:rgba(30,36,34,.18)}
-[data-theme="znaceni"] .hero .progress .bar i{background:#C8322B}
-[data-theme="znaceni"] .hero .face{border-color:#FFD43B}
-[data-theme="znaceni"] .hero .btn{background:rgba(255,255,255,.6)}
-[data-theme="znaceni"] .hero .btn.yes{background:#1E2422;color:#fff}
-[data-theme="znaceni"] .section-h{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:18px;font-weight:400;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
-[data-theme="znaceni"] .section-h::after{content:'';flex:1;height:3px;background:repeating-linear-gradient(90deg,#C8322B 0 18px,transparent 18px 26px)}
-[data-theme="znaceni"] .rows .row{border:none;border-left:6px solid #2E5FB8;margin-bottom:8px}
-[data-theme="znaceni"] .rows .row:nth-child(3n+2){border-left-color:#2F8A4C}
-[data-theme="znaceni"] .rows .row:nth-child(3n+3){border-left-color:#E0B000}
-[data-theme="znaceni"] .rows .row:nth-child(4n+4){border-left-color:#C8322B}
-[data-theme="znaceni"] .rows .row .datetile.sm{background:transparent!important}
-[data-theme="znaceni"] .rows .row .datetile .d{font-family:var(--display);font-weight:400;font-size:24px}
-[data-theme="znaceni"] .rows .row .r{font-family:var(--display);font-size:15px;color:var(--ink);text-transform:uppercase}
-[data-theme="znaceni"] .tabbar{background:#1E2422;border-top:none}
-[data-theme="znaceni"] .tabbar a{color:#9AA39F;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
-[data-theme="znaceni"] .tabbar a.on{color:#fff;box-shadow:inset 0 -4px 0 #C8322B}
-[data-theme="znaceni"] .tabbar .plus{border-radius:4px;width:58px;height:50px;background:#C8322B;color:#fff;box-shadow:none}
+[data-theme="znaceni"] .h1,[data-theme="znaceni"] .brand,[data-theme="znaceni"] .title,[data-theme="znaceni"] h2,[data-theme="znaceni"] h3{font-family:var(--display);font-weight:800;text-transform:none;letter-spacing:0}
+[data-theme="znaceni"] .card{border:2.5px solid #141414;box-shadow:none}
+[data-theme="znaceni"] .ibtn{background:#fff;border:2px solid #141414;box-shadow:none}
+[data-theme="znaceni"] .ibtn.on{background:#141414;color:#fff}
+[data-theme="znaceni"] .btn{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:16px;border:2.5px solid #141414;background:#fff;color:#141414;box-shadow:none}
+[data-theme="znaceni"] .btn.yes,[data-theme="znaceni"] .btn.on{background:#141414;color:#fff}
+[data-theme="znaceni"] .btn.primary{background:#D2232A;border-color:#D2232A;color:#fff}
+[data-theme="znaceni"] .eyebrow{color:#D2232A;font-family:var(--display);font-weight:700;letter-spacing:.12em}
+
+/* hlavička = tabulka místního názvu */
+[data-theme="znaceni"] .top{background:#fff;border:2.5px solid #141414;border-radius:3px;margin:6px 12px 12px;padding:9px 10px 8px 12px;align-items:center}
+[data-theme="znaceni"] .top .h1,[data-theme="znaceni"] .brand{font-size:26px;line-height:1.05}
+[data-theme="znaceni"] .top .sub{font-family:var(--display);font-weight:500;font-size:13px;color:#444;text-transform:none;letter-spacing:0;margin-top:2px}
+[data-theme="znaceni"] .brand::before{content:'';display:inline-block;width:26px;height:18px;margin-right:9px;vertical-align:1px;background:linear-gradient(#fff 0 33.3%,var(--k,var(--kct-r)) 33.3% 66.6%,#fff 66.6%);box-shadow:0 0 0 1px rgba(0,0,0,.3);border-radius:1px}
+[data-theme="znaceni"] .top:has(.brand) .icons::before{content:'276 m\A n. m.';white-space:pre;font-family:var(--display);font-weight:700;font-size:15px;line-height:1;text-align:right;align-self:center;margin-right:6px;color:#141414}
+[data-theme="znaceni"] .top .ibtn{width:38px;height:38px}
+
+/* nadpis sekce */
+[data-theme="znaceni"] .section-h{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#141414}
+[data-theme="znaceni"] .section-h::before{display:none}
+[data-theme="znaceni"] .section-h::after{content:'';flex:1;height:2px;background:#141414;opacity:.3}
+
+/* hlavní karta = velká směrovka (černý rám a bílá výplň jako dvě vrstvy se šipkou) */
+[data-theme="znaceni"] .hero-wrap{filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
+[data-theme="znaceni"] .hero{--card:transparent;--ink:#141414;--muted:#333;--line:rgba(20,20,20,.25);--surface:#EFECE3;
+  position:relative;isolation:isolate;background:transparent!important;border:none;border-radius:0;box-shadow:none;padding:16px 54px 16px 16px;color:#141414}
+[data-theme="znaceni"] .hero::before{content:'';position:absolute;inset:0;z-index:-2;background:#141414;clip-path:polygon(0 0,calc(100% - 40px) 0,100% 50%,calc(100% - 40px) 100%,0 100%)}
+[data-theme="znaceni"] .hero::after{content:'';position:absolute;inset:3px;z-index:-1;background:#fff;clip-path:polygon(0 0,calc(100% - 39px) 0,calc(100% - 1px) 50%,calc(100% - 39px) 100%,0 100%)}
+[data-theme="znaceni"] .hero-wrap::after{content:'';position:absolute;right:11px;top:50%;width:24px;height:16px;margin-top:-8px;background:linear-gradient(#fff 0 33.3%,var(--k,var(--kct-r)) 33.3% 66.6%,#fff 66.6%);box-shadow:0 0 0 1px rgba(0,0,0,.3);pointer-events:none}
+[data-theme="znaceni"] .hero .title{font-size:30px;line-height:1.02}
+[data-theme="znaceni"] .hero .datetile{background:transparent;border:none;width:auto;color:#141414}
+[data-theme="znaceni"] .hero .datetile .d{font-family:var(--display);font-size:34px;font-weight:800}
+[data-theme="znaceni"] .hero .datetile .m{color:#555;font-family:var(--display);font-weight:600;letter-spacing:.06em}
+[data-theme="znaceni"] .hero .meta{font-family:var(--display);font-size:15px;font-weight:500;color:#333}
+[data-theme="znaceni"] .hero .wxchip{background:#fff;border:1.5px solid #141414;color:#141414;border-radius:2px}
+/* postup = značená trasa: ušlá část plná, zbytek přerušovaný, na konci koncová značka */
+[data-theme="znaceni"] .hero .progress .bar{height:7px;border-radius:0;background:repeating-linear-gradient(90deg,#D2232A 0 16px,#fff 16px 22px);box-shadow:0 0 0 1px rgba(0,0,0,.25);margin-right:24px;overflow:visible;position:relative}
+[data-theme="znaceni"] .hero .progress .bar i{background:#D2232A;border-radius:0}
+[data-theme="znaceni"] .hero .progress .bar::after{content:'';position:absolute;right:-24px;top:50%;width:18px;height:18px;margin-top:-9px;background:radial-gradient(circle,#D2232A 0 5px,#fff 5.5px);box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+[data-theme="znaceni"] .hero .progress .lbl{font-family:var(--display);font-weight:600;color:#444}
+[data-theme="znaceni"] .hero .face{border-color:#fff}
+[data-theme="znaceni"] .hero .likebtn{background:#fff;border:1.5px solid #141414;border-radius:2px;color:#141414}
+[data-theme="znaceni"] .hero .btn{background:#fff}
+[data-theme="znaceni"] .hero .btn.on,[data-theme="znaceni"] .hero .btn.yes{background:#141414;color:#fff}
+[data-theme="znaceni"] .hero .hero-nav button{font-family:var(--display);font-weight:700;color:#141414}
+
+/* seznam akcí = rozcestník: šedý sloupek, směrovky střídavě doprava a doleva, v hrotu pásová značka */
+[data-theme="znaceni"] .rows{position:relative;isolation:isolate;padding-bottom:6px}
+[data-theme="znaceni"] .rows::before{content:'';position:absolute;left:50%;top:-8px;bottom:-14px;width:16px;margin-left:-8px;z-index:-3;border-radius:3px;background:linear-gradient(90deg,#6E7378,#AEB3B7 45%,#7C8186)}
+[data-theme="znaceni"] .rows .row{position:relative;isolation:isolate;background:transparent;border:none;border-radius:0;box-shadow:none;min-height:62px;padding:9px 48px 9px 14px;margin-bottom:9px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18));--k:var(--kct-r)}
+[data-theme="znaceni"] .rows .row::before{content:'';position:absolute;inset:0;z-index:-2;background:#141414;clip-path:polygon(0 0,calc(100% - 26px) 0,100% 50%,calc(100% - 26px) 100%,0 100%)}
+[data-theme="znaceni"] .rows .row::after{content:'';position:absolute;inset:2.5px;z-index:-1;background:#fff;clip-path:polygon(0 0,calc(100% - 25px) 0,calc(100% - 1px) 50%,calc(100% - 25px) 100%,0 100%)}
+[data-theme="znaceni"] .rows .row .r{position:static;font-family:var(--display);font-weight:800;font-size:15px;color:#141414;text-transform:none}
+[data-theme="znaceni"] .rows .row .r::after{content:'';position:absolute;right:9px;top:50%;width:22px;height:15px;margin-top:-7.5px;background:linear-gradient(#fff 0 33.3%,var(--k,var(--kct-r)) 33.3% 66.6%,#fff 66.6%);box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+[data-theme="znaceni"] .rows .row:nth-child(4n+2){--k:var(--kct-b)}
+[data-theme="znaceni"] .rows .row:nth-child(4n+3){--k:var(--kct-g)}
+[data-theme="znaceni"] .rows .row:nth-child(4n+4){--k:var(--kct-y)}
+/* každá druhá směrovka míří doleva */
+[data-theme="znaceni"] .rows .row:nth-child(even){flex-direction:row-reverse;padding:9px 14px 9px 48px;text-align:right}
+[data-theme="znaceni"] .rows .row:nth-child(even)::before{clip-path:polygon(26px 0,100% 0,100% 100%,26px 100%,0 50%)}
+[data-theme="znaceni"] .rows .row:nth-child(even)::after{clip-path:polygon(25px 0,100% 0,100% 100%,25px 100%,1px 50%)}
+[data-theme="znaceni"] .rows .row:nth-child(even) .r{margin-left:0;margin-right:auto}
+[data-theme="znaceni"] .rows .row:nth-child(even) .r::after{right:auto;left:9px}
+[data-theme="znaceni"] .rows .row .datetile.sm{background:transparent!important;border:none}
+[data-theme="znaceni"] .rows .row .datetile .d{font-family:var(--display);font-weight:800;font-size:22px}
+[data-theme="znaceni"] .rows .row .datetile .m{font-family:var(--display);color:#555}
+[data-theme="znaceni"] .rows .row .t{font-family:var(--display);font-weight:700;font-size:17px}
+[data-theme="znaceni"] .rows .row .s{font-family:var(--display);font-size:13px;color:#3a3a3a}
+[data-theme="znaceni"] .rows .row.past{opacity:.75}
+
+/* dolní lišta: pásové značky místo ikon */
+[data-theme="znaceni"] .tabbar{background:#fff;border-top:2.5px solid #141414}
+[data-theme="znaceni"] .tabbar a{color:#666;font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+[data-theme="znaceni"] .tabbar a svg{opacity:0;position:absolute}
+[data-theme="znaceni"] .tabbar a::before{content:'';width:28px;height:19px;margin:2px 0 1px;background:linear-gradient(#fff 0 33.3%,var(--k,var(--kct-r)) 33.3% 66.6%,#fff 66.6%);box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+[data-theme="znaceni"] .tabbar a[href="#/kde"]::before{width:21px;height:21px;margin:1px 0 0;background:radial-gradient(circle,var(--kct-r) 0 5.5px,#fff 6px)}
+[data-theme="znaceni"] .tabbar a[href="#/chat"]{--k:var(--kct-b)}
+[data-theme="znaceni"] .tabbar a[href="#/fotky"]{--k:var(--kct-g)}
+[data-theme="znaceni"] .tabbar a.on{color:#141414;box-shadow:none}
+[data-theme="znaceni"] .tabbar a.on::before{outline:2px solid #141414;outline-offset:3px}
+[data-theme="znaceni"] .tabbar .plus{border-radius:2px;width:58px;height:44px;background:linear-gradient(#fff 0 24%,#D2232A 24% 76%,#fff 76%);color:#fff;border:2.5px solid #141414;box-shadow:none}
+[data-theme="znaceni"] .tabbar .plus svg{filter:drop-shadow(0 0 1px rgba(0,0,0,.5))}
 
 /* ---------- Neon: noc, sklo, záře, lišta nahoře a plovoucí + ---------- */
 :root[data-theme="neon"]{

@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.10',
+    date: '27. 11. 2026',
+    items: [
+      'Vzhled Značení přepracovaný podle turistického značení KČT: hlavička jako tabulka místního názvu (276 m n. m.), další akce jako velká směrovka s pásovou značkou v hrotu a značenou trasou, seznam akcí jako rozcestník (směrovky na sloupku střídavě doprava/doleva v barvách červená–modrá–zelená–žlutá), dolní lišta s pásovými značkami, úzké písmo jako na směrovkách.'
+    ]
+  },
+  {
     version: '2.09',
     date: '26. 11. 2026',
     items: [
