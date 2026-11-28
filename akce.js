@@ -1,4 +1,5 @@
 // Akce: Nadcházející / Proběhlé.
+import { fillSparks } from './history.js';
 import { esc, icon, fmtWhen, relDays, fmtSpan, MONTHS_NOM, MONTHS_SHORT, DAYS_SHORT, fmtTime, fmtLongDate, looseName } from './util.js';
 import { tabbar, faces, toast, spinner, topButton } from './ui.js';
 import { namedayFor } from './namedays.js';
@@ -214,6 +215,7 @@ export function render(root, { tab }) {
         <div class="meta">${icon('calendar', 16)}${esc(fmtWhen(ev))}${ev.start.getFullYear() !== now.getFullYear() ? ' ' + ev.start.getFullYear() : ''}</div>
         ${past ? '' : `<div class="wxchips" data-hwx>${wxChips(ev)}</div>`}
         ${ev.place ? `<div class="meta">${icon('pin', 16)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.place)}</span></div>` : ''}
+        <div class="evspark" data-spark="${esc(ev.id)}" hidden></div>
       </div>
       ${past ? '' : `<div class="progress ${live ? 'live' : ''}"><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
         <div class="lbl"><span>${esc(left)}</span><span>${att ? `jde <b>${going.length}</b>` : ''}</span></div></div>`}
@@ -363,6 +365,7 @@ export function render(root, { tab }) {
   const arc = (x) => `translateX(${x}px) rotate(${x / 40}deg)`;
 
   function bindHero(ev) {
+    fillSparks(body);   // graf účasti minulých ročníků
     const el = body.querySelector('.hero');
     const wrap = body.querySelector('.hero-wrap');
     if (!el || !wrap) return;
@@ -379,6 +382,7 @@ export function render(root, { tab }) {
       const box = document.createElement('div');
       box.className = 'hero-ghost';
       box.innerHTML = heroHtml(n.ev, cachedAttendance(n.ev.id), n.sh);
+      fillSparks(box);
       box._steps = steps;
       wrap.appendChild(box);
       ghost = box;
@@ -429,6 +433,7 @@ export function render(root, { tab }) {
         const box = document.createElement('div');
         box.className = 'hero-ghost';
         box.innerHTML = nb ? heroHtml(nb.ev, cachedAttendance(nb.ev.id), nb.sh) : '';
+        fillSparks(box);
         box.style.transition = 'none';
         box.style.transform = arc((i + 1) * d * w);
         wrap.appendChild(box);

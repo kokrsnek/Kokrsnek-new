@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.24',
+    date: '28. 11. 2026',
+    items: [
+      'Historie akce: u opakovaných akcí (třeba Mikuláš u Hastrmana) je na kartě v Akcích malý graf účasti po letech a „9. ročník · loni 9 lidí“.',
+      'V detailu akce je nová sekce Historie akce – časová osa minulých ročníků: rok, kdo tam byl, počet lidí a odkaz na fotky. Klepnutím otevřeš daný ročník, starší se rozbalí.'
+    ]
+  },
+  {
     version: '2.23',
     date: '28. 11. 2026',
     items: [

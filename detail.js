@@ -18,6 +18,7 @@ import { changeAttendance, attendButtons } from './attend.js';
 import { albumFlow, canAddAlbum } from './plus.js';
 import { showMap, prefetchMap } from './map.js';
 import { coverArt } from './coverart.js';
+import { fillHistory } from './history.js';
 
 const linkify = (t) => esc(t).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.length > 40 ? u.slice(0, 38) + '…' : u}</a>`).replace(/\n/g, '<br>');
 
@@ -100,6 +101,8 @@ function mountDetail(host, ev, live) {
           <div data-items>${spinner()}</div>
         </div>
 
+        <div data-hist></div>
+
         <div class="h2"><span>Komentáře</span><span class="sub" data-comcount></span></div>
         <div data-coms>${spinner()}</div>
         ${`<form class="inrow" data-comform style="margin-top:6px">
@@ -111,6 +114,7 @@ function mountDetail(host, ev, live) {
 
     const ca = cachedAlbum(ev);
     if (ca !== undefined) { album = ca; drawAlbum(); }
+    fillHistory(host.querySelector('[data-hist]'), ev, live);   // minulé ročníky
     const cc = cachedCover(ev.id);
     if (cc) drawCover(cc);
     if (live) loadCover(ev.id).then((img) => drawCover(img));
