@@ -9,7 +9,7 @@ import { demoBadges } from './badges.js';
 import { weatherDiag, recheckWeather, demoWeather } from './weather.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
-import { maybeOfferCheckin, maybeShowFresh } from './kde.js';
+import { maybeOfferCheckin, demoFresh } from './kde.js';
 import { isPushOn, pushToggle } from './pushui.js';
 import { THEMES, currentTheme, applyTheme, preloadAllFonts, currentMode, setMode, MODES } from './theme.js';
 
@@ -160,7 +160,7 @@ export function render(root) {
     // Nabídka check-inu na známém místě — bez omezení jednou denně a bez kontroly aktuálního check-inu.
     root.querySelector('[data-ciofr]').onclick = () => { toast('Zjišťuju polohu…'); maybeOfferCheckin(true); };
     // Čerstvé check-iny ostatních — ukázka z posledních 7 dní (i už viděné, nic se nezapíše).
-    root.querySelector('[data-cifresh]').onclick = () => maybeShowFresh(true);
+    root.querySelector('[data-cifresh]').onclick = () => { demoFresh(10000); toast('Za 10 s se ukáže ukázka se smyšlenými check-iny – klidně odejdi z aplikace a vrať se.'); };
   }
   const tp = root.querySelector('[data-testpush]');
   if (tp) tp.onclick = async () => {

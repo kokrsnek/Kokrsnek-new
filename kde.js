@@ -1318,13 +1318,19 @@ function freshCard(list, me, demo = false) {
         <span class="ciofr-t"><b>${esc(c0.user)} ${esc(whereTxt(c0))}</b><small>${esc(agoTxt(c0.at))}${c0.transport && TR_PATH[c0.transport] ? ' · ' + esc(trText(c0.transport)) : ''}${c0.note ? ` · „${esc(c0.note)}“` : ''}</small></span></div>
       <div class="ciofr-b"><button class="btn" data-x>Zavřít</button><button class="btn" data-open="${esc(c0.id)}">Otevřít</button>${comeBtn(c0)}</div>`
     : `<div class="ciofr-r"><span class="ciofr-i cifr-n">${list.length}</span>
-        <span class="ciofr-t"><b>Právě venku</b><small>${demo ? 'ukázka z posledních 7 dní' : 'nové check-iny za poslední 2 hodiny'}</small></span></div>
+        <span class="ciofr-t"><b>Právě venku</b><small>${demo ? 'ukázka – smyšlené check-iny' : 'nové check-iny za poslední 2 hodiny'}</small></span></div>
       <div class="cifr-list">${list.map((c) => `<div class="cifr-li" data-open="${esc(c.id)}">${avatar(c.user, 32)}<span class="x"><b>${esc(c.user)}</b> · ${esc(shortPlace(c.place))}<small>${esc(agoTxt(c.at))}</small></span>${comeBtn(c, true)}</div>`).join('')}</div>
       <div class="ciofr-b"><button class="btn" data-x>Zavřít</button><button class="btn primary" data-map>Ukázat na mapě</button></div>`;
   const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 220); };
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-x]')) return close();
     if (e.target.closest('[data-map]')) { close(); location.hash = '#/kde/mapa'; return; }
+    if (demo && e.target.closest('[data-come], [data-open]')) {
+      const b = e.target.closest('[data-come]');
+      if (b) { b.textContent = '✓ Přijdu'; b.disabled = true; }
+      toast('Jen ukázka – nic se nezapsalo.');
+      return;
+    }
     const cb = e.target.closest('[data-come]');
     if (cb) {
       const c = list.find((x) => x.id === cb.dataset.come);
@@ -1339,4 +1345,29 @@ function freshCard(list, me, demo = false) {
   });
   document.body.appendChild(el);
 }
+
+// ---------- Test pro správce: smyšlené čerstvé check-iny za 10 s ----------
+// Nic se nezapisuje. Když v tu chvíli nejsi v aplikaci, karta se ukáže po návratu.
+let demoDue = 0;
+export function demoFresh(delay = 10000) {
+  demoDue = Date.now() + delay;
+  setTimeout(showDemoIfDue, delay + 50);
+}
+function showDemoIfDue() {
+  if (!demoDue || Date.now() < demoDue || document.hidden) return;
+  demoDue = 0;
+  const me = myName();
+  const people = PARTY_NAMES.filter((n) => n !== me).sort(() => Math.random() - 0.5);
+  const places = ['Bouda', 'Hastrman', 'Funibrouk', 'Sjíždění', 'Pivovar Bernard', 'U Lípy', 'Koupaliště Blansko'];
+  const notes = ['na jedno', 'kdo dorazí?', '', 'grilujem', ''];
+  const n = 1 + Math.floor(Math.random() * 3);
+  const list = people.slice(0, n).map((u, i) => ({
+    id: 'demo' + i, user: u, place: places[Math.floor(Math.random() * places.length)],
+    note: notes[Math.floor(Math.random() * notes.length)], transport: TRANSPORT[Math.floor(Math.random() * TRANSPORT.length)][0],
+    at: new Date(Date.now() - (5 + Math.random() * 110) * 60000).toISOString()
+  })).sort((a, b) => (b.at > a.at ? 1 : -1));
+  document.querySelector('.ciofr')?.remove();
+  freshCard(list, me, true);
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(showDemoIfDue, 700); });
 
