@@ -143,9 +143,10 @@ function route(force = false) {
     askPushOnInstall();
     // Aktuálnost vlastního check-inu: kdo je dál než 1 km od místa, už tam není.
     kde.checkMyCheckin();
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { kde.checkMyCheckin(); setTimeout(() => kde.maybeOfferCheckin(), 1200); } });
-    // Na známém místě (do 1 km) nabídnout check-in — jednou denně u každého místa.
-    setTimeout(() => kde.maybeOfferCheckin(), 2500);
+    // Nabídka vlastního check-inu na známém místě, pak čerstvé check-iny ostatních (≤ 2 h).
+    const onOpen = async () => { await kde.maybeOfferCheckin(); kde.maybeShowFresh(); };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { kde.checkMyCheckin(); setTimeout(onOpen, 1200); } });
+    setTimeout(onOpen, 2500);
     consumePendingNav((h) => { if (location.hash !== h) location.hash = h; });
   }
 

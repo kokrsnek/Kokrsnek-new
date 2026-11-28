@@ -1269,3 +1269,74 @@ export async function autoAttend(pos) {
   }
 }
 
+// ---------- Čerstvé check-iny ostatních při otevření aplikace ----------
+// Všem (i bez zvonečku): platné check-iny ostatních nejvýš 2 h staré, které jsem ještě neviděl.
+// Jeden → karta „Pif je na Boudě“, víc → souhrn „Právě venku“. Každý se ukáže jen jednou
+// a zapíše se jako viděný. Nabídka vlastního check-inu má přednost (počká se, až zmizí).
+const FRESH_MS = 2 * 3600 * 1000;
+let freshAt = 0;
+const agoTxt = (at) => { const m = Math.max(1, Math.round((Date.now() - (toDate(at)?.getTime() || Date.now())) / 60000)); return m < 60 ? `před ${m} min` : `před ${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`; };
+const whereTxt = (c) => { const p = shortPlace(c.place); return AT[p] ? `je ${AT[p]}` : `· ${p}`; };
+// force (test v Nastavení): posledních 7 dní, i už viděné, nic se nezapisuje.
+export async function maybeShowFresh(force = false) {
+  if (!LIVE || (!force && Date.now() - freshAt < 2 * 60 * 1000)) return;
+  const me = myName();
+  if (!me || document.hidden) return;
+  freshAt = Date.now();
+  try {
+    const since = new Date(Date.now() - (force ? 7 * 86400000 : FRESH_MS)).toISOString();
+    const [pub, lim] = await Promise.all([
+      getDocs(query(collection(db, 'placeCheckins'), where('at', '>=', since))).then((x) => x.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() }))).catch(() => []),
+      getDocs(myLimited(me)).then((x) => x.docs.map((d) => ({ id: d.id, _col: LIMC, ...d.data() })).filter((c) => (c.at || '') >= since)).catch(() => [])
+    ]);
+    let shown = [];
+    try { shown = JSON.parse(localStorage.getItem('freshShown') || '[]'); } catch (e) { shown = []; }
+    const all = [...pub, ...lim].sort((a, b) => ((b.at || '') > (a.at || '') ? 1 : -1));
+    const latest = new Map();   // jen poslední check-in každého člověka (starší už neplatí)
+    all.forEach((c) => { if (c.user && !latest.has(c.user)) latest.set(c.user, c); });
+    const list = [...latest.values()].filter((c) => c.user !== me && c.place
+      && (force || (!c.endedAt && !(c.seenBy || []).includes(me) && !shown.includes(c.id)))).slice(0, force ? 3 : 6);
+    if (!list.length) { if (force) toast('Za posledních 7 dní nemá nikdo jiný check-in.'); return; }
+    if (force) { document.querySelector('.ciofr')?.remove(); return freshCard(list, me, true); }
+    // počkat, až zmizí nabídka vlastního check-inu nebo otevřený formulář (nejvýš 2 min)
+    for (let i = 0; i < 120 && document.querySelector('.ciofr, .ciform, .cimapfs, .backdrop'); i++) await new Promise((r) => setTimeout(r, 1000));
+    if (document.hidden || document.querySelector('.ciofr, .ciform, .cimapfs, .backdrop')) return;
+    try { localStorage.setItem('freshShown', JSON.stringify([...shown, ...list.map((c) => c.id)].slice(-200))); } catch (e) { /* nic */ }
+    list.forEach((c) => markSeen(c, me));
+    freshCard(list, me);
+  } catch (e) { console.error('Čerstvé check-iny:', e); }
+}
+function freshCard(list, me, demo = false) {
+  const el = document.createElement('div');
+  el.className = 'ciofr cifresh';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Nové check-iny');
+  const one = list.length === 1, c0 = list[0];
+  const comeBtn = (c, small) => `<button class="btn ${small ? 'small' : 'primary'}" data-come="${esc(c.id)}">${(c.coming || []).includes(me) ? '✓ Přijdu' : small ? 'Přijdu' : 'Přijdu taky'}</button>`;
+  el.innerHTML = one
+    ? `<div class="ciofr-r"><span class="cifr-av">${avatar(c0.user, 46)}</span>
+        <span class="ciofr-t"><b>${esc(c0.user)} ${esc(whereTxt(c0))}</b><small>${esc(agoTxt(c0.at))}${c0.transport && TR_PATH[c0.transport] ? ' · ' + esc(trText(c0.transport)) : ''}${c0.note ? ` · „${esc(c0.note)}“` : ''}</small></span></div>
+      <div class="ciofr-b"><button class="btn" data-x>Zavřít</button><button class="btn" data-open="${esc(c0.id)}">Otevřít</button>${comeBtn(c0)}</div>`
+    : `<div class="ciofr-r"><span class="ciofr-i cifr-n">${list.length}</span>
+        <span class="ciofr-t"><b>Právě venku</b><small>${demo ? 'ukázka z posledních 7 dní' : 'nové check-iny za poslední 2 hodiny'}</small></span></div>
+      <div class="cifr-list">${list.map((c) => `<div class="cifr-li" data-open="${esc(c.id)}">${avatar(c.user, 32)}<span class="x"><b>${esc(c.user)}</b> · ${esc(shortPlace(c.place))}<small>${esc(agoTxt(c.at))}</small></span>${comeBtn(c, true)}</div>`).join('')}</div>
+      <div class="ciofr-b"><button class="btn" data-x>Zavřít</button><button class="btn primary" data-map>Ukázat na mapě</button></div>`;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 220); };
+  el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-x]')) return close();
+    if (e.target.closest('[data-map]')) { close(); location.hash = '#/kde/mapa'; return; }
+    const cb = e.target.closest('[data-come]');
+    if (cb) {
+      const c = list.find((x) => x.id === cb.dataset.come);
+      if (!c || (c.coming || []).includes(me)) return;
+      cb.disabled = true;
+      try { await updateDoc(doc(db, c._col, c.id), { coming: arrayUnion(me) }); c.coming = [...(c.coming || []), me]; cb.textContent = '✓ Přijdu'; toast(`${c.user} ví, že přijdeš 👋`); }
+      catch (x) { cb.disabled = false; toast('Nepovedlo se.'); }
+      return;
+    }
+    const o = e.target.closest('[data-open]');
+    if (o) { close(); location.hash = '#/kde/c/' + encodeURIComponent(o.dataset.open); }
+  });
+  document.body.appendChild(el);
+}
+

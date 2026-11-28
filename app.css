@@ -1090,3 +1090,16 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .hist-al{flex:0 0 auto;width:42px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--surface);color:var(--accent);border:1px solid var(--line)}
 .hist-al.off{visibility:hidden}
 .hist-more{display:block;margin:6px 0 0;padding:8px 4px;border:0;background:none;color:var(--accent);font:inherit;font-weight:700;font-size:14px}
+
+/* 2.27 — čerstvé check-iny ostatních při otevření */
+.cifr-av{position:relative;flex:0 0 auto;border-radius:50%}
+.cifr-av::before,.cifr-av::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);animation:ciRing 2s ease-out infinite;pointer-events:none}
+.cifr-av::after{animation-delay:1s}
+.cifr-n{font-family:var(--display);font-size:20px;font-weight:800}
+.cifr-list{margin-top:8px;max-height:40vh;overflow-y:auto}
+.cifr-li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.cifr-li .x{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cifr-li .x small{display:block;font-size:12px;color:var(--muted)}
+.cifr-li .btn{flex:0 0 auto;min-height:34px;padding:0 12px;font-size:13px}
+.cifresh .ciofr-b .btn{padding:0 8px}
+@media (prefers-reduced-motion:reduce){.cifr-av::before,.cifr-av::after{animation:none;display:none}}

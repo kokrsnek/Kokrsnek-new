@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.27',
+    date: '28. 11. 2026',
+    items: [
+      'Při otevření aplikace se ukážou čerstvé check-iny ostatních (platné, nejvýš 2 hodiny staré), i když nemáš zapnutý zvoneček. Jeden jako karta „Pif je na Boudě“, víc jako souhrn „Právě venku“ – s tlačítkem Přijdu, otevřením check-inu a mapou. Každý se ukáže jen jednou a započítá se jako viděný.',
+      'Nastavení (správce): tlačítko „Vyzkoušet Právě venku“ – ukázka z posledních 7 dní.'
+    ]
+  },
+  {
     version: '2.26',
     date: '28. 11. 2026',
     items: [
