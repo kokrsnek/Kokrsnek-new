@@ -6,7 +6,8 @@ export const CHANGELOG = [
     version: '2.14',
     date: '28. 11. 2026',
     items: [
-      'V úvodní animaci je dole malým písmem číslo verze, která se právě otevírá.'
+      'V úvodní animaci je dole malým písmem číslo verze, která se právě otevírá.',
+      'Náhodný obrázek akce (a s ním i náhledy alb) se kreslí ve stylu vybraného vzhledu: vlastní barvy pro den i noc a doplňky podle vzhledu, např. komiksový rastr s obrysy, linkovaný papír, turistická mapa s vrstevnicemi a značkou, neonová záře, měděné spoje na desce nebo sépiový western.'
     ]
   },
   {

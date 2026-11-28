@@ -730,3 +730,22 @@ html[data-theme="hardware"],[data-theme="hardware"] body{background-color:#0F5C3
 [data-theme="western"] .plusmenu span.s{font-style:italic;font-size:14px;color:#7A5A3A}
 [data-theme="western"] .plusmenu .ic{border-radius:50%;color:#FFE29A;background:radial-gradient(circle,#8A5528 0 20px,#5A2E12 21px)!important;box-shadow:0 2px 0 #3B2414,inset 0 0 0 3px #A8713C}
 [data-theme="western"] .plusmenu [data-a="checkin"] .ic{background:radial-gradient(circle,#9C2A12 0 20px,#5A2E12 21px)!important}
+
+/* 2.14 — náhodný obrázek akce (coverart.js) ve stylu vzhledu */
+.coverart.ca-komiks .hl,.coverart.ca-komiks .mt path,.coverart.ca-komiks .mt circle,.coverart.ca-komiks .mt rect,.coverart.ca-komiks .mt ellipse{stroke:#111;stroke-width:3;stroke-linejoin:round}
+.coverart.ca-zapisnik .hl{stroke:#2E4A8C;stroke-width:2;stroke-linejoin:round}
+.coverart.ca-zapisnik .mt{filter:saturate(.55)}
+.coverart.ca-zapisnik .mt path,.coverart.ca-zapisnik .mt rect{stroke:#2E4A8C;stroke-width:1.5}
+.coverart.ca-znaceni .hl{stroke:#8A6A3A;stroke-width:1.2;stroke-dasharray:6 3}
+.coverart.ca-neon .hl{stroke:#22D3EE;stroke-width:2;filter:drop-shadow(0 0 3px #22D3EE)}
+.coverart.ca-neon .hl:nth-of-type(odd){stroke:#FF5CA8;filter:drop-shadow(0 0 3px #FF5CA8)}
+.coverart.ca-neon .mt{filter:drop-shadow(0 0 4px rgba(124,92,255,.8)) saturate(1.3)}
+.coverart.ca-hardware .hl{stroke:#C98A3A;stroke-width:2.5}
+.coverart.ca-hardware .mt{filter:drop-shadow(0 0 3px rgba(57,255,106,.5))}
+.coverart.ca-western .mt{filter:sepia(.6) saturate(1.2)}
+.coverart.ca-western .hl{stroke:#5A2E12;stroke-width:1.5}
+.coverart.ca-taborak .mt{filter:drop-shadow(0 0 6px rgba(255,138,61,.45))}
+.coverart.ca-festival .hl{stroke:#F7F5EE;stroke-width:2}
+.coverart.ca-hlidka .hl{stroke:#FFFFFF;stroke-width:1.5;stroke-opacity:.5}
+.coverart.ca-chata .mt{filter:saturate(.8)}
+.coverart.ca-vodaci .hl{stroke:#FFFFFF;stroke-width:1.5;stroke-opacity:.35}

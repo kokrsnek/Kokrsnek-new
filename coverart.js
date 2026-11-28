@@ -54,7 +54,7 @@ function hill(r, y, amp, color) {
     const cx = x - 400 / n / 2;
     d += ` Q${cx.toFixed(0)} ${(y - amp * (0.4 + r())).toFixed(0)} ${x.toFixed(0)} ${(y - amp * 0.3 * r()).toFixed(0)}`;
   }
-  return `<path d="${d} L400 210 L0 210Z" fill="${color}"/>`;
+  return `<path class="hl" d="${d} L400 210 L0 210Z" fill="${color}"/>`;
 }
 
 const MOTIFS = {
@@ -110,10 +110,53 @@ const MOTIFS = {
   plain: () => ''
 };
 
+// Barvy podle vzhledu: každý vzhled má vlastní paletu pro den a pro noc (zima, večer),
+// takže roční období zůstane poznat, jen v barvách a stylu zvoleného vzhledu.
+// Doplňky (rastr, linky, mřížka) kreslí overlay(), obrysy a záři themes.css (.coverart).
+const LOOKS = {
+  chata: { snow: '#ECE6DA', day: { sky: ['#CFDCCB', '#F4EFE6'], hills: ['#4E7A5E', '#2F5D46', '#1F3F2F'], sun: '#E3A15A' },
+    night: { sky: ['#1F2A24', '#4E5F52'], hills: ['#3E5446', '#2F4537', '#22332A'], sun: '#F4EFE6' } },
+  festival: { snow: '#F7F5EE', day: { sky: ['#F5D90A', '#FF5C8A'], hills: ['#2A2233', '#1E1E24', '#0D0D10'], sun: '#FFFFFF' },
+    night: { sky: ['#0D0D10', '#2A2233'], hills: ['#FF5C8A', '#C93A6A', '#0D0D10'], sun: '#F5D90A' } },
+  hlidka: { snow: '#E6EBF3', day: { sky: ['#C9D2E6', '#EEF1F5'], hills: ['#5A6678', '#3A4660', '#1D2B4F'], sun: '#C84E0F' },
+    night: { sky: ['#14213D', '#2E3E66'], hills: ['#4A5878', '#33405F', '#1D2B4F'], sun: '#FFFFFF' } },
+  taborak: { snow: '#DCC8B4', day: { sky: ['#3A1C10', '#E0521F'], hills: ['#55402E', '#3D2A1C', '#241811'], sun: '#FFD27A' },
+    night: { sky: ['#140E0A', '#5A2410'], hills: ['#3D2A1C', '#2A1C13', '#1A120C'], sun: '#FFB27A' } },
+  zapisnik: { snow: '#FFFDF6', day: { sky: ['#FFFDF6', '#FBF5E6'], hills: ['#E2E8F4', '#F1EAD6', '#FFFDF6'], sun: '#FFE98A' },
+    night: { sky: ['#E2E8F4', '#FBF5E6'], hills: ['#D2DBEE', '#E8E0CB', '#FFFDF6'], sun: '#FFFDF6' } },
+  znaceni: { snow: '#FFFFFF', day: { sky: ['#F3EFE2', '#F3EFE2'], hills: ['#C9D8B4', '#B5CA98', '#9DBB7E'], sun: '#F2C200' },
+    night: { sky: ['#E9E6DC', '#F3EFE2'], hills: ['#DCE3D2', '#C9D3BD', '#B3C2A4'], sun: '#FFFFFF' } },
+  neon: { snow: '#C3CCE6', day: { sky: ['#1B1650', '#7C5CFF'], hills: ['#141A33', '#0E1240', '#070B18'], sun: '#FF5CA8' },
+    night: { sky: ['#070B18', '#1B1650'], hills: ['#141A33', '#0E1240', '#070B18'], sun: '#22D3EE' } },
+  komiks: { snow: '#FFFFFF', day: { sky: ['#7CD3FF', '#E6F7FF'], hills: ['#3DDC84', '#2BB86A', '#FFD400'], sun: '#FFD400' },
+    night: { sky: ['#2B3A8C', '#7CD3FF'], hills: ['#5B6CB8', '#3D4C9C', '#FFFFFF'], sun: '#FFD400' } },
+  vodaci: { snow: '#E3F4F8', day: { sky: ['#1A8FB0', '#E9F6F8'], hills: ['#7CC7D9', '#1A8FB0', '#0B5C73'], sun: '#FFD35A' },
+    night: { sky: ['#08303D', '#1A8FB0'], hills: ['#2D6E82', '#0B5C73', '#08303D'], sun: '#FFD35A' } },
+  hardware: { snow: '#EDEBDC', day: { sky: ['#0F5C3A', '#127047'], hills: ['#0B4A2E', '#1E2124', '#17191B'], sun: '#39FF6A' },
+    night: { sky: ['#0A3D27', '#0F5C3A'], hills: ['#0B4A2E', '#1E2124', '#17191B'], sun: '#39FF6A' } },
+  western: { snow: '#F6E7C4', day: { sky: ['#F1DFB8', '#D9BC85'], hills: ['#C9A66B', '#A8713C', '#8A5528'], sun: '#9C2A12' },
+    night: { sky: ['#3B2414', '#8A5528'], hills: ['#6B3E1C', '#5A2E12', '#3B2414'], sun: '#FFE29A' } }
+};
+const look = () => (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme')) || '';
+
+// Doplňková vrstva přes celý obrázek podle vzhledu.
+function overlay(t, id) {
+  if (t === 'komiks') return `<defs><pattern id="${id}h" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.3" fill="#111" opacity=".22"/></pattern></defs><rect width="400" height="210" fill="url(#${id}h)"/>`;
+  if (t === 'zapisnik') return `<defs><pattern id="${id}h" width="400" height="16" patternUnits="userSpaceOnUse"><path d="M0 15.5 H400" stroke="#9DB6D8" stroke-width="1"/></pattern></defs><rect width="400" height="210" fill="url(#${id}h)" opacity=".7"/><path d="M26 0 V210" stroke="#F2A0A0" stroke-width="2"/>`;
+  if (t === 'hardware') return `<defs><pattern id="${id}h" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r=".9" fill="#C98A3A" opacity=".35"/></pattern></defs><rect width="400" height="210" fill="url(#${id}h)"/>`;
+  if (t === 'neon') return Array.from({ length: 7 }, (_, i) => `<path d="M0 ${150 + i * i * 1.6} H400" stroke="#22D3EE" stroke-width=".8" opacity="${(0.15 + i * 0.05).toFixed(2)}"/>`).join('');
+  if (t === 'znaceni') return `<g transform="translate(372 24)"><rect x="-14" y="-10" width="28" height="20" fill="#fff" stroke="#141414" stroke-width="1.5"/><rect x="-14" y="-3.3" width="28" height="6.6" fill="#D2232A"/></g>`;
+  if (t === 'western') return `<rect width="400" height="210" fill="none" stroke="#5A2E12" stroke-width="10" opacity=".35"/>`;
+  return '';
+}
+
 export function coverArt(ev) {
   const theme = coverTheme(ev);
   const season = seasonOf(ev, theme);
-  const P = SEASONS[season];
+  const t = look();
+  const L = LOOKS[t];
+  const P = L ? { ...(SEASONS[season].night || season === 'evening' ? L.night : L.day), night: SEASONS[season].night } : SEASONS[season];
+  if (L && season === 'winter') P.hills = [P.hills[0], P.hills[1], L.snow];
   const r = rng(ev.id || ev.title);
   const sunX = 60 + r() * 280, sunY = 40 + r() * 30;
   const sun = P.night
@@ -123,13 +166,14 @@ export function coverArt(ev) {
     ? Array.from({ length: 18 }, () => `<circle cx="${(r() * 400).toFixed(0)}" cy="${(r() * 90).toFixed(0)}" r="${(0.5 + r()).toFixed(1)}" fill="#fff" opacity=".7"/>`).join('')
     : '';
   const id = 'g' + Math.floor(r() * 1e9);
-  return `<svg class="coverart" viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  return `<svg class="coverart${t ? ' ca-' + t : ''}" viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.sky[0]}"/><stop offset="1" stop-color="${P.sky[1]}"/></linearGradient></defs>
     <rect width="400" height="210" fill="url(#${id})"/>
     ${stars}${sun}
     ${hill(r, 140, 50, P.hills[0])}
     ${hill(r, 165, 35, P.hills[1])}
     ${hill(r, 190, 22, P.hills[2])}
-    ${MOTIFS[theme](r)}
+    <g class="mt">${MOTIFS[theme](r)}</g>
+    ${overlay(t, id)}
   </svg>`;
 }
