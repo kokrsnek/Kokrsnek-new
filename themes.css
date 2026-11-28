@@ -656,3 +656,77 @@ html[data-theme="hardware"],[data-theme="hardware"] body{background-color:#0F5C3
 [data-theme="hardware"] .plusmenu [data-a="zprava"] .ic{color:#FFB020}
 [data-theme="hardware"] .plusmenu [data-a="checkin"] .ic{color:#FF3B2F}
 [data-theme="hardware"] .plusmenu [data-a="album"] .ic{color:#4DA6FF}
+
+/* 2.13 — nabídka pod „+“ i v ostatních vzhledech (Původní zůstává podle app.css) */
+/* Chata: krémový lístek, ikony jako dřevěná kolečka s barevnou ikonou */
+[data-theme="chata"] .plusmenu{background:#FFFDF8;border:1.5px solid #2A2620;border-radius:18px;box-shadow:0 10px 30px rgba(42,38,32,.25)}
+[data-theme="chata"] .plusmenu button+button{border-top:1px solid #E2D9C8;border-radius:0}
+[data-theme="chata"] .plusmenu b{font-family:var(--display);font-weight:600;font-size:19px}
+[data-theme="chata"] .plusmenu .ic{background:#F4EFE6!important;box-shadow:inset 0 0 0 1.5px #2A2620,inset 0 0 0 6px #F4EFE6,inset 0 0 0 7px #CFC3AC;color:#2F5D46}
+[data-theme="chata"] .plusmenu [data-a="zprava"] .ic{color:#B4532A}
+[data-theme="chata"] .plusmenu [data-a="checkin"] .ic{color:#8A6A1E}
+[data-theme="chata"] .plusmenu [data-a="album"] .ic{color:#4E4639}
+
+/* Festival: černá karta, ikony jako vstupenky střídavě žlutá a růžová */
+[data-theme="festival"] .plusmenu{background:#1E1E24;border:1px solid #34343D;border-radius:26px}
+[data-theme="festival"] .plusmenu b{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:18px}
+[data-theme="festival"] .plusmenu .ic{border-radius:14px;color:#0D0D10;background:#F5D90A!important;transform:rotate(-5deg)}
+[data-theme="festival"] .plusmenu button:nth-child(even) .ic{background:#FF5C8A!important;transform:rotate(5deg)}
+
+/* Hlídka: bílá karta s modrým pruhem nahoře, ikony jako modré odznaky */
+[data-theme="hlidka"] .plusmenu{border:none;border-top:6px solid #1D2B4F;border-radius:12px;box-shadow:0 12px 30px rgba(20,33,61,.3)}
+[data-theme="hlidka"] .plusmenu button{border-radius:8px}
+[data-theme="hlidka"] .plusmenu b{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:18px}
+[data-theme="hlidka"] .plusmenu .ic{border-radius:10px;background:#1D2B4F!important;color:#fff;box-shadow:inset 0 -4px 0 #C84E0F}
+[data-theme="hlidka"] .plusmenu [data-a="checkin"] .ic{background:#C84E0F!important;box-shadow:inset 0 -4px 0 #1D2B4F}
+
+/* Táborák: tmavá karta, ikony jako žhnoucí uhlíky */
+[data-theme="taborak"] .plusmenu{background:#241811;border:1px solid #4A3322;border-radius:26px;box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 40px rgba(255,122,47,.12)}
+[data-theme="taborak"] .plusmenu b{font-family:var(--display);font-size:18px;color:#F3E6D6}
+[data-theme="taborak"] .plusmenu span.s{color:#B49A84}
+[data-theme="taborak"] .plusmenu .ic{background:radial-gradient(circle at 50% 70%,#FFD27A,#FF7A2F 45%,#C2361B)!important;box-shadow:0 0 16px rgba(255,122,47,.55);color:#fff}
+[data-theme="taborak"] .plusmenu button:nth-child(even) .ic{background:radial-gradient(circle at 50% 70%,#FFB27A,#E0521F 50%,#7A2410)!important;box-shadow:0 0 10px rgba(224,82,31,.4)}
+
+/* Zápisník: linkovaný lístek přilepený páskou, ikony obkreslené propiskou */
+[data-theme="zapisnik"] .plusmenu{background:#FFFDF6 repeating-linear-gradient(#FFFDF6 0 31px,#D8E3F0 31px 32px);border:none;border-radius:2px;transform:rotate(-1deg);box-shadow:0 12px 24px rgba(0,0,0,.18);overflow:visible}
+[data-theme="zapisnik"] .plusmenu::before{content:'';position:absolute;top:-12px;left:50%;width:96px;height:24px;margin-left:-48px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.06);transform:rotate(3deg)}
+[data-theme="zapisnik"] .plusmenu b{font-family:var(--display);font-size:19px;color:#2E4A8C}
+[data-theme="zapisnik"] .plusmenu span.s{font-style:italic}
+[data-theme="zapisnik"] .plusmenu .ic{background:transparent!important;border:2.5px solid currentColor;border-radius:48% 52% 45% 55%/55% 45% 52% 48%;color:#2E4A8C;transform:rotate(-6deg)}
+[data-theme="zapisnik"] .plusmenu [data-a="zprava"] .ic{color:#4E8A4C;transform:rotate(5deg)}
+[data-theme="zapisnik"] .plusmenu [data-a="checkin"] .ic{color:#B5562E}
+[data-theme="zapisnik"] .plusmenu [data-a="album"] .ic{color:#C9A227;transform:rotate(8deg)}
+
+/* Neon: skleněná karta, ikony jako zářící skleněné dlaždice */
+[data-theme="neon"] .plusmenu{background:rgba(20,26,51,.96);border:1px solid rgba(255,255,255,.16);border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 0 1px rgba(124,92,255,.25)}
+[data-theme="neon"] .plusmenu b{font-family:var(--display);font-weight:800}
+[data-theme="neon"] .plusmenu .ic{border-radius:16px;color:#fff;background:linear-gradient(135deg,#7C5CFF,#22D3EE)!important;box-shadow:0 6px 18px rgba(124,92,255,.5)}
+[data-theme="neon"] .plusmenu [data-a="zprava"] .ic{background:linear-gradient(135deg,#22D3EE,#2B7CFF)!important;box-shadow:0 6px 18px rgba(34,211,238,.45)}
+[data-theme="neon"] .plusmenu [data-a="checkin"] .ic{background:linear-gradient(135deg,#FF5CA8,#7C5CFF)!important;box-shadow:0 6px 18px rgba(255,92,168,.45)}
+[data-theme="neon"] .plusmenu [data-a="album"] .ic{background:linear-gradient(135deg,#FFB86B,#FF5CA8)!important;box-shadow:0 6px 18px rgba(255,138,120,.45)}
+
+/* Komiks: panel s černým obrysem, ikony jako barevná kolečka s obrysem a stínem, check-in jako výbuch */
+[data-theme="komiks"] .plusmenu{background:#fff;border-radius:4px}
+[data-theme="komiks"] .plusmenu button{border-radius:4px}
+[data-theme="komiks"] .plusmenu b{font-family:var(--display);font-weight:400;font-style:italic;text-transform:uppercase;letter-spacing:.05em;font-size:22px}
+[data-theme="komiks"] .plusmenu .ic{border:2.5px solid #111;box-shadow:3px 3px 0 #111;color:#111;background:#FFD400!important}
+[data-theme="komiks"] .plusmenu [data-a="zprava"] .ic{background:#7CD3FF!important}
+[data-theme="komiks"] .plusmenu [data-a="checkin"] .ic{background:#E8322B!important;color:#fff;border:none;box-shadow:none;border-radius:0;width:58px;height:58px;margin:-3px;clip-path:polygon(50% 0,61% 22%,86% 10%,78% 38%,100% 50%,78% 62%,86% 90%,61% 78%,50% 100%,39% 78%,14% 90%,22% 62%,0 50%,22% 38%,14% 10%,39% 22%)}
+[data-theme="komiks"] .plusmenu [data-a="album"] .ic{background:#3DDC84!important}
+
+/* Vodáci: karta s vlnkou dole, ikony jako kapky vody, check-in jako záchranný kruh */
+[data-theme="vodaci"] .plusmenu{border:none;border-radius:26px;box-shadow:0 14px 34px rgba(11,92,115,.3);padding-bottom:24px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 18' preserveAspectRatio='none'%3E%3Cpath d='M0 9 Q12 0 24 9 T48 9 T72 9 T96 9 V18 H0Z' fill='%231A8FB0' fill-opacity='.18'/%3E%3C/svg%3E") repeat-x left bottom/96px 18px}
+[data-theme="vodaci"] .plusmenu b{font-family:var(--display);font-weight:800;color:#0E3B4A}
+[data-theme="vodaci"] .plusmenu .ic{color:#fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(225deg,#3FB6D3,#0B5C73)!important}
+[data-theme="vodaci"] .plusmenu .ic svg{transform:rotate(45deg)}
+[data-theme="vodaci"] .plusmenu [data-a="checkin"] .ic{transform:none;border-radius:50%;border:3px solid #0B5C73;color:#fff;background:radial-gradient(circle,#0B5C73 0 15px,transparent 16px),conic-gradient(#E8322B 0 45deg,#fff 45deg 90deg,#E8322B 90deg 135deg,#fff 135deg 180deg,#E8322B 180deg 225deg,#fff 225deg 270deg,#E8322B 270deg 315deg,#fff 315deg)!important}
+[data-theme="vodaci"] .plusmenu [data-a="checkin"] .ic svg{transform:none;width:18px;height:18px}
+
+/* Western: pergamen s dvojitým rámem, ikony jako šerifské hvězdy na dřevě */
+[data-theme="western"] .plusmenu{background:#F6E7C4;border:3px solid #5A2E12;outline:2px solid #5A2E12;outline-offset:3px;border-radius:2px;box-shadow:0 12px 28px rgba(90,46,18,.4)}
+[data-theme="western"] .plusmenu button{border-radius:2px}
+[data-theme="western"] .plusmenu button+button{border-top:1.5px dashed #A8854F;border-radius:0}
+[data-theme="western"] .plusmenu b{font-family:'Bitter',serif;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:16px;color:#5A2E12}
+[data-theme="western"] .plusmenu span.s{font-style:italic;font-size:14px;color:#7A5A3A}
+[data-theme="western"] .plusmenu .ic{border-radius:50%;color:#FFE29A;background:radial-gradient(circle,#8A5528 0 20px,#5A2E12 21px)!important;box-shadow:0 2px 0 #3B2414,inset 0 0 0 3px #A8713C}
+[data-theme="western"] .plusmenu [data-a="checkin"] .ic{background:radial-gradient(circle,#9C2A12 0 20px,#5A2E12 21px)!important}
