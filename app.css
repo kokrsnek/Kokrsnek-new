@@ -997,7 +997,8 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .cimapfs .mapcopy{position:absolute;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:600;font-size:11px;color:#333;background:rgba(255,255,255,.8);padding:2px 8px;border-radius:8px;text-decoration:none}
 
 /* 2.17 — kdo uvidí check-in (Celá parta / Jen já / Vybraní) */
-.civissel{display:flex;align-items:center;gap:10px;width:100%;margin:4px 0 12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:inherit;text-align:left}
+.civissel[hidden]{display:none}
+.civissel{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:inherit;text-align:left}
 .civissel .ic{display:flex;color:var(--muted)}
 .civissel .t{flex:1;color:var(--muted);font-size:14px}
 .civissel b{font-size:15px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

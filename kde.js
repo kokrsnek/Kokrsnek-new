@@ -815,6 +815,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     </div>` : ''}
     <label class="cilbl" for="ci-place">Kde jsi</label>
     <input id="ci-place" class="input" data-place placeholder="Napiš, kde jsi…" maxlength="80" value="${esc(guess)}">
+    ${LIVE ? `<button type="button" class="civissel" data-vis ${guess ? '' : 'hidden'}><span class="ic" data-visi>${icon('people', 18)}</span><span class="t">Kdo uvidí</span><b data-visl>Celá parta</b>${icon('next', 16)}</button>` : ''}
     ${favs.length ? `<div class="cilbl">Tvoje místa</div><div class="chips cifav">${favs.map((n) => `<button type="button" class="chip" data-fav="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
     ${sugs.length ? `<div class="cilbl">Místa v okolí</div>
       <div class="cisugs">${first.map((s, i) => sugRow(s, i)).join('')}</div>
@@ -826,7 +827,6 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
     <input type="file" accept="image/*" data-file hidden>
     <div class="ciphrow" data-phrow></div>
-    ${LIVE ? `<button type="button" class="civissel" data-vis><span class="ic" data-visi>${icon('people', 18)}</span><span class="t">Kdo uvidí</span><b data-visl>Celá parta</b>${icon('next', 16)}</button>` : ''}
     ${!LIVE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
   </div>
   <div class="cibtns"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Odeslat</button></div>`;
@@ -857,6 +857,10 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   // Kdo uvidí: vždy začíná „Celá parta“ (nepamatuje se), změna jen pro tenhle check-in.
   let vis = { k: 'all', names: [], label: 'Celá parta' };
   const vb = $('[data-vis]');
+  // řádek se ukáže, až je v poli místo (napsané, vybrané nebo předvyplněné)
+  const showVis = () => { if (vb) vb.hidden = !input.value.trim(); };
+  input.addEventListener('input', showVis);
+  scr.addEventListener('click', (e) => { if (e.target.closest('[data-fav], .cisug')) setTimeout(showVis, 0); });
   if (vb) vb.onclick = async () => {
     const r = await visSheet(vis, me);
     if (!r) return;

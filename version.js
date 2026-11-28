@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.18',
+    date: '28. 11. 2026',
+    items: [
+      'Řádek „Kdo uvidí“ je v check-inu hned pod polem s místem a objeví se, až je místo vyplněné (napsané nebo vybrané).'
+    ]
+  },
+  {
     version: '2.17',
     date: '28. 11. 2026',
     items: [
