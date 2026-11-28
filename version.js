@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.26',
+    date: '28. 11. 2026',
+    items: [
+      'Automatická účast: když uděláš check-in nebo otevřeš aplikaci, zrovna probíhá akce a jsi do 1 km od jejího místa, zapíše se ti účast. Ostatním kvůli tomu nepřijde upozornění a u každé akce se to stane jen jednou (pak už si to můžeš změnit).'
+    ]
+  },
+  {
     version: '2.25',
     date: '28. 11. 2026',
     items: [

@@ -7,7 +7,7 @@ import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus, topButt
 import { myName, session } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
 import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, getDoc, setDoc, writeBatch, callFunction, arrayUnion } from './firebase.js';
-import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
+import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance, isLive } from './store.js';
 import { loadLeaflet, geocode } from './map.js';
 import { placeCoords, KNOWN_PLACES } from './util.js';
 import { pullSearch } from './pullsearch.js';
@@ -1019,6 +1019,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     try {
       const ref = await addDoc(collection(db, limited ? LIMC : LIVE ? 'placeCheckins' : 'v2_checkins'), data);
       endMyOthers(me, ref.id).catch(() => {});
+      if (pos) autoAttend(pos).catch(() => {});
       close();
       toast(!limited ? 'Check-in odeslán 📍' : vis.k === 'me' ? 'Check-in uložen jen pro tebe 🔒' : 'Check-in odeslán vybraným 📍');
       if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
@@ -1221,6 +1222,7 @@ export async function maybeOfferCheckin(force = false) {
     }
     const pos = await getPos(force ? 0 : 120000);
     if (!pos) { if (force) toast('Polohu se nepodařilo zjistit.'); return; }
+    if (!force) await autoAttend(pos).catch(() => {});
     const label = await knownGuess(pos);
     if (!label) {
       if (force) {
@@ -1240,5 +1242,27 @@ export async function maybeOfferCheckin(force = false) {
     const done = () => { try { localStorage.setItem(key, dayKey()); } catch (e) { /* nic */ } };
     offerCheckinCard(label, () => { done(); newCheckin(); }, done);
   } catch (e) { console.error('Nabídka check-inu:', e); }
+}
+
+// ---------- Automatická účast na probíhající akci ----------
+// Při check-inu a při otevření aplikace: probíhá akce a jsi do 1 km od jejího místa →
+// zapíše se ti účast (Jdu / Zúčastnil se). Bez upozornění ostatním (silent) a u každé
+// akce jen jednou — když si pak dáš „Nejdu“, už se znovu nepřepíše.
+export async function autoAttend(pos) {
+  const me = myName();
+  if (!LIVE || !me || !pos) return;
+  const now = new Date();
+  for (const ev of events.list.filter((e) => !e.isTest && e.place && isLive(e, now))) {
+    const key = 'autoAtt:' + ev.id;
+    if (localStorage.getItem(key)) continue;
+    const co = placeCoords(ev.place) || await geocode(ev.place).catch(() => null);
+    if (!co || distM(pos, co) > 1000) continue;
+    let att = cachedAttendance(ev.id);
+    if (!att) att = await loadAttendance(ev).catch(() => null);
+    try { localStorage.setItem(key, '1'); } catch (e) { /* nic */ }
+    if (att && att.going.includes(me)) continue;
+    await setAttendance(ev, 'attend', { silent: true, auto: true });
+    toast(`Jsi na akci ${ev.title} – účast zapsána ✓`);
+  }
 }
 

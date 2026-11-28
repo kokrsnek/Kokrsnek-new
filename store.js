@@ -171,10 +171,11 @@ export function watchAttendance(ev, cb) {
 }
 
 // target: 'attend' | 'decline'
-export async function setAttendance(ev, target) {
+// extra: další pole záznamu (např. { silent: true, auto: true } u automatické účasti).
+export async function setAttendance(ev, target, extra = null) {
   const me = myName();
   const p = paths(ev);
-  const data = { user: me, at: new Date(), eventTitle: ev.title, eventStart: ev.start.toISOString(), via: 'v2' };
+  const data = { user: me, at: new Date(), eventTitle: ev.title, eventStart: ev.start.toISOString(), via: 'v2', ...(extra || {}) };
   const batch = writeBatch(db);
   const aRef = doc(db, ...p.attendees, me), dRef = doc(db, ...p.declines, me);
   if (target === 'attend') { batch.set(aRef, data); batch.delete(dRef); }
