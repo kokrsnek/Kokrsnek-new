@@ -9,6 +9,7 @@ import { demoBadges } from './badges.js';
 import { weatherDiag, recheckWeather, demoWeather } from './weather.js';
 import { CHANGELOG, VERSION } from './version.js';
 import { showIntro } from './intro.js';
+import { maybeOfferCheckin } from './kde.js';
 import { isPushOn, pushToggle } from './pushui.js';
 import { THEMES, currentTheme, applyTheme, preloadAllFonts, currentMode, setMode, MODES } from './theme.js';
 
@@ -32,6 +33,7 @@ export function render(root) {
       ${admin ? `<button class="btn block" data-testpush style="margin-top:10px;justify-content:flex-start;gap:8px">🧪 Poslat si zkušební notifikace</button>
       <div class="note" style="margin-top:6px">Jen pro správce: přijdou jen na tvoje zařízení (chat, check-in, nová akce).</div>
       <button class="btn block" data-wxdemo style="margin-top:10px;justify-content:flex-start;gap:8px">❄️ Vyzkoušet sníh (20 s)</button>
+      <button class="btn block" data-ciofr style="margin-top:10px;justify-content:flex-start;gap:8px">📍 Vyzkoušet nabídku check-inu</button>
       <div class="note" style="margin-top:6px" data-wxdiag></div>` : ''}
 
       <div class="section-h">Vzhled</div>
@@ -154,6 +156,8 @@ export function render(root) {
     };
     showDiag(); recheckWeather(); setTimeout(showDiag, 4000);
     root.querySelector('[data-wxdemo]').onclick = () => demoWeather('snow');
+    // Nabídka check-inu na známém místě — bez omezení jednou denně a bez kontroly aktuálního check-inu.
+    root.querySelector('[data-ciofr]').onclick = () => { toast('Zjišťuju polohu…'); maybeOfferCheckin(true); };
   }
   const tp = root.querySelector('[data-testpush]');
   if (tp) tp.onclick = async () => {

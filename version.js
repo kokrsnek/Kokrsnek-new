@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.23',
+    date: '28. 11. 2026',
+    items: [
+      'Oprava: po check-inu z nabídky + se z otevřeného check-inu (šipkou i gestem) vracíš do Feedu, ne zpátky do formuláře nového check-inu.',
+      'Nastavení (správce): tlačítko „Vyzkoušet nabídku check-inu“ – ukáže kartu i když už na místě check-in máš nebo jsi ji dnes odmítl; mimo známá místa napíše, jak daleko je nejbližší.'
+    ]
+  },
+  {
     version: '2.22',
     date: '28. 11. 2026',
     items: [

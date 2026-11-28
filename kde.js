@@ -608,7 +608,8 @@ export function render(root, { tab = 'feed', openNew = false }) {
   }, () => {}));
 
   if (tab !== 'mista') drawFilters();
-  if (openNew) setTimeout(newCheckin, 50);
+  // #/kde/novy nesmí zůstat v historii — návrat (šipkou i gestem) by otevřel formulář znovu.
+  if (openNew) { history.replaceState(history.state, '', '#/kde'); setTimeout(newCheckin, 50); }
   return () => { alive = false; unsubs.forEach((u) => u()); if (map) map.remove(); if (cleanupBig) cleanupBig(); };
 }
 
@@ -1204,25 +1205,36 @@ const atPlace = (l) => AT[l] || 'na místě ' + l;
 // Polohu zjišťuje jen s už uděleným povolením (nikdy kvůli tomu neotevře dotaz na polohu).
 let offerAt = 0;
 const dayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
-export async function maybeOfferCheckin() {
-  if (!LIVE || Date.now() - offerAt < 2 * 60 * 1000) return;
+// force (test v Nastavení): bez omezení jednou denně a bez kontroly aktuálního check-inu;
+// mimo známé místo řekne, jak daleko je nejbližší.
+export async function maybeOfferCheckin(force = false) {
+  if (!LIVE || (!force && Date.now() - offerAt < 2 * 60 * 1000)) return;
   const me = myName();
   if (!me || document.hidden) return;
   offerAt = Date.now();
   try {
-    if (!navigator.permissions || !navigator.geolocation) return;
-    const perm = await navigator.permissions.query({ name: 'geolocation' }).catch(() => null);
-    if (!perm || perm.state !== 'granted') return;
-    const pos = await getPos(120000);
-    if (!pos) return;
+    if (!navigator.geolocation) { if (force) toast('Tenhle telefon nedává polohu.'); return; }
+    if (!force) {
+      if (!navigator.permissions) return;
+      const perm = await navigator.permissions.query({ name: 'geolocation' }).catch(() => null);
+      if (!perm || perm.state !== 'granted') return;
+    }
+    const pos = await getPos(force ? 0 : 120000);
+    if (!pos) { if (force) toast('Polohu se nepodařilo zjistit.'); return; }
     const label = await knownGuess(pos);
-    if (!label) return;
+    if (!label) {
+      if (force) {
+        const near = Object.entries(KNOWN_PLACES).map(([k, v]) => { const [lat, lng] = v.split(',').map(Number); return { l: KNOWN_LABELS[k], d: distM(pos, { lat, lng }) }; }).sort((a, b) => a.d - b.d)[0];
+        toast(`Nejsi do 1 km od známého místa — nejblíž je ${near.l} (${near.d < 10000 ? (near.d / 1000).toFixed(1).replace('.', ',') : Math.round(near.d / 1000)} km).`);
+      }
+      return;
+    }
     const key = 'ciOffer:' + label;
-    if (localStorage.getItem(key) === dayKey()) return;
+    if (!force && localStorage.getItem(key) === dayKey()) return;
     // už tam mám aktuální check-in?
     const mine = (await myCheckinDocs(me)).map((d) => d.data()).sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
     const c = mine[0];
-    if (c && !c.endedAt && Date.now() - (toDate(c.at)?.getTime() || 0) < MAX_ACTIVE
+    if (!force && c && !c.endedAt && Date.now() - (toDate(c.at)?.getTime() || 0) < MAX_ACTIVE
       && (c.lat == null || distM(pos, { lat: +c.lat, lng: +c.lng }) <= 1000)) return;
     if (document.hidden || document.querySelector('.ciform, .ciofr, .cimapfs, .backdrop')) return;
     const done = () => { try { localStorage.setItem(key, dayKey()); } catch (e) { /* nic */ } };
