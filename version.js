@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.25',
+    date: '28. 11. 2026',
+    items: [
+      'Historie akce: ročník se bere z čísla v názvu (32. výroční oheň → 32. ročník, Osada 33. výročí → 33. ročník), i když starší ročníky v aplikaci nejsou. Graf účasti se ukáže jen tam, kde je zapsaná účast.'
+    ]
+  },
+  {
     version: '2.24',
     date: '28. 11. 2026',
     items: [
