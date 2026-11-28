@@ -57,8 +57,11 @@ function when(at) {
 }
 const isToday = (c) => { const d = toDate(c.at); return d && sameDay(d, new Date()); };
 // Aktuálnost check-inu: platí, dokud autor neudělá nový check-in nebo dokud
-// neotevře aplikaci dál než 1 km od místa (pak se zapíše endedAt). Pojistka: max. 24 h.
+// neotevře aplikaci dál než 500 m od místa (pak se zapíše endedAt). Pojistka: max. 24 h.
 const MAX_ACTIVE = 24 * 3600 * 1000;
+// Okruh „jsi na místě“ pro všechno kolem polohy (předvyplnění, nabídka check-inu,
+// automatická účast, Jsi na akci?, konec check-inu po odchodu).
+const NEAR_M = 500;
 const distM = (a, b) => { const R = 6371000, t = (x) => x * Math.PI / 180; const h = Math.sin(t(b.lat - a.lat) / 2) ** 2 + Math.cos(t(a.lat)) * Math.cos(t(b.lat)) * Math.sin(t(b.lng - a.lng) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 const getPos = (maxAge = 60000) => new Promise((res) => {
   if (!navigator.geolocation) return res(null);
@@ -830,7 +833,7 @@ export function newCheckin() {
   })();
 }
 
-// Předvyplnění místa: jen známá místa party, když jsi do 1 km od nich (jinak pole zůstane prázdné).
+// Předvyplnění místa: jen známá místa party, když jsi do 500 m od nich (jinak pole zůstane prázdné).
 const KNOWN_LABELS = { bouda: 'Bouda', funibrouk: 'Funibrouk', hastrman: 'Hastrman', sjizdeni: 'Sjíždění' };
 // Další známá místa jen pro check-in (ne pro mapu akcí): souřadnice z adresy přes Mapy.com
 // (uloží se do mezipaměti), než se zjistí, platí přibližné (u vstupu do Aqualandu).
@@ -847,11 +850,11 @@ async function knownGuess(coords) {
   let best = null;
   for (const c of cands) {
     const d = distM(coords, c);
-    if (c.label && d <= 1000 && (!best || d < best.d)) best = { label: c.label, d };
+    if (c.label && d <= NEAR_M && (!best || d < best.d)) best = { label: c.label, d };
   }
   return best ? best.label : '';
 }
-// Dnešní (nebo právě probíhající) akce do 1 km od tebe — nabídne se „Jsi na akci?“.
+// Dnešní (nebo právě probíhající) akce do 500 m od tebe — nabídne se „Jsi na akci?“.
 async function eventHere(coords) {
   const now = new Date();
   const today = events.list.filter((e) => !e.isTest && e.place && (sameDay(e.start, now) || (e.start <= now && now < e.end)));
@@ -860,7 +863,7 @@ async function eventHere(coords) {
     const co = placeCoords(ev.place) || await geocode(ev.place).catch(() => null);
     if (!co) continue;
     const d = distM(coords, co);
-    if (d <= 1000 && (!best || d < best.d)) best = { ev, co, d };
+    if (d <= NEAR_M && (!best || d < best.d)) best = { ev, co, d };
   }
   return best;
 }
@@ -1043,7 +1046,7 @@ async function endMyOthers(me, keepId) {
   const now = new Date().toISOString();
   await Promise.all(docs.filter((d) => d.id !== keepId && !d.data().endedAt).map((d) => updateDoc(d.ref, { endedAt: now, endedWhy: 'novy' })));
 }
-// Při otevření aplikace: když jsem dál než 1 km od místa posledního check-inu, check-in skončí.
+// Při otevření aplikace: když jsem dál než 500 m od místa posledního check-inu, check-in skončí.
 let lastCheck = 0;
 export async function checkMyCheckin() {
   if (Date.now() - lastCheck < 3 * 60 * 1000) return;
@@ -1057,7 +1060,7 @@ export async function checkMyCheckin() {
     if (Date.now() - (toDate(c.at)?.getTime() || 0) > MAX_ACTIVE) return;
     const pos = await getPos(120000);
     if (!pos) return;
-    if (distM(pos, { lat: +c.lat, lng: +c.lng }) > 1000) await updateDoc(c.ref, { endedAt: new Date().toISOString(), endedWhy: 'pryc' });
+    if (distM(pos, { lat: +c.lat, lng: +c.lng }) > NEAR_M) await updateDoc(c.ref, { endedAt: new Date().toISOString(), endedWhy: 'pryc' });
   } catch (e) { console.error('Aktuálnost check-inu:', e); }
 }
 
@@ -1201,7 +1204,7 @@ export function offerCheckinCard(label, onYes, onNo) {
 const AT = { 'Bouda': 'na Boudě', 'Funibrouk': 'na Funibrouku', 'Hastrman': 'u Hastrmana', 'Sjíždění': 'na Sjíždění', 'Vila Moravia, Pasohlávky': 've Vile Moravia' };
 const atPlace = (l) => AT[l] || 'na místě ' + l;
 
-// Při otevření aplikace (a návratu do ní): když jsi do 1 km od známého místa a nemáš tam
+// Při otevření aplikace (a návratu do ní): když jsi do 500 m od známého místa a nemáš tam
 // aktuální check-in, nabídne se. „Teď ne“ i odeslání ji u daného místa schová do dalšího dne.
 // Polohu zjišťuje jen s už uděleným povolením (nikdy kvůli tomu neotevře dotaz na polohu).
 let offerAt = 0;
@@ -1227,7 +1230,7 @@ export async function maybeOfferCheckin(force = false) {
     if (!label) {
       if (force) {
         const near = Object.entries(KNOWN_PLACES).map(([k, v]) => { const [lat, lng] = v.split(',').map(Number); return { l: KNOWN_LABELS[k], d: distM(pos, { lat, lng }) }; }).sort((a, b) => a.d - b.d)[0];
-        toast(`Nejsi do 1 km od známého místa — nejblíž je ${near.l} (${near.d < 10000 ? (near.d / 1000).toFixed(1).replace('.', ',') : Math.round(near.d / 1000)} km).`);
+        toast(`Nejsi do 500 m od známého místa — nejblíž je ${near.l} (${near.d < 10000 ? (near.d / 1000).toFixed(1).replace('.', ',') : Math.round(near.d / 1000)} km).`);
       }
       return;
     }
@@ -1237,7 +1240,7 @@ export async function maybeOfferCheckin(force = false) {
     const mine = (await myCheckinDocs(me)).map((d) => d.data()).sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
     const c = mine[0];
     if (!force && c && !c.endedAt && Date.now() - (toDate(c.at)?.getTime() || 0) < MAX_ACTIVE
-      && (c.lat == null || distM(pos, { lat: +c.lat, lng: +c.lng }) <= 1000)) return;
+      && (c.lat == null || distM(pos, { lat: +c.lat, lng: +c.lng }) <= NEAR_M)) return;
     if (document.hidden || document.querySelector('.ciform, .ciofr, .cimapfs, .backdrop')) return;
     const done = () => { try { localStorage.setItem(key, dayKey()); } catch (e) { /* nic */ } };
     offerCheckinCard(label, () => { done(); newCheckin(); }, done);
@@ -1245,7 +1248,7 @@ export async function maybeOfferCheckin(force = false) {
 }
 
 // ---------- Automatická účast na probíhající akci ----------
-// Při check-inu a při otevření aplikace: probíhá akce a jsi do 1 km od jejího místa →
+// Při check-inu a při otevření aplikace: probíhá akce a jsi do 500 m od jejího místa →
 // zapíše se ti účast (Jdu / Zúčastnil se). Bez upozornění ostatním (silent) a u každé
 // akce jen jednou — když si pak dáš „Nejdu“, už se znovu nepřepíše.
 export async function autoAttend(pos) {
@@ -1256,7 +1259,7 @@ export async function autoAttend(pos) {
     const key = 'autoAtt:' + ev.id;
     if (localStorage.getItem(key)) continue;
     const co = placeCoords(ev.place) || await geocode(ev.place).catch(() => null);
-    if (!co || distM(pos, co) > 1000) continue;
+    if (!co || distM(pos, co) > NEAR_M) continue;
     let att = cachedAttendance(ev.id);
     if (!att) att = await loadAttendance(ev).catch(() => null);
     try { localStorage.setItem(key, '1'); } catch (e) { /* nic */ }

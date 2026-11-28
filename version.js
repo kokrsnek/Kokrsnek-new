@@ -6,7 +6,8 @@ export const CHANGELOG = [
     version: '2.26',
     date: '28. 11. 2026',
     items: [
-      'Automatická účast: když uděláš check-in nebo otevřeš aplikaci, zrovna probíhá akce a jsi do 1 km od jejího místa, zapíše se ti účast. Ostatním kvůli tomu nepřijde upozornění a u každé akce se to stane jen jednou (pak už si to můžeš změnit).'
+      'Všechno „jsi na místě“ se teď počítá do 500 m (předvyplnění místa, nabídka check-inu, Jsi na akci?, konec check-inu po odchodu).',
+      'Automatická účast: když uděláš check-in nebo otevřeš aplikaci, zrovna probíhá akce a jsi do 500 m od jejího místa, zapíše se ti účast. Ostatním kvůli tomu nepřijde upozornění a u každé akce se to stane jen jednou (pak už si to můžeš změnit).'
     ]
   },
   {
