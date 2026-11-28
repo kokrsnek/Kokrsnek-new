@@ -663,8 +663,9 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 .mmeta .pinic{display:inline-flex;vertical-align:-1px;color:var(--accent-text)}
 
 /* 1.47/1.50 — odznaky: čekající žádosti na ozubeném kole, nová alba na záložce Fotky */
-.gearbtn{position:relative}
-html[data-pending] .gearbtn::after{content:var(--pending-n,"!");position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg,#1c1c21)}
+.tabbar .plus,.plusmenu [data-a="parta"] .ic{position:relative}
+/* odznak čekajících žádostí (správce): na tlačítku + a u položky Parta a nastavení */
+html[data-pending] .tabbar .plus:not(.open)::after,html[data-pending] .plusmenu [data-a="parta"] .ic::after{content:var(--pending-n,"!");position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg,#1c1c21)}
 .tabbar a[href="#/fotky"]{position:relative}
 html[data-newalbums] .tabbar a[href="#/fotky"]::after{content:var(--newalbums-n,"!");position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--coral,#e5484d);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bar,#1c1c21)}
 

@@ -182,7 +182,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
-// Správce: odznak s počtem čekajících žádostí na záložce Parta.
+// Správce: odznak s počtem čekajících žádostí na tlačítku + a u položky Parta a nastavení.
 function watchPendingMembers() {
   if (!isAdmin()) return;
   onSnapshot(query(collection(db, 'v2_members'), where('status', '==', 'pending')), (s) => {

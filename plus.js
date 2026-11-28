@@ -30,7 +30,8 @@ function openMenu() {
     ${adm ? `<button role="menuitem" data-a="akce"><span class="ic" style="background:#2F7A56">${icon('calendar', 24)}</span><span><b>Přidat akci</b><span class="s">nová akce pro partu</span></span></button>` : ''}
     <button role="menuitem" data-a="zprava"><span class="ic" style="background:#C08A2E">${icon('chat', 24)}</span><span><b>Zpráva v chatu</b><span class="s">napiš partě nebo jen někomu</span></span></button>
     <button role="menuitem" data-a="checkin"><span class="ic" style="background:#E2664F">${icon('pin', 24)}</span><span><b>Check-in</b><span class="s">dej partě vědět, kde jsi</span></span></button>
-    ${adm ? `<button role="menuitem" data-a="album"><span class="ic" style="background:#5B6CB8">${icon('photo', 24)}</span><span><b>Přidat fotoalbum</b><span class="s">odkaz na fotky k proběhlé akci</span></span></button>` : ''}`;
+    ${adm ? `<button role="menuitem" data-a="album"><span class="ic" style="background:#5B6CB8">${icon('photo', 24)}</span><span><b>Přidat fotoalbum</b><span class="s">odkaz na fotky k proběhlé akci</span></span></button>` : ''}
+    <button role="menuitem" data-a="parta"><span class="ic" style="background:#6B6F76">${icon('gear', 24)}</span><span><b>Parta a nastavení</b><span class="s">členové, vzhled, oznámení</span></span></button>`;
   m.onclick = (e) => {
     const b = e.target.closest('[data-a]');
     if (!b) return;
@@ -38,6 +39,7 @@ function openMenu() {
     if (b.dataset.a === 'akce') location.hash = '#/nova';
     else if (b.dataset.a === 'zprava') chatFlow();
     else if (b.dataset.a === 'checkin') { if (location.hash.startsWith('#/kde')) newCheckin(); else location.hash = '#/kde/novy'; }
+    else if (b.dataset.a === 'parta') location.hash = '#/parta';
     else albumFlow();
   };
   document.body.append(bd, m);

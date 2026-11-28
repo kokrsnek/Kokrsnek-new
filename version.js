@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.15',
+    date: '28. 11. 2026',
+    items: [
+      'Ozubené kolečko zmizelo z hlavičky Akcí – Parta a nastavení je teď poslední položkou v nabídce pod tlačítkem +, ve všech vzhledech.',
+      'Správce vidí počet čekajících žádostí o členství přímo na tlačítku + a u položky Parta a nastavení.'
+    ]
+  },
+  {
     version: '2.14',
     date: '28. 11. 2026',
     items: [

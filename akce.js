@@ -28,7 +28,6 @@ export function render(root, { tab }) {
       <div><div class="brand">KoKrŠNeK</div><div class="sub">${esc(DAYS_SHORT[today.getDay()] + ' ' + fmtLongDate(today).replace(/^\S+ /, ''))}${nd ? ' – ' + esc(nd) : ''}</div></div>
       <div class="icons">
         <a class="ibtn" href="#/kalendar" aria-label="Kalendář">${icon('calendarGrid')}</a>
-        <a class="ibtn gearbtn" href="#/parta" aria-label="Parta a nastavení">${icon('gear')}</a>
       </div>
     </div>
     <div class="pullind" data-pull aria-hidden="true"><div class="pullpill">${icon('search', 18)}<span>Hledat akci nebo místo</span></div><div class="pulltxt" data-pulltxt>↓ Táhni dál</div></div>
