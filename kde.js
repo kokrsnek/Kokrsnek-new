@@ -1199,3 +1199,34 @@ export function offerCheckinCard(label, onYes, onNo) {
 const AT = { 'Bouda': 'na Boudě', 'Funibrouk': 'na Funibrouku', 'Hastrman': 'u Hastrmana', 'Sjíždění': 'na Sjíždění', 'Vila Moravia, Pasohlávky': 've Vile Moravia' };
 const atPlace = (l) => AT[l] || 'na místě ' + l;
 
+// Při otevření aplikace (a návratu do ní): když jsi do 1 km od známého místa a nemáš tam
+// aktuální check-in, nabídne se. „Teď ne“ i odeslání ji u daného místa schová do dalšího dne.
+// Polohu zjišťuje jen s už uděleným povolením (nikdy kvůli tomu neotevře dotaz na polohu).
+let offerAt = 0;
+const dayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+export async function maybeOfferCheckin() {
+  if (!LIVE || Date.now() - offerAt < 2 * 60 * 1000) return;
+  const me = myName();
+  if (!me || document.hidden) return;
+  offerAt = Date.now();
+  try {
+    if (!navigator.permissions || !navigator.geolocation) return;
+    const perm = await navigator.permissions.query({ name: 'geolocation' }).catch(() => null);
+    if (!perm || perm.state !== 'granted') return;
+    const pos = await getPos(120000);
+    if (!pos) return;
+    const label = await knownGuess(pos);
+    if (!label) return;
+    const key = 'ciOffer:' + label;
+    if (localStorage.getItem(key) === dayKey()) return;
+    // už tam mám aktuální check-in?
+    const mine = (await myCheckinDocs(me)).map((d) => d.data()).sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
+    const c = mine[0];
+    if (c && !c.endedAt && Date.now() - (toDate(c.at)?.getTime() || 0) < MAX_ACTIVE
+      && (c.lat == null || distM(pos, { lat: +c.lat, lng: +c.lng }) <= 1000)) return;
+    if (document.hidden || document.querySelector('.ciform, .ciofr, .cimapfs, .backdrop')) return;
+    const done = () => { try { localStorage.setItem(key, dayKey()); } catch (e) { /* nic */ } };
+    offerCheckinCard(label, () => { done(); newCheckin(); }, done);
+  } catch (e) { console.error('Nabídka check-inu:', e); }
+}
+

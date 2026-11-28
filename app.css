@@ -1062,3 +1062,12 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .ciseen .faces .face{width:20px;height:20px;font-size:10px}
 .cidseen{color:var(--muted)}
 .cidseen>svg{flex:0 0 auto}
+
+/* nabídka check-inu: vlny ze špendlíku (varianta B) */
+.ciofr-i{position:relative;--ring:var(--accent)}
+.ciofr-i::before,.ciofr-i::after{content:'';position:absolute;inset:0;border-radius:inherit;border:2px solid var(--ring);animation:ciRing 2s ease-out infinite;pointer-events:none}
+.ciofr-i::after{animation-delay:1s}
+.ciofr-i svg{animation:ciBeat 2s ease-in-out infinite}
+@keyframes ciRing{from{transform:scale(1);opacity:.85}to{transform:scale(2.1);opacity:0}}
+@keyframes ciBeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.ciofr-i::before,.ciofr-i::after,.ciofr-i svg{animation:none}.ciofr-i::before,.ciofr-i::after{display:none}}

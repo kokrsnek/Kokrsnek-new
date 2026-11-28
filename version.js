@@ -6,7 +6,8 @@ export const CHANGELOG = [
     version: '2.22',
     date: '28. 11. 2026',
     items: [
-      'U check-inu je vidět, kdo si ho už zobrazil (ikonka oka a obličeje) – ve Feedu i v detailu. Zobrazení se počítá, když je karta chvilku vidět nebo když check-in otevřeš.'
+      'U check-inu je vidět, kdo si ho už zobrazil (ikonka oka a obličeje) – ve Feedu i v detailu. Zobrazení se počítá, když je karta chvilku vidět nebo když check-in otevřeš.',
+      'Když otevřeš aplikaci do 1 km od známého místa (Bouda, Funibrouk, Hastrman, Sjíždění, Vila Moravia) a nemáš tam aktuální check-in, vyjede dole karta „Jsi na Boudě?“ s pulzujícím špendlíkem. Check-in ji otevře rovnou s místem, „Teď ne“ ji u toho místa schová do zítřka.'
     ]
   },
   {
