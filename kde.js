@@ -783,21 +783,32 @@ export function newCheckin() {
     const [nb, here] = await Promise.all([coords ? nearby(coords) : { list: [], guess: '' }, coords ? eventHere(coords) : null]);
     const favs = await favP;
     if (cancelled) return;
-    renderForm(scr, me, coords, nb.list, knownGuess(coords), favs, here);
+    const guess = await knownGuess(coords);
+    if (cancelled) return;
+    renderForm(scr, me, coords, nb.list, guess, favs, here);
   })();
 }
 
 // Předvyplnění místa: jen známá místa party, když jsi do 1 km od nich (jinak pole zůstane prázdné).
 const KNOWN_LABELS = { bouda: 'Bouda', funibrouk: 'Funibrouk', hastrman: 'Hastrman', sjizdeni: 'Sjíždění' };
-function knownGuess(coords) {
+// Další známá místa jen pro check-in (ne pro mapu akcí): souřadnice z adresy přes Mapy.com
+// (uloží se do mezipaměti), než se zjistí, platí přibližné (u vstupu do Aqualandu).
+const CI_EXTRA = [{ label: 'Vila Moravia, Pasohlávky', addr: 'Pasohlávky 50E, 691 22 Pasohlávky', approx: { lat: 48.9041, lng: 16.5751 } }];
+async function knownGuess(coords) {
   if (!coords) return '';
-  let best = null;
-  for (const [k, v] of Object.entries(KNOWN_PLACES)) {
-    const [lat, lng] = v.split(',').map(Number);
-    const d = distM(coords, { lat, lng });
-    if (d <= 1000 && (!best || d < best.d)) best = { k, d };
+  const cands = Object.entries(KNOWN_PLACES).map(([k, v]) => { const [lat, lng] = v.split(',').map(Number); return { label: KNOWN_LABELS[k], lat, lng }; });
+  for (const x of CI_EXTRA) {
+    if (distM(coords, x.approx) > 5000) continue;   // daleko — není co dohledávat
+    const g = await Promise.race([geocode(x.addr).catch(() => null), new Promise((r) => setTimeout(() => r(null), 2500))]);
+    // nesmyslný výsledek (dál než 3 km od přibližné polohy) se nepoužije
+    cands.push({ label: x.label, ...(g && distM(g, x.approx) <= 3000 ? g : x.approx) });
   }
-  return best ? KNOWN_LABELS[best.k] || '' : '';
+  let best = null;
+  for (const c of cands) {
+    const d = distM(coords, c);
+    if (c.label && d <= 1000 && (!best || d < best.d)) best = { label: c.label, d };
+  }
+  return best ? best.label : '';
 }
 // Dnešní (nebo právě probíhající) akce do 1 km od tebe — nabídne se „Jsi na akci?“.
 async function eventHere(coords) {
