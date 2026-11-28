@@ -1023,3 +1023,11 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .civis{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .civis svg{vertical-align:-1px}
 .civisrow{display:flex;align-items:center;gap:6px;margin-top:10px;padding:7px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--ink);font-size:13px}
+
+/* 2.19 — křížek v poli s místem u check-inu */
+.ciplw{position:relative;margin-bottom:16px}
+.ciplw+.civissel{margin-top:-6px}
+.ciformin .ciplw .input{margin-bottom:0}
+.ciplw .input{padding-right:48px}
+.ciclr{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:0;background:var(--line);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
+.ciclr[hidden],[data-sugbox][hidden]{display:none}

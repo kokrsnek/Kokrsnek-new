@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.19',
+    date: '28. 11. 2026',
+    items: [
+      'Check-in: po vyplnění místa zmizí Tvoje místa i Místa v okolí, aby byl formulář přehlednější. Křížkem na konci pole místo vymažeš a návrhy se vrátí.'
+    ]
+  },
+  {
     version: '2.18',
     date: '28. 11. 2026',
     items: [

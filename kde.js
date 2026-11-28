@@ -814,13 +814,16 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
       <small>Udělá check-in i „Jsem na místě“ u akce. Když nemáš „Jdu“, přidá ho.</small>
     </div>` : ''}
     <label class="cilbl" for="ci-place">Kde jsi</label>
-    <input id="ci-place" class="input" data-place placeholder="Napiš, kde jsi…" maxlength="80" value="${esc(guess)}">
+    <div class="ciplw"><input id="ci-place" class="input" data-place placeholder="Napiš, kde jsi…" maxlength="80" value="${esc(guess)}">
+      <button type="button" class="ciclr" data-clr aria-label="Vymazat místo" ${guess ? '' : 'hidden'}>${icon('close', 16)}</button></div>
     ${LIVE ? `<button type="button" class="civissel" data-vis ${guess ? '' : 'hidden'}><span class="ic" data-visi>${icon('people', 18)}</span><span class="t">Kdo uvidí</span><b data-visl>Celá parta</b>${icon('next', 16)}</button>` : ''}
+    <div data-sugbox ${guess ? 'hidden' : ''}>
     ${favs.length ? `<div class="cilbl">Tvoje místa</div><div class="chips cifav">${favs.map((n) => `<button type="button" class="chip" data-fav="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
     ${sugs.length ? `<div class="cilbl">Místa v okolí</div>
       <div class="cisugs">${first.map((s, i) => sugRow(s, i)).join('')}</div>
       ${more.length ? `<div class="cisugs" data-more hidden>${more.map((s, i) => sugRow(s, i + 3)).join('')}</div>
         <button type="button" class="cimore" data-morebtn>Další místa v okolí (${more.length})</button>` : ''}` : ''}
+    </div>
     ${!coords ? '<div class="note" style="text-align:left;margin-bottom:12px">Polohu se nepodařilo zjistit — místo napiš ručně.</div>' : ''}
     ${trChips('')}
     <label class="cilbl" for="ci-note">Poznámka (nepovinné)</label>
@@ -858,7 +861,14 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   let vis = { k: 'all', names: [], label: 'Celá parta' };
   const vb = $('[data-vis]');
   // řádek se ukáže, až je v poli místo (napsané, vybrané nebo předvyplněné)
-  const showVis = () => { if (vb) vb.hidden = !input.value.trim(); };
+  // s vyplněným místem zmizí návrhy (Tvoje místa, Místa v okolí) a objeví se křížek na vymazání
+  const showVis = () => {
+    const has = !!input.value.trim();
+    if (vb) vb.hidden = !has;
+    $('[data-sugbox]').hidden = has;
+    $('[data-clr]').hidden = !has;
+  };
+  $('[data-clr]').onclick = () => { input.value = ''; picked = null; mark(null); showVis(); input.focus(); };
   input.addEventListener('input', showVis);
   scr.addEventListener('click', (e) => { if (e.target.closest('[data-fav], .cisug')) setTimeout(showVis, 0); });
   if (vb) vb.onclick = async () => {
