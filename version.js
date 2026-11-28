@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.20',
+    date: '28. 11. 2026',
+    items: [
+      'Check-in: dole ve formuláři je náhled mapy s polohou. Klepnutím se otevře mapa přes celou obrazovku – posuneš ji pod špendlík a potvrdíš „Použít tuto polohu“ (tlačítkem Moje poloha se vrátíš zpět). Bez zjištěné polohy jde místo umístit ručně.'
+    ]
+  },
+  {
     version: '2.19',
     date: '28. 11. 2026',
     items: [

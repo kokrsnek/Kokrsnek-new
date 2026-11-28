@@ -1031,3 +1031,14 @@ html[data-bkde] .tabbar a[href="#/kde"]::after,html[data-bakce] .tabbar a[href="
 .ciplw .input{padding-right:48px}
 .ciclr{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:0;background:var(--line);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
 .ciclr[hidden],[data-sugbox][hidden]{display:none}
+
+/* 2.20 — náhled a výběr polohy check-inu */
+.cimapsel{margin:4px 0 14px}
+.cimapbtn{position:relative;display:block;width:100%;padding:0;border:0;background:none;border-radius:12px;overflow:hidden}
+.cimapbtn .cimap{width:100%!important}
+.cimapbtn .cimpin{width:18px;height:18px;margin:-9px 0 0 -9px}
+.cimaphint{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:99px;background:var(--card);color:var(--ink);font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.cipick .pickpin{position:absolute;left:50%;top:50%;z-index:650;width:30px;height:42px;margin:-42px 0 0 -15px;pointer-events:none;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 42'%3E%3Cpath d='M15 1C7.3 1 1 7.2 1 14.8 1 25 15 41 15 41s14-16 14-26.2C29 7.2 22.7 1 15 1z' fill='%23E5484D' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='15' cy='15' r='5' fill='%23fff'/%3E%3C/svg%3E");filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.cipick .pickbar{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 48px);z-index:700;display:flex;gap:10px;max-width:536px;margin:0 auto}
+.cipick .pickbar .btn{flex:1;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.cipick .pickbar .btn:not(.primary){flex:0 0 auto;background:var(--card)}

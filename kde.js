@@ -71,6 +71,48 @@ function miniMap(lat, lng, w = 132, h = 76, z = 15) {
       tiles.push(`<img src="https://tile.openstreetmap.org/${Z}/${tx}/${ty}.png" alt="" loading="lazy" style="left:${Math.round(tx * 128 - left)}px;top:${Math.round(ty * 128 - top)}px">`);
   return `<span class="cimap" style="width:${w}px;height:${h}px">${tiles.join('')}<i class="cimpin"></i><small>© OSM</small></span>`;
 }
+// Dlaždice Mapy.com (nebo OSM) + povinné logo a copyright.
+function addMapTiles(L, m, box) {
+  const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
+  L.tileLayer(MAPY_API_KEY ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}` : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, tileSize: 256 }).addTo(m);
+  box.insertAdjacentHTML('beforeend', MAPY_API_KEY
+    ? '<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a><a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>'
+    : '<span class="mapcopy">© OpenStreetMap</span>');
+}
+// Výběr polohy check-inu: mapa přes celou obrazovku, špendlík pevně uprostřed, posouvá se mapa.
+// Vrací { lat, lng } nebo null (zavřeno křížkem / gestem zpět).
+function pickOnMap(start, home) {
+  return new Promise(async (resolve) => {
+    let L;
+    try { L = await loadLeaflet(); } catch (e) { toast('Mapu se nepodařilo načíst.'); return resolve(null); }
+    const fs = document.createElement('div');
+    fs.className = 'cimapfs cipick';
+    fs.innerHTML = `<div class="fsmap"></div><i class="pickpin" aria-hidden="true"></i>
+      <div class="fstop"><button class="ibtn" data-x aria-label="Zavřít">${icon('close', 22)}</button><div class="fst">Posuň mapu pod špendlík</div></div>
+      <div class="pickbar">${home ? `<button class="btn" data-home>${icon('pin', 18)} Moje poloha</button>` : ''}<button class="btn primary" data-ok>Použít tuto polohu</button></div>`;
+    document.body.appendChild(fs);
+    const box = fs.querySelector('.fsmap');
+    const m = L.map(box, { zoomControl: false, attributionControl: false }).setView([start.lat, start.lng], start.z || 17);
+    addMapTiles(L, m, box);
+    setTimeout(() => m.invalidateSize(), 60);
+    let done = false;
+    const finish = (v, fromPop) => {
+      if (done) return; done = true;
+      removeEventListener('popstate', onPop);
+      fs.classList.add('out');
+      setTimeout(() => { m.remove(); fs.remove(); }, 200);
+      if (!fromPop) history.back();
+      resolve(v);
+    };
+    const onPop = () => finish(null, true);
+    history.pushState({ kdePick: 1 }, '');
+    addEventListener('popstate', onPop);
+    fs.querySelector('[data-x]').onclick = () => finish(null);
+    fs.querySelector('[data-ok]').onclick = () => { const c = m.getCenter(); finish({ lat: +c.lat.toFixed(6), lng: +c.lng.toFixed(6) }); };
+    const h = fs.querySelector('[data-home]');
+    if (h) h.onclick = () => m.setView([home.lat, home.lng], Math.max(m.getZoom(), 16));
+  });
+}
 const gplace = (c) => `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
 const gmaps = (c) => c.lat != null ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.place || '')}`;
 
@@ -391,14 +433,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     setTimeout(() => map.invalidateSize(), 50);
   }
 
-  // Dlaždice Mapy.com (nebo OSM) + povinné logo a copyright.
-  function addTiles(L, m, box) {
-    const size = window.devicePixelRatio > 1 ? '256@2x' : '256';
-    L.tileLayer(MAPY_API_KEY ? `https://api.mapy.com/v1/maptiles/outdoor/${size}/{z}/{x}/{y}?apikey=${encodeURIComponent(MAPY_API_KEY)}` : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, tileSize: 256 }).addTo(m);
-    box.insertAdjacentHTML('beforeend', MAPY_API_KEY
-      ? '<a class="mapylogo" href="https://mapy.com/" target="_blank" rel="noopener"><img src="https://api.mapy.com/img/api/logo.svg" alt="Mapy.com"></a><a class="mapcopy" href="https://api.mapy.com/copyright" target="_blank" rel="noopener">© Seznam.cz a.s. a další</a>'
-      : '<span class="mapcopy">© OpenStreetMap</span>');
-  }
+  const addTiles = addMapTiles;
   // Mapa přes celou obrazovku: posouvání, přiblížení, klepnutí na člověka ukáže check-in.
   // Zavře se křížkem nebo gestem zpět.
   let mapPts = [];
@@ -830,6 +865,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
     <input type="file" accept="image/*" data-file hidden>
     <div class="ciphrow" data-phrow></div>
+    <div class="cimapsel" data-mapsel></div>
     ${!LIVE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
   </div>
   <div class="cibtns"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Odeslat</button></div>`;
@@ -857,6 +893,20 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   const close = () => scr.remove();
   $('[data-x]').onclick = close;
   const getTr = bindTr(scr);
+  // Náhled polohy pod formulářem; klepnutím se otevře mapa a špendlík jde posunout.
+  let pos = coords ? { lat: coords.lat, lng: coords.lng } : null, moved = false;
+  const drawMapSel = () => {
+    const w = Math.max(200, Math.min(innerWidth, 560) - 40);
+    $('[data-mapsel]').innerHTML = pos
+      ? `<div class="cilbl">Poloha${moved ? ' · upravená' : ''}</div><button type="button" class="cimapbtn" data-mapopen aria-label="Upravit polohu na mapě">${miniMap(pos.lat, pos.lng, w, 150, 16)}<span class="cimaphint">${icon('edit', 14)} Posunout špendlík</span></button>`
+      : `<button type="button" class="btn" data-mapopen>${icon('pin', 18)} Umístit na mapě</button>`;
+  };
+  drawMapSel();
+  $('[data-mapsel]').addEventListener('click', async (e) => {
+    if (!e.target.closest('[data-mapopen]')) return;
+    const r = await pickOnMap(pos || { lat: 49.43, lng: 16.62, z: 12 }, coords);
+    if (r) { pos = r; moved = !coords || Math.abs(r.lat - coords.lat) > 1e-5 || Math.abs(r.lng - coords.lng) > 1e-5; drawMapSel(); }
+  });
   // Kdo uvidí: vždy začíná „Celá parta“ (nepamatuje se), změna jen pro tenhle check-in.
   let vis = { k: 'all', names: [], label: 'Celá parta' };
   const vb = $('[data-vis]');
@@ -887,7 +937,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     const ev = here.ev;
     try {
       const d = { user: me, place: shortPlace(ev.place) || ev.title, note: $('[data-note]').value.trim(),
-        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '', transport: getTr() };
+        lat: pos ? pos.lat : coords.lat, lng: pos ? pos.lng : coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '', transport: getTr() };
       const lim = vis.k !== 'all';
       if (lim) { d.vis = vis.k; d.visibleTo = vis.k === 'me' ? [me] : [me, ...vis.names.filter((n) => n !== me)]; if (vis.group) d.visGroup = vis.group; }
       const ref = await addDoc(collection(db, lim ? LIMC : 'placeCheckins'), d);
@@ -907,7 +957,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     e.target.disabled = true; e.target.textContent = 'Ukládám…';
     const gp = picked && picked.name === place ? picked : null;
     const data = { user: me, place, note: $('[data-note]').value.trim(),
-      lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, gPlaceId: gp ? gp.id || '' : '',
+      lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, gPlaceId: gp && !moved ? gp.id || '' : '',
       at: new Date().toISOString(), photo, photoPath: '', via: 'v2', transport: getTr() };
     const limited = LIVE && vis.k !== 'all';
     if (limited) { data.vis = vis.k; data.visibleTo = vis.k === 'me' ? [me] : [me, ...vis.names.filter((n) => n !== me)]; if (vis.group) data.visGroup = vis.group; }
