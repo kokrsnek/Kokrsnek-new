@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.16',
+    date: '28. 11. 2026',
+    items: [
+      'Hlavička Akcí: datum a svátek jsou vedle názvu KoKrŠNeK a pod ním heslo „tak život chode“.'
+    ]
+  },
+  {
     version: '2.15',
     date: '28. 11. 2026',
     items: [

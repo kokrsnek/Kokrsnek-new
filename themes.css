@@ -764,3 +764,8 @@ html[data-theme="hardware"],[data-theme="hardware"] body{background-color:#0F5C3
 /* Komiks: výbuch má clip-path, odznak by ořízl — kreslí se proto na liště vedle něj */
 html[data-pending][data-theme="komiks"] .tabbar .plus::after{content:none}
 html[data-pending][data-theme="komiks"] .tabbar:not(:has(.plus.open))::after{content:var(--pending-n,"!");position:absolute;z-index:3;left:50%;margin-left:16px;top:-30px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#E8322B;color:#fff;font-size:12px;font-weight:800;line-height:16px;text-align:center;border:2px solid #111}
+
+/* 2.16 — datum a svátek vedle názvu: v úzkých hlavičkách (Značení, Zápisník) se datum zalomí místo zkrácení */
+[data-theme="znaceni"] .bdate,[data-theme="zapisnik"] .bdate{white-space:normal;line-height:1.2}
+[data-theme="znaceni"] .bdate{font-family:var(--display);color:#444;border-left-color:#141414}
+[data-theme="znaceni"] .bdate span,[data-theme="zapisnik"] .bdate span{overflow:visible}
