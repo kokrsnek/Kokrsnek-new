@@ -9,7 +9,7 @@ import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
 import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, getDoc, setDoc, writeBatch, callFunction } from './firebase.js';
 import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
 import { loadLeaflet, geocode } from './map.js';
-import { placeCoords } from './util.js';
+import { placeCoords, KNOWN_PLACES } from './util.js';
 import { pullSearch } from './pullsearch.js';
 import { PARTY_NAMES, gx } from './config.js';
 
@@ -755,22 +755,13 @@ async function favoritePlaces(me) {
   return [...map.values()].sort((a, b) => (b.count - a.count) || (b.last > a.last ? 1 : -1)).slice(0, 6).map((e) => e.name);
 }
 
-// Místa v okolí: stejná serverová funkce jako stará aplikace (Google Places),
-// když nic nevrátí, aspoň odhad adresy z Mapy.com.
+// Místa v okolí: stejná serverová funkce jako stará aplikace (Google Places).
 async function nearby(c) {
   try {
     const r = await callFunction('nearbyPlaces', { lat: c.lat, lng: c.lng });
     if (r && r.results && r.results.length) return { list: r.results, guess: '' };
   } catch (e) { console.error('Místa v okolí:', e); }
-  let guess = '';
-  if (MAPY_API_KEY) {
-    try {
-      const res = await fetch(`https://api.mapy.com/v1/rgeocode?lon=${c.lng}&lat=${c.lat}&lang=cs&apikey=${encodeURIComponent(MAPY_API_KEY)}`);
-      const j = await res.json();
-      guess = (j.items && j.items[0] && (j.items[0].name || j.items[0].label)) || '';
-    } catch (e) { /* bez odhadu */ }
-  }
-  return { list: [], guess };
+  return { list: [], guess: '' };
 }
 
 export function newCheckin() {
@@ -792,10 +783,22 @@ export function newCheckin() {
     const [nb, here] = await Promise.all([coords ? nearby(coords) : { list: [], guess: '' }, coords ? eventHere(coords) : null]);
     const favs = await favP;
     if (cancelled) return;
-    renderForm(scr, me, coords, nb.list, nb.guess, favs, here);
+    renderForm(scr, me, coords, nb.list, knownGuess(coords), favs, here);
   })();
 }
 
+// Předvyplnění místa: jen známá místa party, když jsi do 1 km od nich (jinak pole zůstane prázdné).
+const KNOWN_LABELS = { bouda: 'Bouda', funibrouk: 'Funibrouk', hastrman: 'Hastrman', sjizdeni: 'Sjíždění' };
+function knownGuess(coords) {
+  if (!coords) return '';
+  let best = null;
+  for (const [k, v] of Object.entries(KNOWN_PLACES)) {
+    const [lat, lng] = v.split(',').map(Number);
+    const d = distM(coords, { lat, lng });
+    if (d <= 1000 && (!best || d < best.d)) best = { k, d };
+  }
+  return best ? KNOWN_LABELS[best.k] || '' : '';
+}
 // Dnešní (nebo právě probíhající) akce do 1 km od tebe — nabídne se „Jsi na akci?“.
 async function eventHere(coords) {
   const now = new Date();

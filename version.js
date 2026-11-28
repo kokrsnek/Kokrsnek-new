@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.21',
+    date: '28. 11. 2026',
+    items: [
+      'Check-in předvyplní místo jen u známých míst party (Bouda, Funibrouk, Hastrman, Sjíždění), když jsi do 1 km od nich. Jinde zůstane pole prázdné a nabídnou se Tvoje místa a Místa v okolí.'
+    ]
+  },
+  {
     version: '2.20',
     date: '28. 11. 2026',
     items: [
