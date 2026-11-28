@@ -628,3 +628,31 @@ html[data-theme="hardware"],[data-theme="hardware"] body{background-color:#0F5C3
 [data-theme="hardware"] .tabbar a.on{color:#39FF6A}
 [data-theme="hardware"] .tabbar a.on::before{box-shadow:0 0 0 1px #000,0 0 8px #39FF6A}
 [data-theme="hardware"] .tabbar .plus{border-radius:6px;width:52px;height:46px;background:linear-gradient(#b02a20,#6d140f);border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 3px 0 #000}
+
+/* 2.12 — nabídka pod „+“ ve vzhledech Značení a Hardware */
+/* Značení: tabule s černým rámem, ikony = turistické značky KČT */
+[data-theme="znaceni"] .plusmenu{background:#fff;border:2.5px solid #141414;border-radius:3px;box-shadow:0 4px 0 rgba(0,0,0,.25);padding:6px}
+[data-theme="znaceni"] .plusmenu button{border-radius:2px;border-bottom:1.5px solid #D8D4C8}
+[data-theme="znaceni"] .plusmenu button:last-child{border-bottom:none}
+[data-theme="znaceni"] .plusmenu b{font-family:var(--display);font-weight:800;font-size:19px}
+[data-theme="znaceni"] .plusmenu span.s{font-family:var(--display);font-size:14px;color:#444}
+[data-theme="znaceni"] .plusmenu .ic{width:54px;height:38px;border-radius:1px;box-shadow:0 0 0 1.5px #141414;--k:var(--kct-r);background:linear-gradient(#fff 0 33.3%,var(--k) 33.3% 66.6%,#fff 66.6%)!important}
+[data-theme="znaceni"] .plusmenu .ic svg{display:none}
+[data-theme="znaceni"] .plusmenu [data-a="zprava"] .ic{--k:var(--kct-b)}
+[data-theme="znaceni"] .plusmenu [data-a="checkin"] .ic{width:42px;height:42px;margin:0 6px;background:radial-gradient(circle,var(--kct-r) 0 11px,#fff 11.5px)!important}
+[data-theme="znaceni"] .plusmenu [data-a="album"] .ic{--k:var(--kct-g)}
+[data-theme="znaceni"] .plusmenu-bd{background:rgba(233,230,220,.55)}
+
+/* Hardware: tmavý čip, ikony = malé čipy s pozlacenými nožičkami a svítící ikonou jako LED */
+[data-theme="hardware"] .plusmenu{background:linear-gradient(160deg,#25282b,#17191B);border:1px solid #000;border-radius:6px;box-shadow:0 6px 0 #062c1c,0 16px 40px rgba(0,0,0,.5)}
+[data-theme="hardware"] .plusmenu button{border-radius:4px;color:#EDEBDC}
+[data-theme="hardware"] .plusmenu button:active{background:#2A2E31}
+[data-theme="hardware"] .plusmenu b{font-family:var(--display);font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:#fff}
+[data-theme="hardware"] .plusmenu span.s{font-family:var(--display);font-size:11.5px;color:#9AA0A4}
+[data-theme="hardware"] .plusmenu .ic{position:relative;width:46px;height:46px;margin:0 7px;border-radius:4px;background:#0b0c0d!important;box-shadow:inset 0 0 0 1px #333;color:var(--led2,#39FF6A);--led2:#39FF6A}
+[data-theme="hardware"] .plusmenu .ic::before,[data-theme="hardware"] .plusmenu .ic::after{content:'';position:absolute;top:7px;bottom:7px;width:7px;background:repeating-linear-gradient(#C98A3A 0 4px,transparent 4px 8px)}
+[data-theme="hardware"] .plusmenu .ic::before{left:-7px}[data-theme="hardware"] .plusmenu .ic::after{right:-7px}
+[data-theme="hardware"] .plusmenu .ic svg{filter:drop-shadow(0 0 4px currentColor)}
+[data-theme="hardware"] .plusmenu [data-a="zprava"] .ic{color:#FFB020}
+[data-theme="hardware"] .plusmenu [data-a="checkin"] .ic{color:#FF3B2F}
+[data-theme="hardware"] .plusmenu [data-a="album"] .ic{color:#4DA6FF}

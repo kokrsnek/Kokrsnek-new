@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.12',
+    date: '28. 11. 2026',
+    items: [
+      'Nabídka pod tlačítkem + teď sleduje vzhled: ve Značení je to tabule s turistickými značkami (červená, modrá, koncová a zelená), v Hardwaru čipy s pozlacenými nožičkami a barevně svítícími ikonami.'
+    ]
+  },
+  {
     version: '2.11',
     date: '27. 11. 2026',
     items: [
