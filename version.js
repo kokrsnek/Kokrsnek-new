@@ -3,6 +3,13 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.22',
+    date: '28. 11. 2026',
+    items: [
+      'U check-inu je vidět, kdo si ho už zobrazil (ikonka oka a obličeje) – ve Feedu i v detailu. Zobrazení se počítá, když je karta chvilku vidět nebo když check-in otevřeš.'
+    ]
+  },
+  {
     version: '2.21',
     date: '28. 11. 2026',
     items: [

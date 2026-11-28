@@ -132,7 +132,7 @@ service cloud.firestore {
         && request.resource.data.user == resource.data.user
         && (resource.data.user == myV2Name()
             || request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['coming', 'near', 'nearLoc', 'emojis', 'commentCount']))
+                 .hasOnly(['coming', 'near', 'nearLoc', 'emojis', 'commentCount', 'seenBy']))
         && request.resource.data.visibleTo is list
         && resource.data.user in request.resource.data.visibleTo;
       allow delete: if isV2Approved() && resource.data.user == myV2Name();

@@ -6,7 +6,7 @@ import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.
 import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus, topButton } from './ui.js';
 import { myName, session } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
-import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, getDoc, setDoc, writeBatch, callFunction } from './firebase.js';
+import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, getDoc, setDoc, writeBatch, callFunction, arrayUnion } from './firebase.js';
 import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
 import { loadLeaflet, geocode } from './map.js';
 import { placeCoords, KNOWN_PLACES } from './util.js';
@@ -24,6 +24,21 @@ const LIMC = 'ciLimited';
 // komentáře omezených check-inů jsou v „lcomments“ (mimo skupinové dotazy na comments)
 const comCol = (col) => col === LIMC ? 'lcomments' : 'comments';
 const myLimited = (me) => query(collection(db, LIMC), where('visibleTo', 'array-contains', me));
+// Kdo si check-in zobrazil: pole seenBy (jména, bez autora). Zapisuje se jednou za člověka
+// — ve Feedu, když je karta aspoň 1,2 s z větší části vidět, a při otevření detailu.
+const seenSent = new Set();
+function markSeen(c, me) {
+  if (!c || c._kind === 'ev' || !me || c.user === me || !c._col || c._col === 'v2_checkins') return;
+  if ((c.seenBy || []).includes(me) || seenSent.has(c._col + '/' + c.id)) return;
+  seenSent.add(c._col + '/' + c.id);
+  updateDoc(doc(db, c._col, c.id), { seenBy: arrayUnion(me) }).catch(() => seenSent.delete(c._col + '/' + c.id));
+}
+const seenNames = (c) => (c.seenBy || []).filter((n) => n && n !== c.user);
+const seenRow = (c) => {
+  const s = seenNames(c);
+  if (!s.length) return '';
+  return `<div class="ciseen" title="${esc(s.join(', '))}">${icon('eye', 14)}${faces(s, 6)}<span>${s.length === 1 ? gx(s[0], 'Viděl ', 'Viděla ') + esc(s[0]) : 'Viděli ' + s.length}</span></div>`;
+};
 const visTag = (c, me) => {
   if (c._col !== LIMC) return '';
   const o = (c.visibleTo || []).filter((n) => n !== c.user);
@@ -308,6 +323,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
         <button class="pill" data-act="com">${icon('chat', 14)} ${c.commentCount || (cs ? cs.length : 0) || ''}</button>
         ${mine && w ? `<button class="pill" data-act="edit" aria-label="Upravit">${icon('edit', 14)}</button><button class="pill" data-act="del" aria-label="Smazat">${icon('trash', 14)}</button>` : ''}
       </div>
+      ${seenRow(c)}
       ${open.has(c.id) ? `<div class="cicoms">${cs ? (cs.length ? cs.map((m) => `<div class="com"><span data-profile="${esc(m.user || '')}">${avatar(m.user || '?', 26)}</span><div class="bub"><b style="font-size:12px" data-profile="${esc(m.user || '')}">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub">Zatím bez komentářů.</div>') : spinner()}
         ${w ? `<form class="inrow" data-cform style="margin-top:8px"><input class="input" name="t" placeholder="Komentář" maxlength="300" autocomplete="off"><button class="ibtn" aria-label="Odeslat">${icon('next', 20, 2.4)}</button></form>` : ''}</div>` : ''}
     </div>`;
@@ -358,6 +374,28 @@ export function render(root, { tab = 'feed', openNew = false }) {
       html += card(c);
     }
     body.innerHTML = html + tail;
+    watchSeen();
+  }
+  // Zobrazení ve Feedu: karta aspoň z 60 % vidět 1,2 s (a aplikace v popředí).
+  let seenObs = null;
+  const seenTimers = new Map();
+  function watchSeen() {
+    if (!('IntersectionObserver' in window)) return;
+    if (!seenObs) {
+      seenObs = new IntersectionObserver((ents) => ents.forEach((en) => {
+        const id = en.target.dataset.ci;
+        if (en.isIntersecting && en.intersectionRatio >= 0.6) {
+          if (!seenTimers.has(id)) seenTimers.set(id, setTimeout(() => {
+            seenTimers.delete(id);
+            if (document.hidden || !alive) return;
+            markSeen(all().find((x) => x.id === id), me);
+          }, 1200));
+        } else if (seenTimers.has(id)) { clearTimeout(seenTimers.get(id)); seenTimers.delete(id); }
+      }), { threshold: [0, 0.6] });
+      unsubs.push(() => { seenObs.disconnect(); seenTimers.forEach((t) => clearTimeout(t)); });
+    }
+    seenObs.disconnect();
+    body.querySelectorAll('.ci[data-ci]').forEach((el) => seenObs.observe(el));
   }
 
   body.addEventListener('click', async (e) => {
@@ -677,6 +715,7 @@ export function renderDetail(root, { id }) {
       </div>
       ${coming.length ? `<div class="cidppl">${faces(coming)}<span>${esc(joinNames(coming))} ${coming.length === 1 ? 'přijde' : 'přijdou'}</span></div>` : ''}
       ${near.length ? `<div class="cidppl">${faces(near)}<span>${esc(joinNames(near))} ${near.length === 1 ? 'je' : 'jsou'} poblíž</span></div>` : ''}
+      ${seenNames(c).length ? `<div class="cidppl cidseen">${icon('eye', 16)}${faces(seenNames(c), 8)}<span>${seenNames(c).length === 1 ? gx(seenNames(c)[0], 'Viděl ', 'Viděla ') : 'Viděli '}${esc(joinNames(seenNames(c)))}</span></div>` : ''}
     </div>
     <div class="section-h">Komentáře${coms && coms.length ? ' · ' + coms.length : ''}</div>
     <div class="cidcoms">${coms ? (coms.length ? coms.map((m) => `<div class="com"><span data-profile="${esc(m.user || '')}">${avatar(m.user || '?', 32)}</span><div class="bub"><b style="font-size:12px" data-profile="${esc(m.user || '')}">${esc(m.user || '?')}</b><div>${esc(m.text || '')}</div><div class="ts">${esc(when(m.at))}</div></div></div>`).join('') : '<div class="sub" style="padding:4px 2px 14px">Zatím bez komentářů.</div>') : spinner()}</div>`;
@@ -696,6 +735,7 @@ export function renderDetail(root, { id }) {
       const first = !found;
       found = true;
       c = { id: d.id, _col: col, ...d.data() };
+      markSeen(c, me);
       if (first) {
         // Aktuálnost: novější check-in stejného člověka ho ukončil (stačí zjistit jednou).
         const t = toDate(c.at);
@@ -1137,3 +1177,25 @@ function editCheckin(c) {
   };
   document.body.appendChild(bd);
 }
+
+// ---------- Nabídka check-inu na známém místě (při otevření aplikace) ----------
+// Malá karta nad lištou: „Jsi na Boudě?“ → Check-in / Teď ne.
+export function offerCheckinCard(label, onYes, onNo) {
+  document.querySelector('.ciofr')?.remove();
+  const el = document.createElement('div');
+  el.className = 'ciofr';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Nabídka check-inu');
+  el.innerHTML = `<div class="ciofr-r"><span class="ciofr-i">${icon('pin', 22)}</span>
+    <span class="ciofr-t"><b>Jsi ${esc(atPlace(label))}?</b><small>Dej partě vědět, že tu jsi</small></span></div>
+    <div class="ciofr-b"><button class="btn" data-no>Teď ne</button><button class="btn primary" data-yes>${icon('pin', 16)} Check-in</button></div>`;
+  const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 220); };
+  el.querySelector('[data-no]').onclick = () => { close(); onNo && onNo(); };
+  el.querySelector('[data-yes]').onclick = () => { close(); onYes && onYes(); };
+  document.body.appendChild(el);
+  return el;
+}
+// „na Boudě“, „u Hastrmana“… — jen pro známá místa, jinak „v místě X“.
+const AT = { 'Bouda': 'na Boudě', 'Funibrouk': 'na Funibrouku', 'Hastrman': 'u Hastrmana', 'Sjíždění': 'na Sjíždění', 'Vila Moravia, Pasohlávky': 've Vile Moravia' };
+const atPlace = (l) => AT[l] || 'na místě ' + l;
+

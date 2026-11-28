@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   collection, collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
-  query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, Timestamp
+  query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, Timestamp, arrayUnion
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { firebaseConfig } from './config.js';
 
@@ -49,5 +49,5 @@ export {
   onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut,
   collection, collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
-  query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, Timestamp
+  query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, Timestamp, arrayUnion
 };
