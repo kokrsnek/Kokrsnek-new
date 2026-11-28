@@ -37,7 +37,11 @@ const evLoaded = () => new Promise((res) => { const u = watchEvents((e) => { if 
 async function collect(name) {
   const [sh, place, chat, games, polls, log] = await Promise.all([
     loadShared(),
-    getDocs(query(collection(db, 'placeCheckins'), where('user', '==', name))).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))).catch(() => []),
+    Promise.all([
+      getDocs(query(collection(db, 'placeCheckins'), where('user', '==', name))).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))).catch(() => []),
+      // omezené check-iny tohoto člověka, které smím vidět
+      getDocs(query(collection(db, 'ciLimited'), where('visibleTo', 'array-contains', myName()))).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.user === name)).catch(() => [])
+    ]).then(([a, b]) => [...a, ...b]),
     getDocs(query(collection(db, 'chats', PARTY_THREAD, 'messages'), where('from', '==', name))).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))).catch(() => []),
     getDocs(query(collection(db, 'v2_games'), where('players', 'array-contains', name))).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))).catch(() => []),
     getDocs(collection(db, 'polls')).then((s) => s.docs.map((d) => ({ id: d.id, ...d.data() }))).catch(() => []),

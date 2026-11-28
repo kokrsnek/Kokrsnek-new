@@ -37,10 +37,27 @@ service cloud.firestore {
     }
 
     // Všechno: stará aplikace čte i zapisuje, nová (zkušební provoz) jen čte.
+    // Výjimka: omezené check-iny (ciLimited) a uložené skupiny (ciGroups) mají vlastní
+    // pravidla níže — obecné „čti všechno“ na ně nesmí platit, jinak by je viděl každý.
+    function isPrivateCol(col) {
+      return col in ['ciLimited', 'ciGroups'];
+    }
+    // Stará aplikace (heslo party) — beze změny, končí 1. 12. 2026.
     match /{document=**} {
       allow read, write: if isPartyMember();
-      allow read: if isV2Approved();
     }
+    match /{col}/{document=**} {
+      allow read: if isV2Approved() && !isPrivateCol(col);
+    }
+    // Skupinové dotazy (collectionGroup) — pravidlo výše s názvem kolekce je nepokryje,
+    // proto zvlášť. Omezené check-iny mají komentáře v „lcomments“, sem nespadají.
+    match /{path=**}/comments/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/checkins/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/attendees/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/declines/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/likes/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/items/{id} { allow read: if isV2Approved(); }
+    match /{path=**}/times/{id} { allow read: if isV2Approved(); }
 
     // Členové nové aplikace.
     match /v2_members/{uid} {
@@ -96,6 +113,38 @@ service cloud.firestore {
       match /comments/{c} {
         allow read, write: if isV2Approved();
       }
+    }
+
+    // Omezený check-in („Jen já“ / „Vybraní“): číst, reagovat a komentovat smí jen
+    // lidé v poli visibleTo (seznam jmen, autor je v něm vždy). Seznam mění jen autor.
+    function myV2Name() {
+      return get(memberPath()).data.name;
+    }
+    match /ciLimited/{id} {
+      allow read: if isV2Approved() && myV2Name() in resource.data.visibleTo;
+      allow create: if isV2Approved()
+        && request.resource.data.user == myV2Name()
+        && request.resource.data.visibleTo is list
+        && request.resource.data.visibleTo.size() <= 60
+        && myV2Name() in request.resource.data.visibleTo;
+      allow update: if isV2Approved()
+        && myV2Name() in resource.data.visibleTo
+        && request.resource.data.user == resource.data.user
+        && (resource.data.user == myV2Name()
+            || request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['coming', 'near', 'nearLoc', 'emojis', 'commentCount']))
+        && request.resource.data.visibleTo is list
+        && resource.data.user in request.resource.data.visibleTo;
+      allow delete: if isV2Approved() && resource.data.user == myV2Name();
+      match /lcomments/{c} {
+        allow read, write: if isV2Approved()
+          && myV2Name() in get(/databases/$(database)/documents/ciLimited/$(id)).data.visibleTo;
+      }
+    }
+
+    // Uložené skupiny lidí pro omezené check-iny — každý vidí a mění jen svoje.
+    match /ciGroups/{uid} {
+      allow read, write: if isV2Approved() && request.auth.uid == uid;
     }
 
     // Lajky u akcí (stejné místo jako stará aplikace). Každý smí dát nebo

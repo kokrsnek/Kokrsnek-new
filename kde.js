@@ -4,9 +4,9 @@
 import { emo, emojiSheet } from './emoji.js';
 import { esc, icon, fmtTime, toDate, dayDiff, sameDay, DAYS_FULL } from './util.js';
 import { tabbar, avatar, toast, spinner, confirmDanger, faces, setFocus, topButton } from './ui.js';
-import { myName } from './auth.js';
+import { myName, session } from './auth.js';
 import { TEST_MODE, MAPY_API_KEY, CHAT_LIVE } from './config.js';
-import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, writeBatch, callFunction } from './firebase.js';
+import { db, collection, collectionGroup, doc, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, getDoc, setDoc, writeBatch, callFunction } from './firebase.js';
 import { shrinkPhoto, events, watchEvents, toggleEventCheckin, setAttendance, cachedAttendance, loadAttendance } from './store.js';
 import { loadLeaflet, geocode } from './map.js';
 import { placeCoords } from './util.js';
@@ -17,6 +17,19 @@ const isTestDoc = (c) => c._col === 'v2_checkins';
 const canWriteCi = (c) => isTestDoc(c) || !TEST_MODE || CHAT_LIVE;
 const LIVE = CHAT_LIVE || !TEST_MODE;
 const colOf = (c) => c._col;
+// Omezené check-iny („Jen já“ / „Vybraní“) jsou ve vlastní kolekci ciLimited s polem
+// visibleTo (jména, autor vždy). Pravidla Firestore je pustí jen lidem ze seznamu,
+// proto se vždy čtou dotazem visibleTo array-contains já (bez řazení, třídí se tady).
+const LIMC = 'ciLimited';
+// komentáře omezených check-inů jsou v „lcomments“ (mimo skupinové dotazy na comments)
+const comCol = (col) => col === LIMC ? 'lcomments' : 'comments';
+const myLimited = (me) => query(collection(db, LIMC), where('visibleTo', 'array-contains', me));
+const visTag = (c, me) => {
+  if (c._col !== LIMC) return '';
+  const o = (c.visibleTo || []).filter((n) => n !== c.user);
+  if (!o.length) return ` · <span class="civis">${icon('lock', 12)} jen ${c.user === me ? 'já' : esc(c.user)}</span>`;
+  return ` · <span class="civis" title="${esc(o.join(', '))}">${icon('users', 12)} vidí ${o.length + 1}</span>`;
+};
 
 function when(at) {
   const d = toDate(at);
@@ -63,7 +76,7 @@ const gmaps = (c) => c.lat != null ? `https://www.google.com/maps/dir/?api=1&des
 
 export function render(root, { tab = 'feed', openNew = false }) {
   const me = myName();
-  let real = [], test = [], week = [], comments = {}, open = new Set(), map = null, markers = null, alive = true;
+  let real = [], test = [], limited = [], week = [], comments = {}, open = new Set(), map = null, markers = null, alive = true;
   let lim = 60, feedUnsub = null, more = true;
   const unsubs = [];
 
@@ -141,9 +154,10 @@ export function render(root, { tab = 'feed', openNew = false }) {
   let evCis = [];
   const byTime = (a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0);
   const all = () => {
-    const free = [...real, ...test];
+    // omezené check-iny se načítají celé — do Feedu jen ty, které spadají do načteného úseku
+    const oldest = more && real.length ? Math.min(...real.map((c) => toDate(c.at)?.getTime() || 0)) : 0;
+    const free = [...real, ...test, ...limited.filter((c) => (toDate(c.at)?.getTime() || 0) >= oldest)];
     const linked = new Set(free.filter((c) => c.eventId).map((c) => c.eventId + '|' + c.user));
-    const oldest = more && free.length ? Math.min(...free.map((c) => toDate(c.at)?.getTime() || 0)) : 0;
     const ev = evCis.filter((c) => !linked.has(c.eventId + '|' + c.user) && (toDate(c.at)?.getTime() || 0) >= oldest);
     return [...free, ...ev].sort(byTime);
   };
@@ -232,7 +246,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     const cs = comments[c.id];
     return `<div class="ci" data-ci="${esc(c.id)}">
       <div class="cihead"><span data-profile="${esc(c.user || '')}">${avTr(c, 36)}</span>
-        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+        <div style="min-width:0;flex:1"><div class="t"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span>${isTestDoc(c) ? ' <span class="pill test" style="height:18px;font-size:10px">test</span>' : ''}${active ? ' <span class="cinow">právě tady</span>' : ''}</div><div class="s">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}${visTag(c, me)}</div></div>
         ${c.lat != null && c.lng != null
           ? `<a class="cimaplink" href="${esc(gplace(c))}" target="_blank" rel="noopener" aria-label="Otevřít v Google Mapách">${miniMap(+c.lat, +c.lng)}</a>`
           : `<a class="ibtn ghost" href="${esc(gmaps(c))}" target="_blank" rel="noopener" aria-label="Najít v Google Mapách">${icon('pin', 18)}</a>`}
@@ -320,7 +334,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     if (act === 'com') {
       open.has(c.id) ? open.delete(c.id) : open.add(c.id);
       if (open.has(c.id) && !comments[c.id]) {
-        unsubs.push(onSnapshot(query(collection(db, colOf(c), c.id, 'comments'), orderBy('at', 'asc')), (s) => {
+        unsubs.push(onSnapshot(query(collection(db, colOf(c), c.id, comCol(colOf(c))), orderBy('at', 'asc')), (s) => {
           comments[c.id] = s.docs.map((d) => ({ id: d.id, ...d.data() })); if (alive) drawFeed();
         }, () => { comments[c.id] = []; drawFeed(); }));
       }
@@ -362,7 +376,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
     markers.clearLayers();
     const wk = Date.now() - 7 * 86400000;
     const evWeek = evCis.filter((c) => (toDate(c.at)?.getTime() || 0) >= wk).map((c) => { const co = c.lat != null ? c : placeCoords(c.place); return co ? { ...c, lat: +co.lat, lng: +co.lng } : null; }).filter(Boolean);
-    const both = [...week, ...evWeek].sort(byTime);
+    const both = [...week, ...limited.filter((c) => (toDate(c.at)?.getTime() || 0) >= wk), ...evWeek].sort(byTime);
     const pts = both.filter((c) => c.lat != null && c.lng != null && pass(c, both));
     const seen = new Set();
     pts.forEach((c) => {
@@ -434,7 +448,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
       body.innerHTML = spinner();
       try {
         const s = await getDocs(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(1000)));
-        allPlaces = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+        allPlaces = [...s.docs.map((d) => ({ id: d.id, ...d.data() })), ...limited].sort((a, b) => ((b.at || '') > (a.at || '') ? 1 : -1));
       } catch (e) { body.innerHTML = '<div class="empty">Místa se nepodařilo načíst.</div>'; return; }
       if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { myPos = { lat: p.coords.latitude, lng: p.coords.longitude }; if (alive && tab === 'mista') drawPlaces(); }, () => {}, { timeout: 8000, maximumAge: 300000 });
     }
@@ -512,6 +526,10 @@ export function render(root, { tab = 'feed', openNew = false }) {
     week = s.docs.map((d) => ({ id: d.id, _col: 'placeCheckins', ...d.data() }));
     if (tab === 'mapa') draw();
   }, () => {}));
+  if (LIVE && me) unsubs.push(onSnapshot(myLimited(me), (s) => {
+    limited = s.docs.map((d) => ({ id: d.id, _col: LIMC, ...d.data() }));
+    draw();
+  }, (err) => console.error('Omezené check-iny:', err)));
   if (!LIVE) unsubs.push(onSnapshot(query(collection(db, 'v2_checkins'), orderBy('at', 'desc'), limit(30)), (s) => {
     test = s.docs.map((d) => ({ id: d.id, _col: 'v2_checkins', ...d.data() })); draw();
   }, () => {}));
@@ -528,7 +546,7 @@ export function render(root, { tab = 'feed', openNew = false }) {
 async function sendComment(c, me, text) {
   try {
     const b = writeBatch(db);
-    b.set(doc(collection(db, colOf(c), c.id, 'comments')), { user: me, text, at: new Date().toISOString() });
+    b.set(doc(collection(db, colOf(c), c.id, comCol(colOf(c)))), { user: me, text, at: new Date().toISOString() });
     b.update(doc(db, colOf(c), c.id), { commentCount: (c.commentCount || 0) + 1 });
     await b.commit();
     return true;
@@ -605,8 +623,9 @@ export function renderDetail(root, { id }) {
     body.innerHTML = `<div class="ci cidcard">
       <div class="cihead" style="align-items:center"><span data-profile="${esc(c.user || '')}">${avTr(c, 48)}</span>
         <div style="min-width:0;flex:1"><div class="t" style="font-size:18px"><span data-profile="${esc(c.user || '')}">${esc(c.user || '?')}</span></div>
-          <div class="s" style="font-size:13px">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}</div></div>
+          <div class="s" style="font-size:13px">${esc(when(c.at))}${c.transport && TR_PATH[c.transport] ? ` · <span class="trtxt">${trIcon(c.transport, 14)}${esc(trText(c.transport))}</span>` : ''}${ended && ended - toDate(c.at) < MAX_ACTIVE ? ` · ${gx(c.user, 'odešel', 'odešla')} ${esc(fmtTime(ended))}` : ''}${c.editedAt ? ' · upraveno' : ''}${visTag(c, me)}</div></div>
         ${active ? '<span class="cinow">právě tady</span>' : ''}</div>
+      ${c._col === LIMC ? `<div class="civisrow">${icon((c.visibleTo || []).length > 1 ? 'users' : 'lock', 14)} ${(c.visibleTo || []).length > 1 ? 'Vidí jen: ' + esc(joinNames(c.visibleTo)) : 'Vidíš jen ty'}</div>` : ''}
       ${c.eventId ? `<a class="cievb" href="#/akce/${encodeURIComponent(c.eventId)}">🎉 ${esc(c.eventTitle || 'akce')} ›</a>` : ''}
       <div class="ciplace cidplace">${esc(c.place || '')}</div>
       ${c.note ? `<div class="cinote" style="font-size:16px">${esc(c.note)}</div>` : ''}
@@ -630,7 +649,7 @@ export function renderDetail(root, { id }) {
   }
 
   // Najít check-in (ostrá kolekce, v testovacím režimu i testovací).
-  const cols = LIVE ? ['placeCheckins'] : ['placeCheckins', 'v2_checkins'];
+  const cols = LIVE ? ['placeCheckins', LIMC] : ['placeCheckins', 'v2_checkins'];
   let found = false, missing = 0;
   cols.forEach((col) => {
     unsubs.push(onSnapshot(doc(db, col, id), (d) => {
@@ -646,11 +665,11 @@ export function renderDetail(root, { id }) {
         // Aktuálnost: novější check-in stejného člověka ho ukončil (stačí zjistit jednou).
         const t = toDate(c.at);
         if (t && Date.now() - t.getTime() < MAX_ACTIVE && !c.endedAt) {
-          getDocs(query(collection(db, col), where('at', '>=', t.toISOString()))).then((s) => {
+          getDocs(col === LIMC ? myLimited(me) : query(collection(db, col), where('at', '>=', t.toISOString()))).then((s) => {
             later = s.docs.some((x) => x.id !== c.id && x.data().user === c.user && x.data().at > c.at); draw();
           }).catch(() => {});
         }
-        unsubs.push(onSnapshot(query(collection(db, col, id, 'comments'), orderBy('at', 'asc')), (s) => {
+        unsubs.push(onSnapshot(query(collection(db, col, id, comCol(col)), orderBy('at', 'asc')), (s) => {
           coms = s.docs.map((x) => ({ id: x.id, ...x.data() })); draw();
         }, () => { coms = []; draw(); }));
       }
@@ -682,11 +701,12 @@ export function renderDetail(root, { id }) {
 
 async function favoritePlaces(me) {
   const map = new Map();
-  for (const col of LIVE ? ['placeCheckins'] : ['placeCheckins', 'v2_checkins']) {
+  for (const col of LIVE ? ['placeCheckins', LIMC] : ['placeCheckins', 'v2_checkins']) {
     try {
-      const s = await getDocs(query(collection(db, col), where('user', '==', me), limit(300)));
+      const s = await getDocs(col === LIMC ? myLimited(me) : query(collection(db, col), where('user', '==', me), limit(300)));
       s.forEach((d) => {
         const c = d.data();
+        if (c.user !== me) return;
         const name = (c.place || '').trim();
         if (!name) return;
         const key = name.toLowerCase();
@@ -806,6 +826,7 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     <textarea id="ci-note" class="input" data-note rows="2" maxlength="120" placeholder="Třeba doporučení pro ostatní…"></textarea>
     <input type="file" accept="image/*" data-file hidden>
     <div class="ciphrow" data-phrow></div>
+    ${LIVE ? `<button type="button" class="civissel" data-vis><span class="ic" data-visi>${icon('people', 18)}</span><span class="t">Kdo uvidí</span><b data-visl>Celá parta</b>${icon('next', 16)}</button>` : ''}
     ${!LIVE ? '<div class="note" style="text-align:left;margin-bottom:10px">Zkušební provoz: check-in se uloží jako testovací — parta ho neuvidí.</div>' : ''}
   </div>
   <div class="cibtns"><button class="btn" data-x>Zrušit</button><button class="btn primary" data-go>Odeslat</button></div>`;
@@ -833,6 +854,17 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
   const close = () => scr.remove();
   $('[data-x]').onclick = close;
   const getTr = bindTr(scr);
+  // Kdo uvidí: vždy začíná „Celá parta“ (nepamatuje se), změna jen pro tenhle check-in.
+  let vis = { k: 'all', names: [], label: 'Celá parta' };
+  const vb = $('[data-vis]');
+  if (vb) vb.onclick = async () => {
+    const r = await visSheet(vis, me);
+    if (!r) return;
+    vis = r;
+    $('[data-visl]').textContent = r.label;
+    $('[data-visi]').innerHTML = icon(r.k === 'me' ? 'lock' : r.k === 'sel' ? 'users' : 'people', 18);
+    vb.classList.toggle('lim', r.k !== 'all');
+  };
   const no = $('[data-no]');
   if (no) no.onclick = () => $('[data-here]').remove();
   const yes = $('[data-yes]');
@@ -840,8 +872,11 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     yes.disabled = true; yes.textContent = 'Ukládám…';
     const ev = here.ev;
     try {
-      const ref = await addDoc(collection(db, 'placeCheckins'), { user: me, place: shortPlace(ev.place) || ev.title, note: $('[data-note]').value.trim(),
-        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '', transport: getTr() });
+      const d = { user: me, place: shortPlace(ev.place) || ev.title, note: $('[data-note]').value.trim(),
+        lat: coords.lat, lng: coords.lng, gPlaceId: '', at: new Date().toISOString(), photo, photoPath: '', via: 'v2', eventId: ev.id, eventTitle: ev.title || '', transport: getTr() };
+      const lim = vis.k !== 'all';
+      if (lim) { d.vis = vis.k; d.visibleTo = vis.k === 'me' ? [me] : [me, ...vis.names.filter((n) => n !== me)]; if (vis.group) d.visGroup = vis.group; }
+      const ref = await addDoc(collection(db, lim ? LIMC : 'placeCheckins'), d);
       endMyOthers(me, ref.id).catch(() => {});
       await toggleEventCheckin(ev, false, here.co);
       let att = cachedAttendance(ev.id);
@@ -860,11 +895,13 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
     const data = { user: me, place, note: $('[data-note]').value.trim(),
       lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, gPlaceId: gp ? gp.id || '' : '',
       at: new Date().toISOString(), photo, photoPath: '', via: 'v2', transport: getTr() };
+    const limited = LIVE && vis.k !== 'all';
+    if (limited) { data.vis = vis.k; data.visibleTo = vis.k === 'me' ? [me] : [me, ...vis.names.filter((n) => n !== me)]; if (vis.group) data.visGroup = vis.group; }
     try {
-      const ref = await addDoc(collection(db, LIVE ? 'placeCheckins' : 'v2_checkins'), data);
+      const ref = await addDoc(collection(db, limited ? LIMC : LIVE ? 'placeCheckins' : 'v2_checkins'), data);
       endMyOthers(me, ref.id).catch(() => {});
       close();
-      toast('Check-in odeslán 📍');
+      toast(!limited ? 'Check-in odeslán 📍' : vis.k === 'me' ? 'Check-in uložen jen pro tebe 🔒' : 'Check-in odeslán vybraným 📍');
       if (!location.hash.startsWith('#/kde')) location.hash = '#/kde';
     } catch (x) { console.error(x); e.target.disabled = false; e.target.textContent = 'Odeslat'; toast('Check-in se nepodařilo uložit.'); }
   };
@@ -873,10 +910,18 @@ function renderForm(scr, me, coords, sugs, guess, favs, here = null) {
 
 // ---------- aktuálnost vlastního check-inu ----------
 // Moje check-iny, které ještě nejsou ukončené (kromě keepId), dostanou endedAt.
+// Moje check-iny z obou kolekcí (veřejné i omezené).
+async function myCheckinDocs(me) {
+  const [a, b] = await Promise.all([
+    getDocs(query(collection(db, 'placeCheckins'), where('user', '==', me), limit(50))),
+    getDocs(myLimited(me)).catch(() => ({ docs: [] }))
+  ]);
+  return [...a.docs, ...b.docs.filter((d) => d.data().user === me)];
+}
 async function endMyOthers(me, keepId) {
-  const s = await getDocs(query(collection(db, 'placeCheckins'), where('user', '==', me), limit(50)));
+  const docs = await myCheckinDocs(me);
   const now = new Date().toISOString();
-  await Promise.all(s.docs.filter((d) => d.id !== keepId && !d.data().endedAt).map((d) => updateDoc(d.ref, { endedAt: now, endedWhy: 'novy' })));
+  await Promise.all(docs.filter((d) => d.id !== keepId && !d.data().endedAt).map((d) => updateDoc(d.ref, { endedAt: now, endedWhy: 'novy' })));
 }
 // Při otevření aplikace: když jsem dál než 1 km od místa posledního check-inu, check-in skončí.
 let lastCheck = 0;
@@ -886,8 +931,7 @@ export async function checkMyCheckin() {
   const me = myName();
   if (!me || !LIVE) return;
   try {
-    const s = await getDocs(query(collection(db, 'placeCheckins'), where('user', '==', me), limit(50)));
-    const mine = s.docs.map((d) => ({ ref: d.ref, ...d.data() })).sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
+    const mine = (await myCheckinDocs(me)).map((d) => ({ ref: d.ref, ...d.data() })).sort((a, b) => (toDate(b.at)?.getTime() || 0) - (toDate(a.at)?.getTime() || 0));
     const c = mine[0];
     if (!c || c.endedAt || c.lat == null || c.lng == null) return;
     if (Date.now() - (toDate(c.at)?.getTime() || 0) > MAX_ACTIVE) return;
@@ -895,6 +939,78 @@ export async function checkMyCheckin() {
     if (!pos) return;
     if (distM(pos, { lat: +c.lat, lng: +c.lng }) > 1000) await updateDoc(c.ref, { endedAt: new Date().toISOString(), endedWhy: 'pryc' });
   } catch (e) { console.error('Aktuálnost check-inu:', e); }
+}
+
+// ---------- Kdo uvidí check-in: Celá parta / Jen já / Vybraní (+ uložené skupiny) ----------
+// Skupiny jsou soukromé: ciGroups/{uid} → { groups: [{ name, names }] }.
+async function loadGroups() {
+  const uid = session.user && session.user.uid;
+  if (!uid) return [];
+  try { const d = await getDoc(doc(db, 'ciGroups', uid)); return (d.exists() && d.data().groups) || []; } catch (e) { return []; }
+}
+async function saveGroups(groups) {
+  const uid = session.user && session.user.uid;
+  if (uid) await setDoc(doc(db, 'ciGroups', uid), { groups });
+}
+function visSheet(cur, me) {
+  return new Promise((resolve) => {
+    let k = cur.k, sel = new Set(cur.names), group = cur.group || '', groups = [];
+    const people = PARTY_NAMES.filter((n) => n !== me);
+    const bd = document.createElement('div');
+    bd.className = 'backdrop';
+    const opt = (key, ic, t, sub) => `<button type="button" class="visopt ${k === key ? 'on' : ''}" data-k="${key}"><span class="r"></span><span class="ic">${icon(ic, 20)}</span><span class="tx"><b>${t}</b><small>${sub}</small></span></button>`;
+    const sameSet = (a, b) => a.length === b.size && a.every((n) => b.has(n));
+    const drawS = () => {
+      const g = groups.find((x) => x.name === group && sameSet(x.names, sel));
+      bd.querySelector('[data-body]').innerHTML = `
+        ${opt('all', 'people', 'Celá parta', 'jako obvykle, všichni v partě')}
+        ${opt('me', 'lock', 'Jen já', 'soukromý záznam, nikomu nic nepřijde')}
+        ${opt('sel', 'users', 'Vybraní', sel.size ? `${sel.size} ${sel.size === 1 ? 'člověk' : sel.size <= 4 ? 'lidé' : 'lidí'}` : 'vyber, komu se ukáže')}
+        ${k === 'sel' ? `<div class="vissel">
+          ${groups.length ? `<div class="cilbl">Skupiny</div><div class="chips visgr">${groups.map((x) => `<button type="button" class="chip ${x.name === group && sameSet(x.names, sel) ? 'on' : ''}" data-g="${esc(x.name)}">${esc(x.name)} <small>${x.names.length}</small></button>`).join('')}</div>` : ''}
+          <div class="cilbl">Lidé</div>
+          <div class="cipp">${people.map((n) => `<button type="button" class="${sel.has(n) ? 'on' : ''}" data-p="${esc(n)}">${avatar(n, 40)}<span>${esc(n)}</span></button>`).join('')}</div>
+          <div class="visgact">${g ? `<button type="button" class="btn small" data-gdel>Smazat skupinu „${esc(g.name)}“</button>` : sel.size >= 2 ? '<button type="button" class="btn small" data-gsave>Uložit jako skupinu</button>' : ''}</div>
+          <div class="viserr" data-err></div>
+        </div>` : ''}`;
+    };
+    bd.innerHTML = `<div class="sheet vissheet" role="dialog" aria-modal="true" aria-label="Kdo uvidí"><div class="grab"></div><h3>Kdo uvidí check-in</h3>
+      <div data-body></div>
+      <button class="btn primary block" data-ok style="margin-top:14px">Hotovo</button></div>`;
+    drawS();
+    loadGroups().then((g) => { groups = g; drawS(); });
+    const done = (v) => { bd.remove(); resolve(v); };
+    bd.addEventListener('click', async (e) => {
+      if (e.target === bd) return done(null);
+      const o = e.target.closest('[data-k]');
+      if (o) { k = o.dataset.k; drawS(); return; }
+      const p = e.target.closest('[data-p]');
+      if (p) { sel.has(p.dataset.p) ? sel.delete(p.dataset.p) : sel.add(p.dataset.p); drawS(); return; }
+      const g = e.target.closest('[data-g]');
+      if (g) { const x = groups.find((y) => y.name === g.dataset.g); if (x) { sel = new Set(x.names.filter((n) => n !== me)); group = x.name; } drawS(); return; }
+      if (e.target.closest('[data-gsave]')) {
+        const name = (prompt('Název skupiny (třeba Vodáci):') || '').trim().slice(0, 24);
+        if (!name) return;
+        groups = [...groups.filter((x) => x.name !== name), { name, names: [...sel] }];
+        group = name; drawS();
+        saveGroups(groups).then(() => toast('Skupina uložena')).catch(() => toast('Skupinu se nepodařilo uložit.'));
+        return;
+      }
+      if (e.target.closest('[data-gdel]')) {
+        groups = groups.filter((x) => x.name !== group); group = ''; drawS();
+        saveGroups(groups).catch(() => toast('Skupinu se nepodařilo smazat.'));
+        return;
+      }
+      if (e.target.closest('[data-ok]')) {
+        if (k === 'sel' && !sel.size) { const er = bd.querySelector('[data-err]'); if (er) er.textContent = 'Vyber aspoň jednoho člověka.'; return; }
+        const names = [...sel];
+        const g2 = groups.find((x) => x.name === group && sameSet(x.names, sel));
+        const label = k === 'all' ? 'Celá parta' : k === 'me' ? 'Jen já' : g2 ? g2.name : names.length <= 2 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+        done({ k, names: k === 'sel' ? names : [], label, group: k === 'sel' && g2 ? g2.name : '' });
+      }
+    });
+    document.body.appendChild(bd);
+  });
 }
 
 // ---------- úprava vlastního check-inu ----------

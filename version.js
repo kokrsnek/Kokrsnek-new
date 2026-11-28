@@ -3,6 +3,14 @@
 //  2) ve sw.js zvyš název mezipaměti (CACHE), ať si telefony stáhnou nové soubory.
 export const CHANGELOG = [
   {
+    version: '2.17',
+    date: '28. 11. 2026',
+    items: [
+      'Check-in jde omezit: ve formuláři je řádek „Kdo uvidí“ – Celá parta (vždy výchozí), Jen já, nebo Vybraní. Vybrané lidi si můžeš uložit jako skupinu (třeba „Vodáci“).',
+      'Omezený check-in opravdu vidí jen vybraní (hlídá to databáze), jen jim chodí upozornění a jen oni můžou reagovat a komentovat. V přehledu ho poznáš podle ikonky zámku nebo „vidí N“.'
+    ]
+  },
+  {
     version: '2.16',
     date: '28. 11. 2026',
     items: [

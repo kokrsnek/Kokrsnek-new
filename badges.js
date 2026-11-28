@@ -126,8 +126,14 @@ export function startBadges() {
     threads.forEach(subThread);
     computeChat(); paint();
   }, () => { threads.forEach(subThread); });
+  let pubCi = [], limCi = [];
+  const setKde = () => { kdeList = [...pubCi, ...limCi]; computeKde(); paint(); };
   onSnapshot(query(collection(db, 'placeCheckins'), orderBy('at', 'desc'), limit(10)), (s) => {
-    kdeList = s.docs.map((d) => d.data()); computeKde(); paint();
+    pubCi = s.docs.map((d) => d.data()); setKde();
+  }, () => {});
+  // omezené check-iny, které smím vidět (Jen já / Vybraní)
+  if (me) onSnapshot(query(collection(db, 'ciLimited'), where('visibleTo', 'array-contains', me)), (s) => {
+    limCi = s.docs.map((d) => d.data()); setKde();
   }, () => {});
   watchEvents(() => { computeAkce(); paint(); });
   window.addEventListener('hashchange', () => setTimeout(recompute, 50));
